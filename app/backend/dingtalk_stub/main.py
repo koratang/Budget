@@ -77,15 +77,17 @@ def corp_access_token(body: dict):
 TMP_PREFIX = "tmp-"
 EMBED_PAGE = """<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>钉钉扫码登录（替身）</title>
 <style>
-body{{margin:0;font:13px/1.5 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;color:#1f2329;background:#fff;text-align:center}}
+body{{margin:0;font:13px/1.5 system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+color:#1f2329;background:#fff;text-align:center}}
 .qr{{display:inline-block;margin:8px 0 4px}} .qr svg{{display:block}}
-.tip{{margin:0 0 8px;color:#646a73}} .stub{{border-top:1px dashed #c9cdd4;margin:0 8px;padding-top:6px;text-align:left}}
-.stub b{{font-size:12px;color:#646a73;font-weight:500}} ul{{list-style:none;margin:4px 0 0;padding:0;max-height:96px;overflow:auto}}
-li button{{width:100%;text-align:left;border:0;background:none;padding:2px 4px;font:inherit;color:#1f2329;cursor:pointer}}
+.stub{{border-top:1px dashed #c9cdd4;margin:0 8px;padding-top:6px;text-align:left}}
+.stub b{{font-size:12px;color:#646a73;font-weight:500}}
+ul{{list-style:none;margin:4px 0 0;padding:0;max-height:118px;overflow:auto}}
+li button{{width:100%;text-align:left;border:0;background:none;padding:2px 4px;font:inherit;color:#1f2329;
+cursor:pointer}}
 li button:hover{{background:#f2f3f5}}
 </style>
 <div class="qr" role="img" aria-label="钉钉扫码登录二维码">{qr}</div>
-<p class="tip">请使用钉钉 App 扫码登录</p>
 <div class="stub"><b>模拟扫码（替身）</b><ul>{items}</ul></div>
 <script>
 const TARGET = {target};
@@ -112,11 +114,13 @@ def qr_page(request: Request, redirect_uri: str):
         return RedirectResponse(f"{redirect_uri}?{urlencode({'authCode': 'qr-' + userid, 'state': st})}",
                                 status_code=302)
     if request.query_params.get("iframe") == "true":
-        qr = segno.make(str(request.url), error="m").svg_inline(scale=4, border=2, dark="#1f2329")
+        client_id = request.query_params.get("client_id", "")
+        scan = f"{str(request.base_url).rstrip('/')}/oauth2/scan?{urlencode({'client_id': client_id})}"
+        qr = segno.make(scan, error="m").svg_inline(scale=4, border=2, dark="#1f2329")
         items = "".join(
             f'<li><button type="button" data-tmp="{html.escape(TMP_PREFIX + u["userid"])}">'
-            f'{html.escape(u["name"])}（{html.escape(u["dept_name"])}{"，已停用" if not u["active"] else ""}）</button></li>'
-            for u in state["users"].values())
+            f'{html.escape(u["name"])}（{html.escape(u["dept_name"])}{"，已停用" if not u["active"] else ""}）'
+            '</button></li>' for u in state["users"].values())
         return EMBED_PAGE.format(qr=qr, items=items, target=json.dumps(_origin(redirect_uri)))
     items = "".join(
         f'<li><a href="{html.escape(redirect_uri)}?{urlencode({"authCode": "qr-" + u["userid"], "state": st})}">'

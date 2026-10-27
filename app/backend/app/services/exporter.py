@@ -541,7 +541,8 @@ def compare_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, 
 # ---------------------------------------------------------------------------
 # 视图：BI 与金蝶核对（PAGE-F09-02：月 × 店铺 × 站点，8 列）
 # ---------------------------------------------------------------------------
-RECONCILE_HEADERS = ["店铺 · 站点", "BI 本币销售额", "当月平均汇率", "BI 折人民币", "金蝶收入", "差额", "差异率", "标记"]
+RECONCILE_HEADERS = ["店铺 · 站点", "BI 本币销售额", "当月平均汇率", "BI 折人民币", "金蝶收入", "差额", "差异率",
+                     "标记"]
 
 
 def reconcile_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, list[Sheet]]:

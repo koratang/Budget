@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
 .login-card > section { padding: var(--space-8) var(--space-6); }
 .login-card > section + section { border-left: 1px solid var(--border-soft); }
 .sec-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-4); }
-.qr-frame { display: block; width: 280px; height: 320px; max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); margin-bottom: var(--space-4); }
+.qr-frame { display: block; width: 260px; height: 300px; max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); margin-bottom: var(--space-4); }
 .hint { color: var(--fg-2); margin: 0 0 var(--space-1); }
 .sub { color: var(--muted); font-size: var(--text-sm); margin: 0; }
 .steps { margin: 0; padding-left: 20px; color: var(--fg-2); }
