@@ -169,8 +169,11 @@ export async function download(path: string, query: Query | undefined, fallbackN
   a.download = name
   document.body.appendChild(a)
   a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
+  // 立即 revoke 会让部分浏览器丢失 download 文件名（落成 "download"），延后释放
+  setTimeout(() => {
+    a.remove()
+    URL.revokeObjectURL(url)
+  }, 1000)
   return name
 }
 

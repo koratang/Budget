@@ -142,7 +142,8 @@ def _get(row: list, idx: int | None):
 
 
 def _err(errors: list, row, code: str, value: str = "", **extra) -> None:
-    errors.append({"row": row, "code": code, "type": ISSUE_TYPES[code][0], "value": value, **extra})
+    """库内错误：type = 英文错误代码（G1 科目映射页按 account_unmapped 识别），type_label = 中文问题类型。"""
+    errors.append({"row": row, "type": code, "type_label": ISSUE_TYPES[code][0], "value": value, **extra})
 
 
 # ---------------------------------------------------------------------------
@@ -205,10 +206,11 @@ def validate_kingdee(db: Session, rows: list[tuple[int, list]], source: str) -> 
         account_id = mapping.get(code)
         if account_id is None:
             name = cell_text(_get(r, cols.get("code_name"))) or code_names.get(code) or ""
-            _err(errors, row_no, "account_unmapped", f"{code} {name}".strip())
+            _err(errors, row_no, "account_unmapped", f"{code} {name}".strip(), code=code, name=name or None)
             ok = False
         try:
-            amount = cell_decimal(_get(r, cols["amount"]))
+            # 金额约定（与 G4 报表一致）：各科目存发生额绝对值，收入 / 费用按科目性质区分
+            amount = abs(cell_decimal(_get(r, cols["amount"])))
         except MoneyError:
             _err(errors, row_no, "amount_format", cell_text(_get(r, cols["amount"])))
             ok = False
@@ -295,8 +297,7 @@ def validate_bi(db: Session, rows: list[tuple[int, list]], source: str) -> tuple
                        "sales": format(values["sales"], "f"), "currency": currency,
                        "ad_fee": format(values["ad_fee"], "f"), "platform_fee": format(values["platform_fee"], "f")})
     for code, row_nos in unmapped.items():
-        errors.append({"row": row_nos[0], "code": "sku_unmapped", "type": ISSUE_TYPES["sku_unmapped"][0],
-                       "value": code, "count": len(row_nos)})
+        _err(errors, row_nos[0], "sku_unmapped", code, count=len(row_nos))
     if not errors and not staged:
         _err(errors, header_row + 1, "empty_file")
     return errors, staged
@@ -357,7 +358,8 @@ def validate_batch(db: Session, batch_id: int) -> ImportBatch:
             raise ImportFileError("empty_file")
         errors, staged = VALIDATORS[batch.source](db, rows, batch.source)
     except ImportFileError as e:
-        errors, staged = [{"row": 1, "code": e.code, "type": ISSUE_TYPES[e.code][0], "value": e.value}], []
+        errors, staged = [], []
+        _err(errors, 1, e.code, e.value)
         rows = []
     batch.row_count = len(staged) if not errors else max(len(rows) - 1, 0)
     batch.validated_at = clock.now()
@@ -393,11 +395,11 @@ def run_validation(session_factory, batch_id: int) -> None:
 def issues_view(errors: list[dict] | None) -> list[dict]:
     out = []
     for e in errors or []:
-        _label, action, link = ISSUE_TYPES.get(e.get("code"), (e.get("type"), None, None))
+        label, action, link = ISSUE_TYPES.get(e.get("type"), (e.get("type_label"), None, None))
         row = e["row"]
-        if e.get("code") == "sku_unmapped":
+        if e.get("type") == "sku_unmapped":
             row = f"第 {row:,} 行起 · 共 {e.get('count', 1)} 行"
-        out.append({"row": row, "type": e.get("type"), "code": e.get("code"), "name": e.get("value") or None,
+        out.append({"row": row, "type": label, "code": e.get("type"), "name": e.get("value") or None,
                     "action": action, "link": link})
     return out
 
@@ -484,7 +486,7 @@ def batch_view(db: Session, batch: ImportBatch) -> dict:
     if batch.status == ImportStatus.VALIDATION_FAILED:
         errs = batch.errors or []
         data["issue_counts"] = _issue_counts(errs)
-        data["unmapped_skus"] = [e["value"] for e in errs if e.get("code") == "sku_unmapped"]
+        data["unmapped_skus"] = [e["value"] for e in errs if e.get("type") == "sku_unmapped"]
     if batch.status == ImportStatus.PENDING_CONFIRM:
         periods = staged_periods(db, batch.id)
         data["periods"] = [fmt_month(p) for p in periods]
@@ -502,7 +504,7 @@ def batch_view(db: Session, batch: ImportBatch) -> dict:
 def _issue_counts(errors: list[dict]) -> list[dict]:
     counts: dict[str, int] = defaultdict(int)
     for e in errors:
-        counts[e.get("type")] += 1
+        counts[ISSUE_TYPES.get(e.get("type"), (e.get("type_label"),))[0]] += 1
     return [{"type": k, "count": v} for k, v in counts.items()]
 
 
