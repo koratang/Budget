@@ -12,3 +12,4 @@ deploy/images/
 deploy/data/
 deploy/.env
 backup/
+deploy/wheels/
