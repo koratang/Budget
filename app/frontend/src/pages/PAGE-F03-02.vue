@@ -27,7 +27,7 @@ interface Progress {
   units: ProgressUnit[]
 }
 
-const TASK_BADGE: Record<string, string> = { 填报中: 'badge', '待 CEO 审批': 'badge badge-info', 'CEO 已退回': 'badge badge-bad', 已完成: 'badge badge-good' }
+const TASK_BADGE: Record<string, string> = { 进行中: 'badge', '待CEO审批': 'badge badge-info', 'CEO 已退回': 'badge badge-bad', 已完成: 'badge badge-good' }
 const STATUSES = ['未开始', '填报中', '已提交', '已退回', '已通过']
 const TYPES = ['平台渠道', 'B端', '成本比例', '物流比例', '部门费用']
 

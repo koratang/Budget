@@ -256,9 +256,9 @@ def task_status_label(task: BudgetTask) -> str:
     if task.status == TaskStatus.IN_PROGRESS and task.ceo_return_reason:
         return "CEO 已退回"
     if task.status == TaskStatus.IN_PROGRESS:
-        return "填报中"
+        return "进行中"
     if task.status == TaskStatus.PENDING_CEO:
-        return "待 CEO 审批"
+        return "待CEO审批"
     return "已完成"
 
 

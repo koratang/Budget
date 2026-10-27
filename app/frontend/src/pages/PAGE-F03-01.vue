@@ -28,7 +28,7 @@ interface Candidate {
   reviewer: { id: number; name: string } | null
 }
 
-const TASK_BADGE: Record<string, string> = { 填报中: 'badge', '待 CEO 审批': 'badge badge-info', 'CEO 已退回': 'badge badge-bad', 已完成: 'badge badge-good' }
+const TASK_BADGE: Record<string, string> = { 进行中: 'badge', '待CEO审批': 'badge badge-info', 'CEO 已退回': 'badge badge-bad', 已完成: 'badge badge-good' }
 const tasks = ref<TaskRow[]>([])
 const canPublish = ref(false)
 const loading = ref(true)

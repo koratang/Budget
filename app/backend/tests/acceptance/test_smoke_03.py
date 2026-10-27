@@ -7,7 +7,6 @@
 from sqlalchemy import select
 
 from app.models import BudgetAccount, BCustomer, Category, FillingUnit, Store
-from app.models.enums import TaskStatus
 from tests.acceptance.e1_helpers import DEADLINE, People, grid, row, save, smoke03_master
 
 
@@ -46,7 +45,7 @@ def test_smoke_03(seeded, dingtalk):
     plan = _cell_plan(db)
     labels, task = _progress_labels(lin, task_id)
     assert set(labels) == set(plan)
-    task_states = [task["status"]]
+    task_states = [task["status_label"]]
     seen = {name: [st] for name, st in labels.items()}
 
     units = {u.name: u.id for u in db.scalars(select(FillingUnit).where(FillingUnit.task_id == task_id))}
@@ -65,12 +64,14 @@ def test_smoke_03(seeded, dingtalk):
 
     r = lin.post(f"/api/tasks/{task_id}/submit-to-ceo")
     assert r.status_code == 200, r.text
-    task_states.append(_progress_labels(lin, task_id)[1]["status"])
+    task_states.append(_progress_labels(lin, task_id)[1]["status_label"])
     r = p("zhoumingyuan").post(f"/api/approvals/task/{task_id}/approve")
     assert r.status_code == 200, r.text
-    task_states.append(_progress_labels(lin, task_id)[1]["status"])
-    # 任务状态依次为 进行中 → 待CEO审批 → 已完成
-    assert [TaskStatus.LABELS[s] for s in task_states] == ["进行中", "待CEO审批", "已完成"]
+    task_states.append(_progress_labels(lin, task_id)[1]["status_label"])
+    # 任务状态依次为 进行中 → 待CEO审批 → 已完成（任务详情 / 编制任务列表显示文字）
+    assert task_states == ["进行中", "待CEO审批", "已完成"], task_states
+    listed = next(t for t in lin.get("/api/tasks").json()["items"] if t["id"] == task_id)
+    assert listed["status_label"] == "已完成"
 
     vers = p("zhoumingyuan").get("/api/versions", params={"year": 2027})
     assert vers.status_code == 200, vers.text

@@ -24,7 +24,7 @@ from sqlalchemy.orm import Session
 from app.core.auth import CurrentUser, get_current_user
 from app.core.errors import Forbidden
 from app.db import get_db
-from app.models import Store, UserScope
+from app.models import BCustomer, Store, UserScope
 from app.models.enums import Role, ScopeType
 
 # 物流物控可见 / 可编辑的四项比例（头程、尾程、仓储、关税）
@@ -117,13 +117,18 @@ def load_scope(db: Session, user_id: int, roles: Iterable[str]) -> ScopeContext:
     stores = set(by_type[ScopeType.STORE])
     if by_type[ScopeType.CHANNEL]:
         stores |= set(db.scalars(select(Store.id).where(Store.channel_id.in_(by_type[ScopeType.CHANNEL]))))
+    customers = set(by_type[ScopeType.CUSTOMER])
+    if customers and Role.B2B in set(roles):
+        # B 端业务按所负责客户的部门（其 B 端填报单位）看全部客户，之后新增的客户自动纳入（AC-F02-09，同渠道含新店铺）
+        depts = select(BCustomer.department_id).where(BCustomer.id.in_(customers))
+        customers |= set(db.scalars(select(BCustomer.id).where(BCustomer.department_id.in_(depts))))
     return ScopeContext(
         user_id=user_id,
         roles=frozenset(roles),
         department_ids=frozenset(by_type[ScopeType.DEPARTMENT]),
         channel_ids=frozenset(by_type[ScopeType.CHANNEL]),
         store_ids=frozenset(stores),
-        customer_ids=frozenset(by_type[ScopeType.CUSTOMER]),
+        customer_ids=frozenset(customers),
     )
 
 

@@ -25,6 +25,13 @@ async function boardStatus(page, taskId) {
   const out = {}
   for (const [name] of PLAN) out[name] = (await page.locator(`[data-unit="${name}"] [data-unit-status]`).innerText()).trim()
   out.__task = (await page.locator('[data-task-status]').innerText()).trim()
+  await page.goto(`${BASE}/tasks`)
+  await page.locator('[data-task-status]').first().waitFor()
+  out.__list = (await page.locator('[data-task-status]').first().innerText()).trim()
+  await page.goto(`${BASE}/`)
+  const wb = page.locator('[data-testid="kpi-submit"]')
+  await wb.waitFor()
+  out.__wb = (await wb.innerText()).replace(/\s+/g, ' ')
   return out
 }
 
@@ -60,7 +67,7 @@ await run('SMOKE-03', 'smoke03', async (env) => {
   const taskStates = []
   let b = await boardStatus(page, taskId)
   for (const [n] of PLAN) states[n].push(b[n])
-  taskStates.push(b.__task)
+  taskStates.push(b)
 
   const filled = {}
   for (const [name, filler, head, pred, prop, value] of PLAN) {
@@ -94,7 +101,7 @@ await run('SMOKE-03', 'smoke03', async (env) => {
   await page.locator('[data-confirm-ceo]').click()
   await page.getByRole('button', { name: '已提交 CEO 审批' }).waitFor()
   b = await boardStatus(page, taskId)
-  taskStates.push(b.__task)
+  taskStates.push(b)
   await loginAs(page, '周明远')
   await page.goto(`${BASE}/approvals`)
   await page.locator('[data-approval*="2027 年度预算编制"] a').first().click()
@@ -104,9 +111,12 @@ await run('SMOKE-03', 'smoke03', async (env) => {
   await page.locator('[data-confirm-approve]').click()
   await page.locator('[data-result]').waitFor()
   b = await boardStatus(page, taskId)
-  taskStates.push(b.__task)
-  console.log('  任务状态显示序列：' + taskStates.join(' → '))
-  eq(taskStates.length, 3, '任务状态经历三个阶段')
+  taskStates.push(b)
+  const want = ['进行中', '待CEO审批', '已完成']
+  eq(taskStates.map((s) => s.__task), want, '任务详情：任务状态依次为 进行中→待CEO审批→已完成')
+  eq(taskStates.map((s) => s.__list), want, '编制任务列表：任务状态依次为 进行中→待CEO审批→已完成')
+  console.log('  工作台提交率卡片：' + taskStates.map((s) => s.__wb).join(' | '))
+  check(taskStates.every((s, i) => !s.__wb.includes('填报中') && (s.__wb.includes(want[i]) || !s.__wb.includes('最近'))), '工作台不把任务状态显示为「填报中」')
 
   await page.goto(`${BASE}/versions`)
   const vrow = page.locator('tr', { hasText: '年初原始目标' }).first()

@@ -60,7 +60,13 @@ await run('FLOW-14', async (browser) => {
   await modal.getByRole('button', { name: '知道了' }).click()
   eq(dumpStore(s.store_id), before, '数据库值未变化')
   await gotoGrid(wang, `/filling/platform/${s.unit}`)
-  eq(JSON.stringify(await gridRows(wang)), rowsBefore, '页面数据未变化')
+  const rowsAfter = await gridRows(wang)
+  const diff = []
+  for (const r of rowsAfter) {
+    const b = JSON.parse(rowsBefore).find((x) => x.__rowKey === r.__rowKey)
+    for (const k of Object.keys(r)) if (!b || b[k] !== r[k]) diff.push(`${r.__rowKey}.${k}: ${b?.[k]} → ${r[k]}`)
+  }
+  eq(diff, [], '页面数据未变化')
 
   // 修正后上传成功并刷新合计
   const m3 = sheet[2][4] // 第 3 行（Excel 行号）对应月份：SPU 7 × 平均销量 5 = 35

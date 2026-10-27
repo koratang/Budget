@@ -182,6 +182,7 @@ def test_rule_02_role_gated_routes_forbidden(world):
             c = world["clients"][userid]
             checked += 1
             _check(failures, f"{ROLES[userid]} {method} {url}", _send(c, method, url))
+    print(f"\nRULE-02 功能级越权请求 {checked} 次")
     assert checked > 150
     assert failures == [], "\n".join(failures)
 

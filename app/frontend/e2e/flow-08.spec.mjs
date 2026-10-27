@@ -1,6 +1,6 @@
 // FLOW-08 浏览器 E2E：期望值逐字取自 TDD验收契约 FLOW-08。
-// 前置（PAGE-F02-03：B端业务负责人取自角色与权限中的客户范围）：林晓在角色与权限把新客户分配给孙婷。
-import { run, loginAs, BASE, check, eq } from './e1_harness.mjs'
+// 不做额外的客户范围分配：新客户自动纳入负责部门的 B 端填报。
+import { run, loginAs, BASE, check, eq, editCell } from './e1_harness.mjs'
 
 const SIX = ['销售额（USD）', '退款率', '推广费用率', '其他运营费用率', '平台佣金率', '库存索赔率'].sort()
 
@@ -38,11 +38,6 @@ await run('FLOW-08', 'default', async (env) => {
 
   const lin = await env.newPage()
   await loginAs(lin, '林晓')
-  await lin.goto(`${BASE}/settings/roles`)
-  await lin.locator('tr', { hasText: '孙婷' }).getByRole('button', { name: '分配' }).click()
-  await lin.getByRole('dialog').locator('label', { hasText: 'Floor & Decor' }).locator('input').check()
-  await lin.getByRole('dialog').getByRole('button', { name: '保存' }).click()
-  await lin.getByRole('dialog').waitFor({ state: 'detached' })
   await lin.goto(`${BASE}/tasks`)
   await lin.locator('[data-publish]').click()
   await lin.locator('#p-year').selectOption('2027')
@@ -62,6 +57,9 @@ await run('FLOW-08', 'default', async (env) => {
   const rows = await b2bCustomers(sun)
   const fd = rows.filter(([c]) => c === 'Floor & Decor').map(([, i]) => i).sort()
   eq(fd, SIX, '美国业务部 B 端填报出现 Floor & Decor 客户组（6 个输入项）')
+  const key = await sun.evaluate(async () => (await document.querySelector('revo-grid').getSource()).find((r) => r.customer === 'Floor & Decor' && r.__rowKey.endsWith('|sales_local')).__rowKey)
+  const resp = await editCell(sun, key, '2027-03', '50000')
+  check(resp && resp.status() === 200 && (await resp.json()).errors.length === 0, '孙婷可填 Floor & Decor（2027-03 销售额保存成功）')
   const liu = await env.newPage()
   await loginAs(liu, '刘洋')
   const rows2 = await b2bCustomers(liu)

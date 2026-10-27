@@ -37,7 +37,7 @@ def test_smoke_03_publish_fill_approve_lock(seeded, client):
     r = publish(client, db, minimal_units(db))
     assert r.status_code == 201, r.text
     task_id = r.json()["task"]["id"]
-    assert r.json()["task"]["status_label"] == "填报中"  # 进行中
+    assert r.json()["task"]["status_label"] == "进行中"
     cells = _cells(db)
     units = {u.name: u for u in db.scalars(select(FillingUnit).where(FillingUnit.task_id == task_id))}
     assert set(units) == set(cells)
