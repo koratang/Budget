@@ -13,3 +13,4 @@ deploy/data/
 deploy/.env
 backup/
 deploy/wheels/
+deploy/trial/
