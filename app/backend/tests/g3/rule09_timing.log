@@ -1,4 +1,4 @@
-金蝶_5万行_合法.xlsx: uploaded_at→validated_at 1.18 秒（含上传请求 2.06 秒），状态 passed，问题 0 个
-金蝶_5万行_末行出错.xlsx: uploaded_at→validated_at 0.67 秒（含上传请求 0.73 秒），状态 failed，问题 1 个
-BI_5万行_合法.xlsx: uploaded_at→validated_at 1.40 秒（含上传请求 2.37 秒），状态 passed，问题 0 个
-BI_5万行_末行出错.xlsx: uploaded_at→validated_at 1.16 秒（含上传请求 1.23 秒），状态 failed，问题 1 个
+金蝶_5万行_合法.xlsx: uploaded_at→validated_at 0.69 秒（含上传请求 1.70 秒），状态 passed，问题 0 个
+金蝶_5万行_末行出错.xlsx: uploaded_at→validated_at 1.14 秒（含上传请求 1.21 秒），状态 failed，问题 1 个
+BI_5万行_合法.xlsx: uploaded_at→validated_at 1.11 秒（含上传请求 1.99 秒），状态 passed，问题 0 个
+BI_5万行_末行出错.xlsx: uploaded_at→validated_at 1.19 秒（含上传请求 1.25 秒），状态 failed，问题 1 个

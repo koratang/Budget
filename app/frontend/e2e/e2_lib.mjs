@@ -136,26 +136,34 @@ export async function cellText(page, rowKey, field) {
 }
 
 async function locateCell(page, rowKey, field) {
-  const found = await page.evaluate(
-    async ({ rowKey, field }) => {
-      const g = document.querySelector('revo-grid')
-      const src = await g.getSource('rgRow')
-      const cols = await g.getColumns()
-      const flat = []
-      const walk = (cs) => cs.forEach((c) => (c.children ? walk(c.children) : flat.push(c)))
-      walk(cols)
-      if (!flat.some((c) => !c.pin && c.prop === field)) return false
-      const y = src.findIndex((m) => m.__rowKey === rowKey)
-      if (y >= 0) await g.scrollToRow(y)
-      await g.scrollToColumnProp(field)
-      await new Promise((r) => setTimeout(r, 400))
-      return true
-    },
-    { rowKey, field },
-  )
-  assert.ok(found, `表格中找不到 ${rowKey} · ${field}`)
-  const loc = page.locator(`span[data-cell="${rowKey}::${field}"]`).filter({ visible: true }).first().locator("xpath=..")
-  await loc.waitFor({ timeout: 10000 })
+  const loc = page.locator(`span[data-cell="${rowKey}::${field}"]`).filter({ visible: true }).first().locator('xpath=..')
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const found = await page.evaluate(
+      async ({ rowKey, field }) => {
+        const g = document.querySelector('revo-grid')
+        const src = await g.getSource('rgRow')
+        const cols = await g.getColumns()
+        const flat = []
+        const walk = (cs) => cs.forEach((c) => (c.children ? walk(c.children) : flat.push(c)))
+        walk(cols)
+        if (!flat.some((c) => !c.pin && c.prop === field)) return false
+        const y = src.findIndex((m) => m.__rowKey === rowKey)
+        if (y >= 0) await g.scrollToRow(y)
+        await g.scrollToColumnProp(field)
+        await new Promise((r) => setTimeout(r, 400))
+        return true
+      },
+      { rowKey, field },
+    )
+    assert.ok(found, `表格中找不到 ${rowKey} · ${field}`)
+    try {
+      await loc.waitFor({ timeout: 3000 })
+      return loc
+    } catch {
+      /* 虚拟滚动尚未渲染到该格，重新滚动 */
+    }
+  }
+  await loc.waitFor({ timeout: 3000 })
   return loc
 }
 

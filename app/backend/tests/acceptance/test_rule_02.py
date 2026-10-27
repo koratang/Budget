@@ -240,7 +240,7 @@ def scope_cases(world) -> list[tuple[str, str, str, str, dict | list | None]]:
         ("wujing", "GET", f"/api/dept-expense/{mkt}/grid", "detail", None),
         ("wujing", "GET", f"/api/filling-units/{mkt}/template", "export", None),
         ("wujing", "PATCH", f"/api/filling-units/{mkt}/cells", "write",
-         cell(f"de:{dept['市场部'].id}:{B.account(db, '差旅费').id}|amount")),
+         cell(f"de:{B.account(db, '差旅费').id}|amount")),
         ("wujing", "GET", f"/api/reserves?department_id={dept['市场部'].id}", "list", None),
         ("wujing", "GET", f"/api/approvals/unit/{mkt}", "detail", None),
         ("wujing", "POST", f"/api/approvals/unit/{mkt}/approve", "write", {}),
