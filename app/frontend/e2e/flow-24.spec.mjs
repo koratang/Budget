@@ -1,0 +1,31 @@
+// FLOW-24 BI 与金蝶收入核对（PAGE-F09-02）。期望值逐字取自契约 FLOW-24。
+import { BASE, check, eq, loginAs, run, tableText } from './_e3_harness.mjs'
+
+await run('FLOW-24', 'flow24', '2027-05-20 10:00', async (env) => {
+  const page = await env.newPage()
+  await loginAs(page, '陈思雨')
+  await page.goto(`${BASE}/actuals/reconcile`)
+  const root = page.locator('[data-page-id="PAGE-F09-02"]')
+  await root.locator('#f-m').selectOption('2027-04')
+  await root.locator('table tbody tr').first().waitFor()
+  await page.waitForTimeout(500)
+  const table = root.locator('table').last()
+  const rows = (await tableText(table)).slice(1)
+  console.log('  核对表：', JSON.stringify(rows))
+  const us = rows.find((r) => r[0].startsWith('Amazon-US-01'))
+  const wf = rows.find((r) => r[0].startsWith('Wayfair-US-01'))
+  const uk = rows.find((r) => r[0].startsWith('Amazon-UK-01'))
+  check(!!us && us[3].includes('554,400.00') && us[4].includes('535,000.00') && us[6] === '+3.63%', 'Amazon-US-01：BI 折人民币 554,400.00、金蝶 535,000.00、差异率 +3.63%')
+  const usBad = await table.locator('tbody tr', { hasText: 'Amazon-US-01' }).locator('td.num.bad').count()
+  check(usBad >= 1, 'Amazon-US-01 差异率标红')
+  check(!!wf && wf[3].includes('360,000.00') && wf[6] === '+1.41%', 'Wayfair-US-01：BI 折人民币 360,000.00、差异率 +1.41%')
+  const wfBad = await table.locator('tbody tr', { hasText: 'Wayfair-US-01' }).locator('td.bad').count()
+  eq(wfBad, 0, 'Wayfair-US-01 不标红')
+  check(!!uk && uk.join(' ').includes('缺少 2027-04 汇率'), 'GBP 店铺不计算并提示缺少 2027-04 汇率')
+  check(!!uk && !/[+−-]\d+\.\d+%/.test(uk[6]), 'GBP 店铺无差异率')
+
+  await root.getByLabel('只看差异率超过 3%').check()
+  await page.waitForTimeout(300)
+  const only = (await tableText(table)).slice(1).map((r) => r[0].split(' · ')[0])
+  eq(only, ['Amazon-US-01'], '「只看差异率超过 3%」只留 Amazon-US-01')
+})

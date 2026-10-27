@@ -390,7 +390,7 @@ PLATFORM_INPUTS = [("spu_count", "SPU 数量", "int"), ("avg_sales", "单 SPU �
                    ("avg_price", "平均单价", "amount"), ("discount_rate", "折扣率", "ratio"),
                    ("refund_rate", "退款率", "ratio"), ("ad_rate", "广告费率", "ratio"),
                    ("commission_rate", "佣金率", "ratio")]
-PLATFORM_CALCS = [("sales_qty", "销量", "num1"), ("revenue_local", "收入（本币）", "amount"),
+PLATFORM_CALCS = [("sales_qty", "销量", "qty"), ("revenue_local", "收入（本币）", "amount"),
                   ("revenue_cny", "收入（人民币）", "amount"), ("gross_profit", "毛利（人民币）", "amount"),
                   ("gross_margin", "毛利率", "margin")]
 
@@ -402,9 +402,11 @@ def _budget_cell(kind: str, v: Decimal | None) -> Cell:
         return Cell(int(v), INT_FMT)
     if kind == "num1":
         return Cell(round_to(v, 1), "#,##0.0")
+    if kind == "qty":  # 与填报表格一致：整数不带小数位
+        return Cell(round_to(v, 1), INT_FMT if v == v.to_integral_value() else "#,##0.0")
     if kind == "amount":
         return Cell(round_to(v, 2), AMOUNT_FMT)
-    return Cell(round_to(v, 3), "0.0%")  # ratio / margin：小数，百分比 1 位
+    return Cell(round_to(v, 4), "0.00%")  # ratio / margin：小数，百分比 2 位（与填报表格一致）
 
 
 def budget_platform_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, list[Sheet]]:
@@ -438,6 +440,8 @@ def budget_platform_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tup
         cells_by_month = by_group[key]
         for field_name, label, kind in PLATFORM_INPUTS + PLATFORM_CALCS:
             lab = f"{label}（{store.currency}）" if field_name == "avg_price" else label
+            if field_name == "revenue_local":
+                lab = f"收入（{store.currency}）"
             row = [text(cat), text(is_new), text(lab)]
             year_total = None
             for m in months:
@@ -459,7 +463,8 @@ def budget_platform_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tup
             else:
                 row.append(text("—"))
             sh.rows.append(row)
-    for field_name, label in (("sales_qty", "销量"), ("revenue_local", "收入（本币）"), ("revenue_cny", "收入（人民币）"),
+    for field_name, label in (("sales_qty", "销量"), ("revenue_local", f"收入（{store.currency}）"),
+                              ("revenue_cny", "收入（人民币）"),
                               ("gross_profit", "毛利（人民币）"), ("gross_margin", "毛利率")):
         row = [text("店铺合计"), text("—"), text(label)]
         for m in months:
@@ -467,13 +472,13 @@ def budget_platform_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tup
             if field_name == "gross_margin":
                 row.append(percent_margin(t["gross_profit"] / t["revenue_cny"] if t["revenue_cny"] else None))
             else:
-                row.append(_budget_cell("num1" if field_name == "sales_qty" else "amount", t[field_name]))
+                row.append(_budget_cell("qty" if field_name == "sales_qty" else "amount", t[field_name]))
         if field_name == "gross_margin":
             rev = sum((totals[m]["revenue_cny"] for m in months), Decimal(0))
             gp = sum((totals[m]["gross_profit"] for m in months), Decimal(0))
             row.append(percent_margin(gp / rev if rev else None))
         else:
-            row.append(_budget_cell("num1" if field_name == "sales_qty" else "amount",
+            row.append(_budget_cell("qty" if field_name == "sales_qty" else "amount",
                                     sum((totals[m][field_name] for m in months), Decimal(0))))
         sh.total_rows.add(len(sh.rows))
         sh.rows.append(row)
@@ -484,7 +489,7 @@ def budget_platform_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tup
 def percent_margin(v: Decimal | None) -> Cell:
     if v is None:
         return Cell("—")
-    return Cell(round_to(Decimal(v), 3), "0.0%")
+    return Cell(round_to(Decimal(v), 4), "0.00%")
 
 
 def _unit_task_name(db: Session, unit: FillingUnit) -> str:

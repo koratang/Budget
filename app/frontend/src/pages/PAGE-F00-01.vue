@@ -22,6 +22,7 @@ interface Workbench {
   user: { name: string; role_names: string[] }
   today: string
   year: number
+  budget_year: number
   kingdee_latest: string | null
   filling_list_link: string
   todo: { filling: TodoBlock<FillingItem>; approvals: TodoBlock<ApprovalItem>; alerts: TodoBlock<AlertItem> }
@@ -96,7 +97,7 @@ const submitLink = computed(() => {
   <div data-page-id="PAGE-F00-01">
     <div class="page-head wb-head">
       <h1 class="page-title">工作台</h1>
-      <span v-if="data" class="meta">{{ data.today }} · 预算年度 {{ data.year }} · 最近金蝶导入期间 {{ data.kingdee_latest ?? '尚未导入' }}</span>
+      <span v-if="data" class="meta">{{ data.today }} · 预算年度 {{ data.budget_year }} · 最近金蝶导入期间 {{ data.kingdee_latest ?? '尚未导入' }}</span>
     </div>
 
     <div v-if="loading" class="grid-3" aria-busy="true">

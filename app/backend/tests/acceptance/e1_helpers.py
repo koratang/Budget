@@ -55,8 +55,12 @@ def smoke03_master(db) -> None:
 
 
 def flow09_master(db) -> None:
-    """FLOW-09：5 个启用店铺 + 1 个停用店铺（Lowes-US-02）、美国业务部与外贸部各有启用客户、15 个参与部门。"""
-    db.execute(update(Store).where(Store.name.not_in(FLOW09_ACTIVE_STORES)).values(is_active=False))
+    """FLOW-09：主数据恰为 5 个启用店铺 + 1 个停用店铺（Lowes-US-02）、美国业务部与外贸部各有启用客户、15 个参与部门。"""
+    from sqlalchemy import delete
+    extra = select(Store.id).where(Store.name.not_in((*FLOW09_ACTIVE_STORES, "Lowes-US-02")))
+    db.execute(delete(UserScope).where(UserScope.scope_type == "store", UserScope.object_id.in_(extra)))
+    db.execute(delete(Store).where(Store.name.not_in((*FLOW09_ACTIVE_STORES, "Lowes-US-02"))))
+    db.execute(update(Store).where(Store.name == "Lowes-US-02").values(is_active=False))
     for i, (dept, (budget_name, head_name)) in enumerate(FLOW09_PEOPLE.items()):
         d = db.scalar(select(Department).where(Department.name == dept))
         add_user(db, f"e1-budget-{i}", budget_name, dept, ["dept_budget"], {"department": [d.id]})
@@ -123,3 +127,144 @@ def xlsx(header: list, rows: list[list]) -> bytes:
     buf = io.BytesIO()
     wb.save(buf)
     return buf.getvalue()
+
+
+# ---------------------------------------------------------------------------
+# 报表前置：2027 年初原始目标（已锁定）预算 + 经导入接口生效的 2027-04 金蝶实际
+# ---------------------------------------------------------------------------
+KINGDEE_HEADER = ["期间", "金蝶科目", "科目名称", "部门", "平台/店铺", "站点", "客户", "摘要", "发生额"]
+APRIL = "2027-04"
+
+
+def report_world(db, people, stores: list[str] | None = None, depts=("人力资源部", "财务部", "市场部"),
+                 customers=("Ferguson", "Menards", "Bauhaus")) -> dict:
+    """前置条件：年初原始目标 V1（周明远审批、已锁定）含各店铺 2027-04 浴室柜老品收入/毛利、各 B 端客户收入/毛利、
+    各部门工资预算；陈思雨经 /api/imports 导入 2027-04 金蝶实际（含店铺、客户、部门费用与一行无店铺的仓储费 = 未归属渠道）。"""
+    from datetime import date, datetime
+    from decimal import Decimal as D
+
+    from app.core.clock import TZ
+    from app.models import (B2bUnit, BudgetAccount, BudgetVersion, Category, DeptExpense, PlatformUnit, Site)
+    from app.models.enums import VersionType
+
+    stores = stores or list(db.scalars(select(Store.name).order_by(Store.id)))
+    ceo = uid(db, "zhoumingyuan")
+    v = BudgetVersion(year=2027, type=VersionType.ORIGINAL_TARGET, version_no=1, name="2027 年初原始目标 V1",
+                      approved_by=ceo, approved_at=datetime(2026, 12, 28, 17, 30, tzinfo=TZ), locked=False)
+    db.add(v)
+    db.flush()
+    cat = db.scalar(select(Category.id).where(Category.name == "浴室柜"))
+    m = date(2027, 4, 1)
+    for name in stores:
+        s = db.scalar(select(Store).where(Store.name == name))
+        db.add(PlatformUnit(version_id=v.id, month=m, channel_id=s.channel_id, store_id=s.id, site_id=s.site_id,
+                            category_id=cat, is_new=False, revenue_cny=D("100000"), gross_profit=D("20000")))
+    for name in customers:
+        c = db.scalar(select(BCustomer).where(BCustomer.name == name))
+        db.add(B2bUnit(version_id=v.id, month=m, customer_id=c.id, sales_local=D("10000"), revenue_cny=D("71200"),
+                       gross_profit=D("17088")))
+    salary = db.scalar(select(BudgetAccount.id).where(BudgetAccount.name == "工资薪酬"))
+    for name in depts:
+        d = db.scalar(select(Department.id).where(Department.name == name))
+        for mm in range(1, 13):
+            db.add(DeptExpense(version_id=v.id, month=date(2027, mm, 1), department_id=d, account_id=salary,
+                               amount=D("25000")))
+    db.flush()
+    v.locked = True
+    db.flush()
+
+    site_name = dict(db.execute(select(Site.id, Site.name)).all())
+    rows = []
+    for name in stores:
+        s = db.scalar(select(Store).where(Store.name == name))
+        rows.append([APRIL, "6001", "主营业务收入", "运营部", name, site_name[s.site_id], "", "", 95000])
+    for name in customers:
+        rows.append([APRIL, "6001", "主营业务收入", "", "", "", name, "", 70000])
+    for name in depts:
+        rows.append([APRIL, "6602.01", "管理费用-工资", name, "", "", "", "", 24000])
+    rows.append([APRIL, "6601.06", "销售费用-仓储费", "", "", "", "", "仓储杂费", 12000])
+    bp = people("chensiyu")
+    r = bp.post("/api/imports", files={"file": ("金蝶_2027-04_利润表.xlsx", xlsx(KINGDEE_HEADER, rows), XLSX)},
+                data={"source": "kingdee"})
+    assert r.status_code == 200, r.text
+    batch = bp.get(f"/api/imports/{r.json()['id']}").json()
+    assert batch["status"] == "passed", batch
+    r = bp.post(f"/api/imports/{batch['id']}/confirm", json={"overwrite": False})
+    assert r.status_code == 200, r.text
+    return {"version_id": v.id}
+
+
+FLOW03_STORES = ["Amazon-US-01", "Amazon-CA-01", "Wayfair-US-01", "Lowes-US-01"]
+FLOW03_DEPTS = ("人力资源部", "财务部", "市场部")
+
+
+def flow03_setup(db, people) -> int:
+    """FLOW-03 前置：4 个启用店铺、3 个部门（人力资源部 / 财务部 / 市场部）、3 个 B 端客户的预算与 2027-04 实际；
+    林晓经接口发布 2027 编制任务（4 个平台渠道、美国业务部与外贸部 B 端、成本比例、物流比例、3 个部门费用单位）。"""
+    db.execute(update(Store).values(is_active=False))
+    db.execute(update(Store).where(Store.name.in_(FLOW03_STORES)).values(is_active=True))
+    fin = db.scalar(select(Department.id).where(Department.name == "财务部"))
+    mkt = db.scalar(select(Department.id).where(Department.name == "市场部"))
+    add_user(db, "e1-guoqi", "郭琪", "财务部", ["dept_budget"], {"department": [fin]})
+    add_user(db, "e1-denglin", "邓琳", "市场部", ["dept_budget"], {"department": [mkt]})
+    add_user(db, "e1-kongliang", "孔亮", "市场部", ["dept_head"], {"department": [mkt]}, head=True)
+    report_world(db, people, stores=FLOW03_STORES, depts=FLOW03_DEPTS)
+    lin = people("linxiao")
+    cands = lin.get("/api/tasks/candidates").json()["items"]
+    units = [{"unit_type": c["unit_type"], "scope_object_id": c["scope_object_id"]} for c in cands
+             if c["unit_type"] != "dept_expense" or c["name"] in FLOW03_DEPTS]
+    r = lin.post("/api/tasks", json={"year": 2027, "deadline": DEADLINE, "units": units})
+    assert r.status_code == 201, r.text
+    return r.json()["task"]["id"]
+
+
+def flow06_setup(db, people) -> None:
+    """FLOW-06 前置：预算科目清单含部门费用科目「市场推广费」「差旅费」「招待费」、尚无「员工关怀费」，金蝶 6601.12 未映射；
+    年初原始目标（已锁定）含市场部「招待费」「市场推广费」预算；2027-03 金蝶实际含市场部招待费 5,200.00（经导入接口生效）。"""
+    from datetime import date, datetime
+    from decimal import Decimal as D
+
+    from sqlalchemy import delete
+
+    from app.core.clock import TZ
+    from app.models import BudgetAccount, BudgetVersion, DeptExpense, KingdeeAccountMap
+    from app.models.enums import VersionType
+
+    care = db.scalar(select(BudgetAccount.id).where(BudgetAccount.name == "员工关怀费"))
+    db.execute(delete(KingdeeAccountMap).where(KingdeeAccountMap.account_id == care))
+    db.execute(delete(BudgetAccount).where(BudgetAccount.id == care))
+    db.scalar(select(BudgetAccount).where(BudgetAccount.name == "业务招待费")).name = "招待费"
+    db.add(BudgetAccount(name="市场推广费", is_dept_expense=True, sort=11))
+    mkt = db.scalar(select(Department.id).where(Department.name == "市场部"))
+    add_user(db, "e1-denglin", "邓琳", "市场部", ["dept_budget"], {"department": [mkt]})
+    add_user(db, "e1-kongliang", "孔亮", "市场部", ["dept_head"], {"department": [mkt]}, head=True)
+    db.flush()
+    v = BudgetVersion(year=2027, type=VersionType.ORIGINAL_TARGET, version_no=1, name="2027 年初原始目标 V1",
+                      approved_by=uid(db, "zhoumingyuan"), approved_at=datetime(2026, 12, 28, 17, 30, tzinfo=TZ))
+    db.add(v)
+    db.flush()
+    for name, amount in (("招待费", "6000"), ("市场推广费", "50000")):
+        acc = db.scalar(select(BudgetAccount.id).where(BudgetAccount.name == name))
+        for m in (3, 4):
+            db.add(DeptExpense(version_id=v.id, month=date(2027, m, 1), department_id=mkt, account_id=acc,
+                               amount=D(amount)))
+    db.flush()
+    v.locked = True
+    db.flush()
+    bp = people("chensiyu")
+    r = bp.post("/api/imports", files={"file": ("金蝶_2027-03_利润表.xlsx", xlsx(KINGDEE_HEADER, [
+        ["2027-03", "6602.10", "管理费用-业务招待费", "市场部", "", "", "", "", 5200]]), XLSX)}, data={"source": "kingdee"})
+    assert r.status_code == 200, r.text
+    assert bp.get(f"/api/imports/{r.json()['id']}").json()["status"] == "passed"
+    assert bp.post(f"/api/imports/{r.json()['id']}/confirm", json={"overwrite": False}).status_code == 200
+
+
+def flow07_master(db) -> None:
+    """FLOW-07 前置：2027 尚无 USD、EUR 预算汇率（编制期由陈思雨录入 USD）；王浩负责 Amazon-US-01 与 Amazon-DE-01（EUR）。"""
+    from sqlalchemy import delete
+
+    from app.models import FxBudget
+    db.execute(delete(FxBudget).where(FxBudget.year == 2027, FxBudget.currency.in_(("USD", "EUR"))))
+    de = db.scalar(select(Store.id).where(Store.name == "Amazon-DE-01"))
+    db.add(UserScope(user_id=uid(db, "wanghao"), scope_type="store", object_id=de))
+    db.flush()

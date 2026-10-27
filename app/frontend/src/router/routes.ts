@@ -10,6 +10,8 @@ export interface PageRouteDef {
   group?: string
   /** 上级页路由 name，面包屑中显示为链接 */
   parent?: string
+  /** 设计稿 / 通知链接使用的等价路径（保持原链接不跳转） */
+  alias?: string
 }
 
 export const PAGE_ROUTES: PageRouteDef[] = [
@@ -36,7 +38,7 @@ export const PAGE_ROUTES: PageRouteDef[] = [
   { pageId: 'PAGE-F09-01', path: '/actuals/import', name: 'import', title: '实际数导入', group: '实际数' },
   { pageId: 'PAGE-F09-02', path: '/actuals/reconcile', name: 'reconcile', title: 'BI 与金蝶核对', group: '实际数' },
   { pageId: 'PAGE-F10-01', path: '/reports/company', name: 'report-company', title: '公司汇总', group: '报表' },
-  { pageId: 'PAGE-F10-02', path: '/reports/channel', name: 'report-channel', title: '渠道×站点偏差', group: '报表' },
+  { pageId: 'PAGE-F10-02', path: '/reports/channel', alias: '/reports/channel-site', name: 'report-channel', title: '渠道×站点偏差', group: '报表' },
   { pageId: 'PAGE-F10-03', path: '/reports/category', name: 'report-category', title: '品类×新老品偏差', group: '报表' },
   { pageId: 'PAGE-F10-04', path: '/reports/dept', name: 'report-dept', title: '部门费用报告', group: '报表' },
   { pageId: 'PAGE-F11-01', path: '/alerts', name: 'alerts', title: '预警中心', group: '预警与规则' },

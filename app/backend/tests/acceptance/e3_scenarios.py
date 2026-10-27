@@ -30,11 +30,11 @@ def flow21(g3):
     return v1, v2
 
 
-def flow25(db):
-    return _flow25(db)
+def flow25(db, **kw):
+    return _flow25(db, **kw)
 
 
-def flow26_category(db):
+def flow26_category(db, with_may_kingdee: bool = True):
     """只有 Amazon-US-01：浴室柜 · 新品预算 SPU 10、销量 1,200（单 SPU 平均 120）、平均单价 80.00、折扣率 10%、
     预算汇率 7.12（种子）；BI 实际 SPU 9、销量 1,100、USD 77,000.00、当月平均汇率 7.2000。2027-05 只有金蝶。"""
     v = B.version(db, 2027, VersionType.ORIGINAL_TARGET, "V1 年初原始目标")
@@ -44,8 +44,9 @@ def flow26_category(db):
     bi = B.batch(db, "bi", "2027-04", "BI_2027-04_销售明细.xlsx")
     B.bi_agg(db, bi, "2027-04", "Amazon-US-01", "浴室柜", True, spu=9, qty="1100", revenue_local="77000.00",
              revenue_cny="554400.00")
-    kd = B.batch(db, "kingdee", "2027-05")
-    B.kingdee(db, kd, "2027-05", "平台销售收入", "500000.00", store_name="Amazon-US-01")
+    if with_may_kingdee:
+        kd = B.batch(db, "kingdee", "2027-05")
+        B.kingdee(db, kd, "2027-05", "平台销售收入", "500000.00", store_name="Amazon-US-01")
     return v
 
 

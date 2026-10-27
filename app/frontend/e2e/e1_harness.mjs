@@ -4,7 +4,11 @@
 import { spawn, execFileSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
-import { chromium } from 'playwright'
+import { readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
+
+// playwright 为本机全局安装（NODE_PATH），ESM import 不读 NODE_PATH，用 require 解析
+const { chromium } = createRequire(import.meta.url)('playwright')
 
 const here = path.dirname(fileURLToPath(import.meta.url))
 export const BACKEND = path.resolve(here, '../../backend')
@@ -51,10 +55,15 @@ from pathlib import Path
 import app.main as m
 if os.environ.get('E1_STATIC_DIR'):
     m.STATIC_DIR = Path(os.environ['E1_STATIC_DIR']).resolve()
+if os.environ.get('E1_NOW'):
+    # 可控时钟（验收用）：进程内固定当前时间
+    from datetime import datetime
+    from app.core.clock import clock
+    clock.set_now(datetime.fromisoformat(os.environ['E1_NOW']))
 uvicorn.run(m.app, host='127.0.0.1', port=${PORT}, log_level='warning')
 `
 
-export async function startEnv(scenario = 'default') {
+export async function startEnv(scenario = 'default', opts = {}) {
   py('reset', scenario)
   const procs = []
   const stub = spawn(PY, ['-m', 'uvicorn', 'dingtalk_stub.main:app', '--port', String(STUB_PORT), '--log-level', 'warning'],
@@ -63,23 +72,37 @@ export async function startEnv(scenario = 'default') {
   await waitFor(`${STUB}/_stub/messages`)
   await fetch(`${STUB}/_stub/reset`, { method: 'POST' })
   const backendLog = []
-  const be = spawn(PY, ['-c', LAUNCH], { cwd: BACKEND, env: ENV, stdio: ['ignore', 'pipe', 'pipe'] })
-  be.stdout.on('data', (d) => backendLog.push(String(d)))
-  be.stderr.on('data', (d) => backendLog.push(String(d)))
-  procs.push(be)
-  await waitFor(`${BASE}/api/health`)
+  let be = null
+  async function startBackend(extra = {}) {
+    be = spawn(PY, ['-c', LAUNCH], { cwd: BACKEND, env: { ...ENV, ...extra }, stdio: ['ignore', 'pipe', 'pipe'] })
+    be.stdout.on('data', (d) => backendLog.push(String(d)))
+    be.stderr.on('data', (d) => backendLog.push(String(d)))
+    procs.push(be)
+    await waitFor(`${BASE}/api/health`)
+  }
+  await startBackend(opts.backendEnv ?? {})
   const browser = await chromium.launch()
   const consoleErrors = []
+  const pages = []
   return {
+    pages,
     browser,
     backendLog,
     consoleErrors,
     async newPage() {
       const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } })
       const page = await ctx.newPage()
+      pages.push(page)
       page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(`${page.url()} :: ${m.text()}`) })
       page.on('pageerror', (e) => consoleErrors.push(`${page.url()} :: pageerror ${e.message}`))
       return page
+    },
+    // 以新的环境变量（如 E1_NOW 可控时钟）重启后端；会话按 8 小时无操作规则可能失效，调用方重新切换身份
+    async restartBackend(extra = {}) {
+      const old = be
+      old.kill('SIGTERM')
+      await new Promise((r) => old.once('exit', r))
+      await startBackend(extra)
     },
     async stop() {
       await browser.close()
@@ -119,8 +142,8 @@ export function summary(env) {
   return failed === 0
 }
 
-export async function run(id, scenario, body) {
-  const env = await startEnv(scenario)
+export async function run(id, scenario, body, opts = {}) {
+  const env = await startEnv(scenario, opts)
   let ok = false
   try {
     await body(env)
@@ -130,6 +153,10 @@ export async function run(id, scenario, body) {
     failed++
     failures.push(`异常：${e.message}`)
     if (env.backendLog.length) console.error('后端日志：\n' + env.backendLog.join('').slice(-4000))
+    for (const [i, pg] of env.pages.entries()) {
+      await pg.screenshot({ path: `/tmp/e1_acc_files/fail-${id}-${i}.png`, fullPage: true }).catch(() => {})
+      console.error(`失败截图 /tmp/e1_acc_files/fail-${id}-${i}.png  ${pg.url()}`)
+    }
   } finally {
     await env.stop()
   }
@@ -137,4 +164,48 @@ export async function run(id, scenario, body) {
   for (const e of env.consoleErrors) console.log('  ' + e)
   const allOk = summary(env) && ok
   process.exit(allOk ? 0 : 1)
+}
+
+// 在 BudgetGrid（RevoGrid）中按行键与列编辑一个单元格：打开单元格编辑器 → 输入 → 回车提交（触发真实保存请求）
+export async function editCell(page, rowKey, prop, value) {
+  const idx = await page.evaluate(async ({ rowKey, prop }) => {
+    const g = document.querySelector('revo-grid')
+    const src = await g.getSource()
+    const i = src.findIndex((r) => r.__rowKey === rowKey)
+    if (i < 0) return -1
+    await g.scrollToRow(i)
+    await g.scrollToColumnProp(prop)
+    return i
+  }, { rowKey, prop })
+  if (idx < 0) throw new Error(`表格中没有行 ${rowKey}`)
+  await page.waitForTimeout(200)
+  await page.evaluate(async ({ idx, prop }) => {
+    const g = document.querySelector('revo-grid')
+    await g.setCellEdit(idx, prop)
+  }, { idx, prop })
+  const editor = page.locator('revo-grid input, revo-grid textarea').first()
+  await editor.waitFor({ timeout: 5000 })
+  await editor.fill(String(value))
+  const resp = page.waitForResponse((r) => /\/cells/.test(r.url()) && r.request().method() === 'PATCH', { timeout: 10000 })
+    .catch(() => null)
+  await editor.press('Enter')
+  return resp
+}
+
+// 读表格某行某列当前显示值（来自页面中表格的数据源）
+export async function cellValue(page, rowKey, prop) {
+  return page.evaluate(async ({ rowKey, prop }) => {
+    const g = document.querySelector('revo-grid')
+    const src = await g.getSource()
+    const r = src.find((x) => x.__rowKey === rowKey)
+    return r ? r[prop] : undefined
+  }, { rowKey, prop })
+}
+
+// 生成上传用 Excel（openpyxl，数字以数字单元格写入）
+export function writeXlsx(file, header, rows) {
+  const code = 'import json,sys\nfrom openpyxl import Workbook\nd=json.loads(sys.argv[2])\nwb=Workbook();ws=wb.active\nws.append(d["h"])\n[ws.append(r) for r in d["r"]]\nwb.save(sys.argv[1])'
+  execFileSync(PY, ['-c', code, file, JSON.stringify({ h: header, r: rows })], { cwd: BACKEND, env: ENV })
+  // 以内容 + 原文件名交给 setInputFiles（本机 Playwright 按路径上传中文文件名时不触发选择）
+  return { name: path.basename(file), mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: readFileSync(file) }
 }

@@ -33,6 +33,8 @@ export const useUserStore = defineStore('user', () => {
         if (e instanceof ApiError && e.isUnauthenticated) {
           me.value = null
           loadError.value = null
+          // 账号已停用等登录拒绝：抛给路由守卫 / 登录页显示对应拒绝提示（AC-F01-03）
+          if (e.code === 'account_disabled' || e.code === 'no_role') throw e
           return null
         }
         loadError.value = e instanceof ApiError ? e : new ApiError(0, 'network_error', String(e))

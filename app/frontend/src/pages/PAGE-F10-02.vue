@@ -305,7 +305,7 @@ const isForbidden = computed(() => error.value instanceof ApiError && error.valu
                             <tr v-if="row.kind === 'unassigned'">
                               <td>{{ line.label }}</td><td class="num muted">—</td><td class="num">{{ money(line.actual) }}</td><td class="num muted">—</td><td class="num muted">—</td><td><span class="muted">—</span></td>
                             </tr>
-                            <tr v-else-if="line.budget !== '0' || line.actual !== '0'">
+                            <tr v-else>
                               <td>{{ line.label }}</td>
                               <td class="num">{{ money(line.budget) }}</td>
                               <td class="num">{{ money(line.actual) }}</td>

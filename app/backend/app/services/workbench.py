@@ -202,9 +202,13 @@ def workbench(db: Session, user: CurrentUser, ctx: ScopeContext) -> dict:
     year = R.default_year(db)
     latest = R.latest_kingdee_month(db)
     today = clock.today()
+    # 页头「预算年度」：编制期显示正在编制的年度，否则与报告年度一致
+    compiling = db.scalar(select(BudgetTask.year).where(BudgetTask.status == TaskStatus.IN_PROGRESS)
+                          .order_by(BudgetTask.created_at.desc()).limit(1))
     out = {
         "user": {"id": user.user.id, "name": user.user.name, "role_names": user.role_names},
-        "today": today.isoformat(), "year": year, "kingdee_latest": fmt_month(latest) if latest else None,
+        "today": today.isoformat(), "year": year, "budget_year": compiling or year,
+        "kingdee_latest": fmt_month(latest) if latest else None,
         "todo": {"filling": filling_todo(db, user.user.id), "approvals": approval_todo(db, user),
                  "alerts": alert_todo(db, ctx)},
         "filling_list_link": "/dept-expense" if user.roles == {Role.DEPT_BUDGET} else "/filling",

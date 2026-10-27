@@ -122,6 +122,7 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> Current
         session.last_active_at = now
         session.expires_at = now + timedelta(hours=settings.SESSION_IDLE_HOURS)
         db.commit()
+    request.state.user_id = user.id  # 请求日志记录用户 ID（技术方案 §7.3）
     return CurrentUser(user=user, roles=roles, auth_source=session.auth_source, session_id=session.id)
 
 

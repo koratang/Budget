@@ -590,6 +590,8 @@ def confirm_batch(db: Session, actor: Actor, batch_id: int, *, overwrite: bool, 
     db.flush()
     stats = alerting.evaluate(db, periods, base_url=base_url, import_batch_id=parent.id, actor=actor)
     audit(db, actor, action="import_confirmed", object_type="import_batch", object_id=parent.id, request=request,
+          before={"effective": [{"batch_id": c.id, "period": fmt_month(c.period), "file_name": c.file_name,
+                                 "status": ImportStatus.EFFECTIVE} for c in replaced]} if replaced else None,
           after={"source": parent.source, "file_name": parent.file_name, "periods": [fmt_month(p) for p in periods],
                  "overwrite": bool(replaced),
                  "replaced": [{"batch_id": c.id, "period": fmt_month(c.period), "file_name": c.file_name}

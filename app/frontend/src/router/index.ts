@@ -26,6 +26,7 @@ function pageComponent(pageId: string) {
 
 const shellChildren: RouteRecordRaw[] = PAGE_ROUTES.map((r) => ({
   path: r.path,
+  ...(r.alias ? { alias: r.alias } : {}),
   name: r.name,
   component: pageComponent(r.pageId),
   meta: { pageId: r.pageId, title: r.title, group: r.group, parent: r.parent },

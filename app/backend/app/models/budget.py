@@ -96,10 +96,11 @@ class FillingUnit(Base):
         CheckConstraint("(task_id IS NULL) <> (adjustment_id IS NULL)", name="task_xor_adjustment"),
         CheckConstraint(check_in("unit_type", UnitType.LABELS), name="unit_type"),
         CheckConstraint(check_in("status", UnitStatus.LABELS), name="status"),
-        UniqueConstraint("task_id", "unit_type", "scope_object_id", postgresql_nulls_not_distinct=True,
-                         name="uq_filling_unit_task_scope"),
-        UniqueConstraint("adjustment_id", "unit_type", "scope_object_id", postgresql_nulls_not_distinct=True,
-                         name="uq_filling_unit_adjustment_scope"),
+        # 部分唯一索引：编制单位与调整单位各自唯一（另一外键恒为 NULL，不能参与比较，否则跨任务 / 跨季度调整冲突）
+        Index("uq_filling_unit_task_scope", "task_id", "unit_type", "scope_object_id", unique=True,
+              postgresql_nulls_not_distinct=True, postgresql_where=text("task_id IS NOT NULL")),
+        Index("uq_filling_unit_adjustment_scope", "adjustment_id", "unit_type", "scope_object_id", unique=True,
+              postgresql_nulls_not_distinct=True, postgresql_where=text("adjustment_id IS NOT NULL")),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
     task_id: Mapped[int | None] = mapped_column(ForeignKey("budget_task.id"), index=True)

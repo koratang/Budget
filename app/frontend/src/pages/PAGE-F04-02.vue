@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api/client'
 import FillingWorkspace, { type GridResponse } from '@/components/g2/FillingWorkspace.vue'
+import ExportButton from '@/components/ExportButton.vue'
 import { errorText, rollingBase, toast, type UnitInfo } from '@/components/g2/util'
 
 interface OverLimit {
@@ -85,6 +86,9 @@ const REF_LABELS: [string, string][] = [
       foot="白底单元格可编辑：失焦即保存并刷新合计；可从 Excel 复制整块粘贴（按输入行顺序填入，跳过计算行）。比率按百分数录入，输入 15 即 15%。"
       @loaded="onLoaded"
     >
+      <template #toolbar>
+        <ExportButton v-if="g && !apiBase" view="budget-platform" :filters="{ unit_id: unitId }" />
+      </template>
       <template #info>
         <div v-if="g" class="meta-row">
           <label v-if="myStores.length > 1 && !apiBase">

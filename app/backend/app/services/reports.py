@@ -28,6 +28,7 @@ from app.models import (B2bUnit, BCustomer, BiActualAgg, BudgetAccount, BudgetVe
                         CompanyOtherPl, Department, DeptExpense, FxActual, FxBudget, ImportBatch, KingdeeActual,
                         PlatformUnit, Reserve, Site, SnapshotMonth, Store, User, VarianceNote)
 from app.models.enums import ImportStatus, Role, VersionType
+from app.services.masterdata import is_new_channel_month
 
 ZERO = Decimal(0)
 HUNDRED = Decimal(100)
@@ -498,6 +499,14 @@ def _margin(b_gp, b_rev, a_gp, a_rev) -> dict:
 def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, baseline: str = "adj",
                  channel: str | None = None) -> dict:
     _ensure_channel_access(ctx)
+    if channel not in (None, "", "all") and not ctx.all_company:
+        # 范围外渠道筛选属越权：403「无权限」（NFR-003），不按校验错误返回
+        allowed = {str(cid) for cid in db.scalars(select(Store.channel_id)
+                                                  .where(ctx.store_clause(Store.id, Store.channel_id)))}
+        if ctx.customer_ids:
+            allowed.add("b2b")
+        if channel not in allowed:
+            raise Forbidden()
     if baseline not in BASELINES:
         raise ValidationFailed("对比基准不合法", details={"baseline": baseline})
     kd_months = kingdee_months(db)
@@ -607,7 +616,7 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
             rows.append({
                 "kind": "store", "key": f"store:{sid}", "note_key": {"object_type": "store", "object_key": key},
                 "name": st.name, "channel": ch.name, "site": site.name, "currency": st.currency,
-                "is_new_channel": st.is_new_channel, "revenue": _metric(b["revenue"], a_rev),
+                "is_new_channel": is_new_channel_month(db, st, m), "revenue": _metric(b["revenue"], a_rev),
                 "revenue_local_budget": s(b["local"]), "revenue_local_actual": s(local_actual),
                 "split": split, "gross_profit": _metric(b["gross_profit"], a_gp),
                 "gross_margin": _margin(b["gross_profit"], b["revenue"], a_gp, a_rev), "lines": lines,

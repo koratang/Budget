@@ -367,6 +367,7 @@ async function doSubmit(): Promise<void> {
             <button class="btn" type="button" :disabled="locked" @click="fileInput?.click()">上传填报文件</button>
           </template>
           <input ref="fileInput" type="file" accept=".xlsx" hidden @change="onFile" />
+          <slot name="toolbar" />
           <label v-if="channelFilter && channels.length" class="sub" style="margin: 0">
             渠道
             <select v-model="channel" class="select">

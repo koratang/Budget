@@ -3,8 +3,12 @@
 启动：.venv/bin/uvicorn app.main:app --port 8000
 配置不合法（如 APP_ENV=prod 且 DEV_IDENTITY_SWITCH=true）时 create_app 抛 ConfigError，进程拒绝启动（DEC-013）。
 """
+import json
+import logging
+import time
 import uuid
 from contextlib import asynccontextmanager
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 from urllib.parse import urlsplit
 
@@ -26,6 +30,21 @@ FEATURE_ROUTERS = [masterdata, roles, tasks, filling, dept_expense, approvals, v
                    rules, exports, workbench]
 
 _WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def _request_logger(settings: Settings) -> logging.Logger:
+    """请求日志（技术方案 §7.3）：单行 JSON 写入 DATA_DIR/logs/，按天滚动、保留 90 天；不含请求体与金额。"""
+    log_dir = Path(settings.DATA_DIR) / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    path = str(log_dir / "requests.log")
+    logger = logging.getLogger(f"budget.request.{path}")
+    if not logger.handlers:
+        handler = TimedRotatingFileHandler(path, when="midnight", backupCount=90, encoding="utf-8")
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
+    return logger
 
 
 def create_app(settings: Settings | None = None, dingtalk: DingTalkClient | None = None) -> FastAPI:
@@ -56,10 +75,12 @@ def create_app(settings: Settings | None = None, dingtalk: DingTalkClient | None
     app.state.dingtalk = client
     app.state.session_maker = session_maker
     install_error_handlers(app)
+    request_log = _request_logger(settings)
 
     @app.middleware("http")
     async def request_context(request: Request, call_next):
         request.state.request_id = uuid.uuid4().hex
+        started = time.perf_counter()
         # 写操作防跨站：带 Origin 时必须与本站一致（技术方案 §7.2）
         origin = request.headers.get("origin")
         if (request.method in _WRITE_METHODS and origin and request.url.path.startswith("/api/")
@@ -67,6 +88,11 @@ def create_app(settings: Settings | None = None, dingtalk: DingTalkClient | None
             return JSONResponse({"code": "forbidden", "message": "无权限"}, status_code=403)
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
+        if request.url.path.startswith("/api/"):
+            request_log.info(json.dumps({
+                "request_id": request.state.request_id, "method": request.method, "path": request.url.path,
+                "user_id": getattr(request.state, "user_id", None), "status": response.status_code,
+                "duration_ms": round((time.perf_counter() - started) * 1000, 1)}, ensure_ascii=False))
         return response
 
     app.include_router(health.router, prefix="/api")

@@ -13,6 +13,7 @@ from datetime import datetime
 
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg://budget:budget@127.0.0.1:5432/budget_acc1")
 os.environ.setdefault("DINGTALK_BASE_URL", "http://127.0.0.1:8021")
+os.environ.setdefault("TEST_DATABASE_URL", "postgresql+psycopg://budget:budget@127.0.0.1:5432/budget_test_acc1")
 for k, v in dict(DINGTALK_APP_KEY="stub", DINGTALK_APP_SECRET="stub", DINGTALK_AGENT_ID="10001",
                  DINGTALK_CORP_ID="ding-stub").items():
     os.environ.setdefault(k, v)
@@ -50,8 +51,20 @@ def reset(scenario: str) -> None:
         elif scenario == "flow09":
             from tests.acceptance.e1_helpers import flow09_master
             flow09_master(db)
-        elif scenario == "flow03":
-            db.execute(update(Store).values(is_active=True))
+        elif scenario == "flow07":
+            from tests.acceptance.e1_helpers import flow07_master
+            flow07_master(db)
+        elif scenario in ("reports", "flow03", "flow06"):
+            from pathlib import Path
+
+            from tests.acceptance.e1_helpers import People, flow03_setup, flow06_setup, report_world
+            people = People(db, _client(), Path("/tmp/e1_acc_data"))
+            if scenario == "flow03":
+                flow03_setup(db, people)
+            elif scenario == "flow06":
+                flow06_setup(db, people)
+            else:
+                report_world(db, people)
         db.commit()
 
 
@@ -69,6 +82,7 @@ def main(argv: list[str]) -> None:
             run_contact_sync(db, client)
             db.commit()
     elif cmd == "overdue":
+        import app.services.tasking  # noqa: F401  注册逾期提醒钩子（与应用进程一致）
         now = datetime.fromisoformat(argv[1]).replace(tzinfo=TZ)
         client = _client()
         with session_factory(URL)() as db:
