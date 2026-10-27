@@ -7,7 +7,7 @@ from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.calc.periods import fmt_month, quarter_of
@@ -91,7 +91,11 @@ def _rolling_card(db: Session, v: BudgetVersion | None) -> dict | None:
 def list_versions(year: int | None = None, current: CurrentUser = Depends(get_current_user),
                   ctx: ScopeContext = Depends(get_scope), db: Session = Depends(get_db)):
     today = clock.today()
-    year = year or today.year
+    if year is None:
+        # 当年尚无版本（如编制期在上年第四季度）时默认显示最近有版本的年度
+        has_current = db.scalar(select(BudgetVersion.id).where(BudgetVersion.year == today.year).limit(1))
+        latest = db.scalar(select(func.max(BudgetVersion.year)))
+        year = today.year if has_current or latest is None else latest
     quarter = quarter_of(today) if today.year == year else None
     through = svc.actual_through(db, year)
     is_fin = current.has_role(Role.FINANCE_HEAD)

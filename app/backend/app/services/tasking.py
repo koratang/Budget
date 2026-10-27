@@ -16,7 +16,7 @@ from decimal import Decimal
 from sqlalchemy import func, insert, select
 from sqlalchemy.orm import Session
 
-from app.calc.periods import fmt_month, year_months
+from app.calc.periods import year_months
 from app.core.audit import write_audit
 from app.core.auth import CurrentUser
 from app.core.clock import TZ, clock
@@ -597,9 +597,6 @@ def fill_path(unit: FillingUnit) -> str:
             UnitType.COST_RATIO: f"/filling/cost/{unit.id}", UnitType.LOGISTICS_RATIO: f"/filling/logistics/{unit.id}",
             UnitType.DEPT_EXPENSE: f"/dept-expense?unitId={unit.id}"}[unit.unit_type]
 
-
-def month_keys(year: int) -> list[str]:
-    return [fmt_month(m) for m in year_months(year)]
 
 
 def ensure_task_reader(ctx: ScopeContext) -> None:

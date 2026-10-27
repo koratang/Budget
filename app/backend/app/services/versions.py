@@ -24,7 +24,8 @@ from app.core.clock import clock
 from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.dingtalk.outbox import build_notice, enqueue_notice
 from app.models import (AuditLog, B2bUnit, BCustomer, BudgetAccount, BudgetVersion, CompanyOtherPl, Department,
-                        DeptExpense, ImportBatch, KingdeeActual, PlatformUnit, Reserve, SnapshotMonth, Store, User, UserRole, UserScope)
+                        DeptExpense, ImportBatch, KingdeeActual, PlatformUnit, Reserve, SnapshotMonth, Store, User,
+                        UserRole, UserScope)
 from app.models.enums import ImportSource, ImportStatus, Role, ScopeType, UnitType, VersionType
 
 ZERO = Decimal(0)

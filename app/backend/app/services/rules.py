@@ -69,6 +69,8 @@ def content_view(db, rule_type: str, content: dict) -> dict:
     """规则内容的接口形态：预警规则阈值转为百分数 / 百分点字符串，并给出展示摘要。"""
     if content.get("kind") == "alert":
         applies = content.get("applies_to") or {"type": "all"}
+        if applies.get("type") in ("channel", "department", "category") and not applies.get("ids"):
+            applies = {"type": "all", "ids": []}   # 指标本身限定对象类型（如部门费用），未指定清单即全部
         model = {"channel": Channel, "department": Department, "category": Category}.get(applies.get("type"))
         targets = _names(db, model, applies.get("ids")) if model else []
         applies_text = APPLIES.get(applies.get("type"), "全部") + (f"：{'、'.join(targets)}" if targets else "")

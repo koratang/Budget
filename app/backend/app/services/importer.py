@@ -141,9 +141,9 @@ def _get(row: list, idx: int | None):
     return row[idx] if idx is not None and idx < len(row) else None
 
 
-def _err(errors: list, row, code: str, value: str = "", **extra) -> None:
+def _err(errors: list, row, error: str, value: str = "", **extra) -> None:
     """库内错误：type = 英文错误代码（G1 科目映射页按 account_unmapped 识别），type_label = 中文问题类型。"""
-    errors.append({"row": row, "type": code, "type_label": ISSUE_TYPES[code][0], "value": value, **extra})
+    errors.append({"row": row, "type": error, "type_label": ISSUE_TYPES[error][0], "value": value, **extra})
 
 
 # ---------------------------------------------------------------------------

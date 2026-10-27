@@ -34,6 +34,9 @@ def test_flow_22_kingdee_import(g3):
     assert (issues[22]["type"], issues[22]["name"]) == ("店铺不在主数据中", "Amazon-MX-01")
     assert issues[31]["type"] == "金蝶科目未映射" and issues[31]["name"].startswith("6601.99")
     assert _business_counts(db) == before
+    # G1 科目映射页按错误代码 account_unmapped 读取导入中出现的未映射科目
+    from app.services import masterdata
+    assert "6601.99" in masterdata._latest_unmapped_from_import(db)[1]
     assert db.scalar(select(func.count()).select_from(ImportBatch).where(
         ImportBatch.parent_batch_id == bad["id"])) == 0
 

@@ -1,0 +1,78 @@
+/* G2 页面共用样式：取自 output/pages/PAGE-F03~F05 / F07 原型的页面级样式块，只用 tokens.css 变量 */
+.g2 .sub { color: var(--muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
+.g2 .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); }
+.g2 .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.g2 .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: var(--text-sm); margin-bottom: var(--space-3); }
+.g2 .notice-bad { border-color: color-mix(in oklab, var(--danger), white 60%); background: color-mix(in oklab, var(--danger), white 95%); }
+.g2 .notice-warn { border-color: color-mix(in oklab, var(--warn), white 60%); background: color-mix(in oklab, var(--warn), white 94%); }
+.g2 .notice-info { border-color: color-mix(in oklab, var(--accent), white 70%); background: color-mix(in oklab, var(--accent), white 95%); }
+.g2 .notice .t { font-weight: 600; color: var(--fg); }
+.g2 .err-list, .g2-modal .err-list { margin: var(--space-2) 0 0; padding-left: var(--space-6); max-height: 240px; overflow: auto; }
+.g2 .meta-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-6); font-size: var(--text-sm); color: var(--muted); margin-bottom: var(--space-3); }
+.g2 .meta-row b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+.g2 .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.g2 .kpis.k3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.g2 .kpi-value.sm { font-size: var(--text-xl); }
+.g2 .kpi-value.bad { color: var(--danger); }
+.g2 .kpi-foot { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
+.g2 .tnum { font-variant-numeric: tabular-nums; }
+.g2 .link, .g2-modal .link { color: var(--fg-2); text-decoration: underline; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+.g2 .link:hover { color: var(--fg); }
+.g2 .link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+.g2 .muted, .g2-modal .muted { color: var(--muted); }
+.g2 .neg { color: var(--danger); }
+.g2 .section-title { font-size: var(--text-lg); font-weight: 600; margin: var(--space-6) 0 var(--space-3); }
+.g2 .grid-foot { display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+.g2 .save-state { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+.g2 details.card > summary { cursor: pointer; font-weight: 600; font-size: var(--text-sm); }
+.g2 details.card > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.g2 .table td.wrap { white-space: normal; min-width: 220px; max-width: 380px; }
+.g2 .filters label { display: inline-flex; align-items: center; gap: var(--space-1); }
+.g2 .over-limit-form { margin-top: var(--space-3); }
+.g2 .over-limit-form .ol-row { display: grid; grid-template-columns: 220px 1fr auto; gap: var(--space-3); align-items: center; margin-bottom: var(--space-2); font-size: var(--text-sm); }
+.g2 .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.g2 .spacer { flex: 1; }
+.g2 .small { font-size: var(--text-xs); }
+
+/* 弹窗（.modal-backdrop / .modal 来自 app.css） */
+.g2-modal { z-index: 100; }
+.g2-modal .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+.g2-modal .modal.wide { width: 720px; max-height: 86vh; overflow: auto; }
+.g2-modal .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+.g2-modal .field, .g2 .field { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+.g2-modal .field label, .g2-modal .field .lbl, .g2 .field label { font-size: var(--text-sm); color: var(--fg-2); }
+.g2-modal .req, .g2 .req { color: var(--danger); margin-left: 2px; }
+.g2-modal textarea.input, .g2 textarea.input { height: 80px; padding: var(--space-2) var(--space-3); resize: vertical; font-family: inherit; }
+.g2-modal .sub { color: var(--muted); font-size: var(--text-sm); }
+.toast { z-index: 110; }
+
+/* 审批页（PAGE-F07-01/02 原型） */
+.g2-approval .notice { border: 0; border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+.g2-approval .notice.bad { border-left-color: var(--danger); }
+.g2-approval .notice.warn { border-left-color: var(--warn); }
+.g2-approval .notice.good { border-left-color: var(--success); }
+.g2-approval .section { margin-bottom: var(--space-6); }
+.g2-approval .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); }
+.g2-approval .tabs .count { margin-left: var(--space-1); font-size: var(--text-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+.g2-approval .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.g2-approval .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.g2-approval .kpi-sub { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); }
+.g2-approval .head-card { margin-bottom: var(--space-4); }
+.g2-approval .head-card h2 { margin: 0 0 var(--space-2); font-size: var(--text-xl); }
+.g2-approval .chain { display: flex; gap: 0; list-style: none; padding: 0; margin: 0; }
+.g2-approval .chain li { flex: 1; position: relative; padding: 0 var(--space-3) 0 var(--space-6); font-size: var(--text-sm); }
+.g2-approval .chain li::before { content: ""; position: absolute; left: var(--space-1); top: 5px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--border); }
+.g2-approval .chain li.done::before { background: var(--success); }
+.g2-approval .chain li.now::before { background: var(--warn); }
+.g2-approval .chain li.back::before { background: var(--danger); }
+.g2-approval .chain .who { color: var(--fg); font-weight: 600; }
+.g2-approval .chain .when { color: var(--muted); font-size: var(--text-xs); }
+.g2-approval .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+.g2-approval .kv dt { color: var(--muted); }
+.g2-approval .kv dd { margin: 0; color: var(--fg); }
+.g2-approval .actionbar { position: sticky; bottom: 0; display: flex; align-items: center; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: var(--surface); border-top: 1px solid var(--border); box-shadow: var(--elev-float); border-radius: var(--radius-md); }
+.g2-approval .table tr.total td { font-weight: 600; background: var(--surface-warm); }
+.g2-approval .pager { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+.g2-modal .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface-warm); font-size: var(--text-sm); }
+.g2-modal .tnum { font-variant-numeric: tabular-nums; }
+.g2-modal .field-error { font-size: var(--text-sm); }

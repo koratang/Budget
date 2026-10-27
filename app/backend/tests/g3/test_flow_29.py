@@ -23,15 +23,15 @@ def setup_budget_and_rule(g3):
     g3.approve_rule_version(v1.id)                       # 生效 v1（阈值 10）
     r = g3.client("陈思雨").post(f"/api/rules/{rule.id}/versions", json={
         "alert": {"metric": "usage_minus_time_progress", "comparator": "gte", "threshold": "8",
-                  "consecutive_months": 1, "applies_to": {"type": "department"},
+                  "consecutive_months": 1, "applies_to": {"type": "all"},
                   "receivers": ["dept_head", "finance_head", "ceo"]},
         "credibility": "observed", "basis": "2026 年金蝶回测"})
     assert r.status_code == 200, r.text                   # 待审批 v2（阈值 8）
     return rule, v1
 
 
-def q1_history(g3):
-    rows = []
+def q1_history(g3, extra=()):
+    rows = list(extra)
     for m in (1, 2, 3):
         p = f"2027-{m:02d}"
         rows += [kd(p, "工资", 120000, dept="物流物控部"), kd(p, "工资", 100000, dept="人力资源部")]

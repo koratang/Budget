@@ -1,0 +1,44 @@
+/* G3 页面（版本、导入、预警、规则）共用版式：取自 output/pages 原型页内样式，限定在 .g3 根元素下，只用 tokens 变量 */
+.g3 .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+.g3 .spacer { flex: 1; }
+.g3 .section { margin-bottom: var(--section-y-desktop); }
+.g3 .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); line-height: var(--leading-tight); }
+.g3 .muted { color: var(--muted); }
+.g3 .small { font-size: var(--text-xs); }
+.g3 .num { font-variant-numeric: tabular-nums; }
+.g3 .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.g3 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.g3 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.g3 .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.g3 .link { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; border-radius: var(--radius-sm); background: none; border: 0; padding: 0; font: inherit; cursor: pointer; }
+.g3 .link:hover { color: var(--fg); }
+.g3 .link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.g3 .notice { border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+.g3 .notice.bad { border-left-color: var(--danger); }
+.g3 .notice.warn { border-left-color: var(--warn); }
+.g3 .notice.good { border-left-color: var(--success); }
+.g3 .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+.g3 .kv dt { color: var(--muted); }
+.g3 .kv dd { margin: 0; color: var(--fg); }
+.g3 .table td.wrap { white-space: normal; min-width: 220px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+.g3 .table td.w-n { white-space: normal; min-width: 96px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+.g3 .table tr.is-bad td { background: color-mix(in oklab, var(--danger), white 94%); }
+.g3 .table tr.is-bad:hover td { background: color-mix(in oklab, var(--danger), white 90%); }
+.g3 .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+.g3 .block-note { font-size: var(--text-xs); color: var(--muted); max-width: 360px; line-height: var(--leading-tight); }
+.g3 .field { margin-bottom: var(--space-4); }
+.g3 .field > label, .g3 .field > .label { display: block; font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-1); }
+.g3 .req::after { content: " *"; color: var(--danger); }
+.g3 textarea.input { width: 100%; height: auto; min-height: 88px; padding: var(--space-2) var(--space-3); font-family: inherit; line-height: var(--leading-body); resize: vertical; box-sizing: border-box; }
+.g3-modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+.g3-modal.modal-wide { width: 640px; }
+.g3-modal .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+.g3-modal .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+.g3-modal .kv dt { color: var(--muted); }
+.g3-modal .kv dd { margin: 0; color: var(--fg); }
+.g3-modal .small { font-size: var(--text-xs); }
+.g3-modal .muted { color: var(--muted); }
+.g3-modal .field { margin-bottom: var(--space-4); }
+.g3-modal .req::after { content: " *"; color: var(--danger); }
+.g3-modal textarea.input { width: 100%; height: auto; min-height: 88px; padding: var(--space-2) var(--space-3); font-family: inherit; line-height: var(--leading-body); resize: vertical; box-sizing: border-box; }
+.g3-backdrop { z-index: 20; }

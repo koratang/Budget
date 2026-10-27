@@ -1032,16 +1032,14 @@ def _template_rows(db: Session, ctx: ScopeContext, unit: FillingUnit, sheet: She
 
 
 def _template_value(sheet: Sheet, row: Any, item: str) -> str:
+    """模板预填值：与表格输入格同一无损口径（比率为百分数，不带「%」与千分位）。"""
     kind = sheet.items[item][1]
     if sheet.prefix == "opl":
         rec = row.get(item)
-        return format(rec.amount if rec else ZERO, "f")
-    v = getattr(row, item)
-    if kind == "rate":
-        return format((v or ZERO) * HUNDRED, "f").rstrip("0").rstrip(".") if v else "0"
-    if kind == "int":
-        return str(int(v or 0))
-    return format(v or ZERO, "f")
+        v = rec.amount if rec else ZERO
+    else:
+        v = getattr(row, item)
+    return fmt_input(kind, v).replace(",", "").replace("%", "").replace(MINUS, "-")
 
 
 def build_template(db: Session, ctx: ScopeContext, unit: FillingUnit) -> tuple[bytes, str]:
@@ -1209,9 +1207,3 @@ def company_other_pl(db: Session, version_id: int) -> list[dict]:
                       .order_by(CompanyOtherPl.item, CompanyOtherPl.month))
     return [{"month": fmt_month(r.month), "item": r.item, "item_label": OtherPlItem.LABELS[r.item],
              "amount": str(r.amount), "amount_display": fmt_amount(r.amount)} for r in rows]
-
-
-def cost_unit_for_version(db: Session, version_id: int) -> FillingUnit | None:
-    return db.scalar(select(FillingUnit).where(FillingUnit.version_id == version_id,
-                                               FillingUnit.unit_type == UnitType.COST_RATIO).limit(1))
-

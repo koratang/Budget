@@ -153,7 +153,7 @@ def submit_unit(db, user, unit_id: int, reason: str | None) -> FillingUnit:
                 adjust_reason=reason.strip(), submitted_at=clock.now(), return_reason=None)
     audit(db, actor, action="adjustment_unit_submitted", object_type="filling_unit", object_id=unit.id,
           before={"status": before}, after={"status": unit.status, "adjust_reason": unit.adjust_reason})
-    notify(db, biz_type="adjustment_unit_submitted", biz_id=unit.id, users=[db.get(User, unit.reviewer_id)],
+    notify(db, biz_type="adj_unit_submitted", biz_id=unit.id, users=[db.get(User, unit.reviewer_id)],
            title="【待审批】目标调整", name=f"{adj.year} Q{adj.quarter} 目标调整", object_name=unit.name,
            period=f"{adj.year} Q{adj.quarter}", link=_link(f"/approvals/{TYPE_UNIT}/{unit.id}"))
     return unit
@@ -331,7 +331,7 @@ def _approve_unit(db, actor: Actor, unit_id: int) -> dict:
             db.flush()
             audit(db, actor, action="adjustment_pending_ceo", object_type="target_adjustment", object_id=adj.id,
                   before={"status": AdjustmentStatus.IN_PROGRESS}, after={"status": adj.status})
-            notify(db, biz_type="adjustment_pending_ceo", biz_id=adj.id, users=users_with_role(db, Role.CEO),
+            notify(db, biz_type="adj_pending_ceo", biz_id=adj.id, users=users_with_role(db, Role.CEO),
                    title="【待审批】目标调整终审", name=f"{adj.year} Q{adj.quarter} 目标调整",
                    object_name="全部单位已通过", period=f"{adj.year} Q{adj.quarter}",
                    link=_link(f"/approvals/{TYPE_ADJUSTMENT}/{adj.id}"))
@@ -361,7 +361,7 @@ def _reject_unit(db, actor: Actor, unit_id: int, reason: str) -> dict:
     _record(db, actor, TYPE_UNIT, unit.id, level, "reject", reason)
     audit(db, actor, action="adjustment_unit_returned", object_type="filling_unit", object_id=unit.id,
           before={"status": before}, after={"status": unit.status, "reason": reason, "level": level})
-    notify(db, biz_type="adjustment_unit_returned", biz_id=unit.id, users=[db.get(User, unit.filler_id)],
+    notify(db, biz_type="adj_unit_returned", biz_id=unit.id, users=[db.get(User, unit.filler_id)],
            title="【已退回】目标调整", name=f"{adj.year} Q{adj.quarter} 目标调整", object_name=unit.name,
            period=f"{adj.year} Q{adj.quarter}", link=_link("/versions"))
     return {"type": TYPE_UNIT, "id": unit.id, "status": unit.status}

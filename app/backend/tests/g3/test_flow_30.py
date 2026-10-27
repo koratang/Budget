@@ -28,11 +28,8 @@ def test_flow_30_notifications(g3, stub):
         _rule, v1 = g3.preset(name)
         g3.approve_rule_version(v1.id)
     g3.set_now("2027-04-20 10:00")
-    g3.import_file(q1_history(g3), "kingdee-history")
-    march = write_xlsx(g3.tmp / "金蝶_2027-03_收入.xlsx", KINGDEE_HEADER,
-                       [kd("2027-03", "收入", 120000, store="TikTok-US-01", site="美国")])
-    g3.set_now("2027-04-21 10:00")
-    g3.import_file(march, "kingdee-history", overwrite=True)
+    g3.import_file(q1_history(g3, [kd("2027-03", "收入", 120000, store="TikTok-US-01", site="美国")]),
+                   "kingdee-history")
 
     # 2027-04：物流物控部超额度（FLOW-29）+ TikTok-US-01 3 月 60%、4 月 65% 连续 2 个月低于 70%
     april = write_xlsx(g3.tmp / "金蝶_2027-04_利润表.xlsx", KINGDEE_HEADER, [

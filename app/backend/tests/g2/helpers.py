@@ -1,9 +1,6 @@
 """G2 场景测试共用：开发身份登录、发布任务、取单位与表格行、读钉钉替身通知。"""
 from __future__ import annotations
 
-from datetime import date
-from decimal import Decimal
-
 from sqlalchemy import select
 
 from app.dingtalk.outbox import process_outbox
@@ -130,10 +127,3 @@ def messages(db, dingtalk, stub) -> list[dict]:
 def to_receiver(msgs: list[dict], userid: str) -> list[dict]:
     return [m for m in msgs if userid in m["userid_list"]]
 
-
-def d(s: str) -> Decimal:
-    return Decimal(s)
-
-
-def first_of(year: int, month: int) -> date:
-    return date(year, month, 1)
