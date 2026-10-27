@@ -5,10 +5,9 @@ const NO_ROLE = '未开通预算权限，请联系财务负责人'
 const DISABLED = '无法登录：钉钉账号已停用或不在企业通讯录中'
 const LINK = '/reports/channel-site?month=2027-04'
 
+/** 内嵌钉钉登录页（替身）中模拟某员工扫码：替身以 postMessage 回传临时登录码，登录页带码完成授权 */
 async function scan(page, name) {
-  await page.locator('button.qr').click()
-  await page.waitForURL((u) => u.href.startsWith(STUB))
-  await page.getByRole('link', { name: new RegExp(`^${name}（`) }).click()
+  await page.frameLocator('iframe.qr-frame').getByRole('button', { name: new RegExp(`^${name}（`) }).click()
 }
 
 await run('FLOW-01', 'default', async (env) => {

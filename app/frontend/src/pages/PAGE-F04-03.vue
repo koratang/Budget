@@ -32,6 +32,7 @@ const REF_LABELS: [string, string][] = [
       :unit-id="unitId"
       :api-base="apiBase"
       title-prefix="B端填报"
+      :title-name="(n) => n.replace(/^B端 · /, '')"
       dims="维度：月 × B 端客户"
       loading-text="正在加载 B 端填报表格…"
       error-title="B 端填报表格加载失败"
@@ -67,6 +68,7 @@ const REF_LABELS: [string, string][] = [
               </tbody>
             </table>
           </div>
+          <p class="sub" data-formula>人民币收入 = 销售额（本币）× 预算汇率；毛利 = 人民币收入 − 退款 − 采购成本 − 平台佣金 − 推广费用 − 头程 − 尾程 − 关税 − 仓储 + 库存索赔 − 其他运营费用。</p>
         </details>
       </template>
     </FillingWorkspace>

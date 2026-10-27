@@ -1,13 +1,15 @@
 <script setup lang="ts">
 /**
  * 登录页 PAGE-F01-01（CMP-F01-01 LoginPanel）
- * - 普通浏览器：GET /api/auth/dingtalk/qr-url 取钉钉扫码授权地址并跳转；回调失败时后端重定向回
- *   /login?error=no_role|account_disabled|dingtalk_unavailable[&name=]
+ * - 普通浏览器：GET /api/auth/dingtalk/qr-url 取授权地址；按钉钉「扫码登录第三方网站」内嵌方式用 iframe 显示
+ *   钉钉登录页二维码（不加载任何外部脚本）；钉钉页面以 postMessage 回传临时登录码后，带 loginTmpCode 打开授权地址，
+ *   钉钉 302 到 /api/auth/dingtalk/callback；回调失败时后端重定向回
+ *   /login?error=no_role|account_disabled|dingtalk_unavailable[&name=]；二维码加载失败显示「钉钉登录暂不可用」
  * - 钉钉内置浏览器：dingtalk-jsapi 取免登码 → POST /api/auth/dingtalk/h5，不显示二维码
  * - 开发身份切换：仅非 production 构建打包，且 /api/auth/dev-users 可用时渲染（DEC-002 / DEC-013）
  * - 登录后回到 redirect 原链接，否则工作台（DEC-F01-03）
  */
-import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
+import { computed, defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, ApiError } from '@/api/client'
 import { isInDingTalk, requestDingTalkAuthCode } from '@/api/dingtalk'
@@ -28,7 +30,14 @@ const view = ref<View>('normal')
 const expired = ref(route.query.expired === '1')
 const deniedName = ref(typeof route.query.name === 'string' ? route.query.name : '')
 const qrUrl = ref<string | null>(null)
+const embedUrl = ref<string | null>(null)
+const loginOrigin = ref('')
+/** 每次重新加载换一个 key，强制重建 iframe */
+const frameKey = ref(0)
 const inDingTalk = isInDingTalk()
+/** iframe 超过该时长仍未加载完成，视为二维码加载失败 */
+const QR_LOAD_TIMEOUT = 15000
+let loadTimer: ReturnType<typeof setTimeout> | null = null
 
 /** 登录后去向：仅接受站内相对路径，防止开放重定向 */
 const target = computed(() => {
@@ -74,13 +83,46 @@ async function enterSystem(): Promise<void> {
 /** 取扫码授权地址；keepView 为 true 时只在后台准备地址（拒绝提示保持显示） */
 async function loadQrUrl(keepView = false): Promise<void> {
   try {
-    const res = await api.get<{ url: string }>('/api/auth/dingtalk/qr-url', { redirect: target.value }, { redirectOn401: false })
+    const res = await api.get<{ url: string; embed_url: string; origin: string }>(
+      '/api/auth/dingtalk/qr-url',
+      { redirect: target.value },
+      { redirectOn401: false },
+    )
     qrUrl.value = res.url
-    if (!keepView) view.value = 'normal'
+    embedUrl.value = res.embed_url
+    loginOrigin.value = res.origin
+    if (!keepView) showQr()
   } catch {
     qrUrl.value = null
+    embedUrl.value = null
     if (!keepView) view.value = 'error'
   }
+}
+
+function clearLoadTimer(): void {
+  if (loadTimer) clearTimeout(loadTimer)
+  loadTimer = null
+}
+
+/** 显示内嵌二维码：重建 iframe，并在超时未加载时转为「钉钉登录暂不可用」 */
+function showQr(): void {
+  view.value = 'normal'
+  frameKey.value += 1
+  clearLoadTimer()
+  loadTimer = setTimeout(() => {
+    if (view.value === 'normal') view.value = 'error'
+  }, QR_LOAD_TIMEOUT)
+}
+
+/** 钉钉登录页回传临时登录码（只接受钉钉登录页的源）→ 带 loginTmpCode 打开授权地址完成授权 */
+function onMessage(e: MessageEvent): void {
+  if (!loginOrigin.value || e.origin !== loginOrigin.value || !qrUrl.value) return
+  const tmpCode = e.data
+  if (typeof tmpCode !== 'string' || !tmpCode) return
+  const url = new URL(qrUrl.value)
+  url.searchParams.set('loginTmpCode', tmpCode)
+  view.value = 'loading'
+  window.location.href = url.toString()
 }
 
 async function dingTalkLogin(): Promise<void> {
@@ -117,14 +159,10 @@ async function init(): Promise<void> {
   else await loadQrUrl()
 }
 
-function openQr(): void {
-  if (qrUrl.value) window.location.href = qrUrl.value
-}
-
 function backToScan(): void {
   expired.value = false
   if (inDingTalk) void dingTalkLogin()
-  else if (qrUrl.value) view.value = 'normal'
+  else if (embedUrl.value) showQr()
   else void loadQrUrl()
 }
 
@@ -137,7 +175,14 @@ function onDevDenied(e: ApiError, name: string): void {
   handleAuthError(e, name)
 }
 
-onMounted(init)
+onMounted(() => {
+  window.addEventListener('message', onMessage)
+  void init()
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('message', onMessage)
+  clearLoadTimer()
+})
 </script>
 
 <template>
@@ -154,25 +199,15 @@ onMounted(init)
 
           <div v-if="view === 'normal'" data-view="normal">
             <div v-if="expired" class="notice" role="status">登录已失效，请重新登录</div>
-            <button
-              type="button"
-              class="qr"
-              :disabled="!qrUrl"
-              aria-label="打开钉钉扫码登录页"
-              title="打开钉钉扫码登录页"
-              @click="openQr"
-            >
-              <svg viewBox="0 0 48 48" width="72" height="72" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5">
-                <rect x="5" y="5" width="14" height="14" rx="1" />
-                <rect x="29" y="5" width="14" height="14" rx="1" />
-                <rect x="5" y="29" width="14" height="14" rx="1" />
-                <rect x="10" y="10" width="4" height="4" fill="currentColor" stroke="none" />
-                <rect x="34" y="10" width="4" height="4" fill="currentColor" stroke="none" />
-                <rect x="10" y="34" width="4" height="4" fill="currentColor" stroke="none" />
-                <path d="M29 29h5v5h-5zM38 29h5M29 38h5M38 38h5v5h-5z" />
-              </svg>
-              <span class="qr-cta">点击打开钉钉扫码</span>
-            </button>
+            <iframe
+              v-if="embedUrl"
+              :key="frameKey"
+              class="qr-frame"
+              :src="embedUrl"
+              title="钉钉扫码登录二维码"
+              @load="clearLoadTimer"
+            ></iframe>
+            <div v-else class="skeleton qr-frame" aria-hidden="true"></div>
             <p class="hint">请使用钉钉 App 扫码登录</p>
             <p class="sub">扫码后在手机上确认登录</p>
           </div>
@@ -242,12 +277,7 @@ onMounted(init)
 .login-card > section { padding: var(--space-8) var(--space-6); }
 .login-card > section + section { border-left: 1px solid var(--border-soft); }
 .sec-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-4); }
-.qr { width: 176px; height: 176px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--fg); margin-bottom: var(--space-4); cursor: pointer; font: inherit; transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
-.qr:hover { background: var(--surface-raised); border-color: var(--muted); }
-.qr:active { background: var(--border-soft); }
-.qr:focus-visible { outline: none; box-shadow: var(--focus-ring); }
-.qr[disabled] { cursor: progress; color: var(--muted); }
-.qr-cta { font-size: var(--text-sm); color: var(--fg-2); letter-spacing: 0.02em; }
+.qr-frame { display: block; width: 280px; height: 320px; max-width: 100%; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); margin-bottom: var(--space-4); }
 .hint { color: var(--fg-2); margin: 0 0 var(--space-1); }
 .sub { color: var(--muted); font-size: var(--text-sm); margin: 0; }
 .steps { margin: 0; padding-left: 20px; color: var(--fg-2); }

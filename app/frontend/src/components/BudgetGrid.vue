@@ -11,7 +11,7 @@
  */
 import { computed, ref, watch } from 'vue'
 import VGrid from '@revolist/vue3-datagrid'
-import type { BeforeRangeSaveDataDetails, BeforeSaveDataDetails } from '@revolist/revogrid'
+import type { BeforeRangeSaveDataDetails, BeforeSaveDataDetails, RowDefinition } from '@revolist/revogrid'
 import {
   buildColumns,
   cellKey,
@@ -19,6 +19,7 @@ import {
   isCellEditable,
   ROW_CLASS,
   ROW_KEY,
+  SUB_ROW_SIZE,
   toModels,
   type CellChange,
   type CellMap,
@@ -62,6 +63,12 @@ watch(
   },
   { immediate: true, deep: true },
 )
+
+// 带次级灰字的行加高（主体行与底部合计行分别按各自索引）
+const rowDefinitions = computed<RowDefinition[]>(() => [
+  ...bodyRows.value.flatMap((r, index) => (r.sub ? [{ type: 'rgRow' as const, index, size: SUB_ROW_SIZE }] : [])),
+  ...totalRows.value.flatMap((r, index) => (r.sub ? [{ type: 'rowPinEnd' as const, index, size: SUB_ROW_SIZE }] : [])),
+])
 
 const gridColumns = computed(() =>
   buildColumns(props.columns, {
@@ -157,6 +164,7 @@ defineExpose({ describe })
         :use-clipboard="true"
         :apply-on-close="true"
         :row-size="32"
+        :row-definitions="rowDefinitions"
         :row-class="ROW_CLASS"
         :resize="true"
         theme="default"
@@ -188,6 +196,9 @@ defineExpose({ describe })
 .budget-grid revo-grid .rgRow.row-calc .rgCell { color: var(--fg-2); background: var(--surface-warm); }
 .budget-grid revo-grid .rgRow.row-total .rgCell { font-weight: 600; background: var(--surface-warm); border-top: 1px solid var(--border); }
 .budget-grid.is-locked revo-grid .rgCell { cursor: default; }
+.budget-grid revo-grid .rgRow.row-sub .rgCell { display: flex; flex-direction: column; justify-content: center; line-height: 1.3; }
+.budget-grid revo-grid .rgRow.row-sub .rgCell.bg-num { align-items: flex-end; }
+.budget-grid revo-grid .rgCell .bg-cell-sub { font-size: var(--text-xs); font-weight: 400; color: var(--muted); line-height: 1.2; }
 .budget-grid-wrap { display: flex; flex-direction: column; gap: var(--space-3); }
 .bg-notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: var(--text-sm); }
 .bg-notice .t { font-weight: 600; color: var(--fg); }

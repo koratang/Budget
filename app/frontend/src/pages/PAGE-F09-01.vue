@@ -312,7 +312,7 @@ function rowText(row: number | string): string {
         </div>
         <div class="table-wrap">
           <table class="table">
-            <thead><tr><th>类型</th><th>期间</th><th>文件名</th><th class="num">行数</th><th>导入人</th><th>导入时间</th><th>状态</th></tr></thead>
+            <thead><tr><th>类型</th><th class="num">期间</th><th>文件名</th><th class="num">行数</th><th>导入人</th><th class="num">导入时间</th><th>状态</th></tr></thead>
             <tbody>
               <tr v-for="r in records" :key="r.id">
                 <td>{{ r.source_label }}</td><td class="num">{{ r.period_text }}</td><td>{{ r.file_name }}</td>

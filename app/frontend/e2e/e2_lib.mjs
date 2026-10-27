@@ -132,7 +132,8 @@ export async function cellValue(page, rowKey, field) {
 /** 页面上实际渲染出的单元格文本（滚动到该格后读 DOM） */
 export async function cellText(page, rowKey, field) {
   const el = await locateCell(page, rowKey, field)
-  return (await el.innerText()).trim()
+  // 单元格可能同时含次级灰字（如「上年 x」），只读目标 span 的文本
+  return (await el.locator(`span[data-cell="${rowKey}::${field}"]`).first().innerText()).trim()
 }
 
 async function locateCell(page, rowKey, field) {

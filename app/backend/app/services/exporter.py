@@ -21,12 +21,12 @@ from openpyxl.worksheet.worksheet import Worksheet
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.calc.periods import fmt_month
+from app.calc.periods import fmt_month, parse_month
 from app.core.errors import Forbidden, NotFound, ValidationFailed
 from app.core.money import CENT, HUNDRED, fmt_foreign, round_to
 from app.core.scope import ScopeContext
 from app.models import BudgetTask, BudgetVersion, Category, FillingUnit, PlatformUnit, Store, TargetAdjustment
-from app.models.enums import UnitType
+from app.models.enums import Role, UnitType
 from app.services import reports as R
 
 AMOUNT_FMT = "#,##0.00"
@@ -500,6 +500,75 @@ def _unit_task_name(db: Session, unit: FillingUnit) -> str:
 
 
 # ---------------------------------------------------------------------------
+# 视图：版本对比（PAGE-F08-02：维度、收入 / 毛利 / 净利润各 A、B、差额；净利润只在公司合计行）
+# ---------------------------------------------------------------------------
+COMPARE_DIM_HEADS = {"channel": "渠道 / 店铺 / 站点", "category": "品类 / 新品老品", "customer": "B端客户"}
+
+
+def compare_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, list[Sheet]]:
+    from app.api.versions import compare  # 与页面同一接口函数：同样的范围过滤与口径
+
+    a, b = _int(filters.get("a")), _int(filters.get("b"))
+    if a is None or b is None:
+        raise ValidationFailed("请选择两个不同的版本")
+    data = compare(a, b, str(filters.get("dims") or "channel"), ctx, db)
+    la, lb = data["a"]["label"], data["b"]["label"]
+    sh = Sheet("版本对比", [("", 1), ("收入", 3), ("毛利", 3), ("净利润（仅公司合计行）", 3)],
+               [COMPARE_DIM_HEADS[data["dims"]], *[h for _ in range(3) for h in (la, lb, "差额")]])
+    dash = [text("—")] * 3
+
+    def money(r: dict, prefix: str) -> list[Cell]:
+        return [amount(r[f"{prefix}_a"]), amount(r[f"{prefix}_b"]), amount(r[f"{prefix}_diff"])]
+
+    for r in data["rows"]:
+        if data["dims"] == "channel":
+            dim = f"{r['store']} · {r['site']}（{r['channel']}）"
+        elif data["dims"] == "category":
+            dim = f"{r['category']} · {r['is_new_label']}"
+        else:
+            dim = f"{r['customer']}（{r['department']} · {r['currency']}）"
+        sh.rows.append([text(dim), *money(r, "revenue"), *money(r, "gross"), *dash])
+    sh.total_rows.add(len(sh.rows))
+    sh.rows.append([text(f"{data['dims_label']}合计"), *money(data["total"], "revenue"),
+                    *money(data["total"], "gross"), *dash])
+    if data["company"]:
+        sh.total_rows.add(len(sh.rows))
+        sh.rows.append([text("公司合计（含 B端、部门费用与公司层其他损益）"), *dash, *dash,
+                        *money(data["company"], "net")])
+    return f"版本对比_{la}_vs_{lb}.xlsx", [sh]
+
+
+# ---------------------------------------------------------------------------
+# 视图：BI 与金蝶核对（PAGE-F09-02：月 × 店铺 × 站点，8 列）
+# ---------------------------------------------------------------------------
+RECONCILE_HEADERS = ["店铺 · 站点", "BI 本币销售额", "当月平均汇率", "BI 折人民币", "金蝶收入", "差额", "差异率", "标记"]
+
+
+def reconcile_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, list[Sheet]]:
+    from app.services.importer import reconciliation  # 与页面同一服务函数
+
+    if not ctx.has_role(Role.FINANCE_BP, Role.FINANCE_HEAD, Role.CEO):
+        raise Forbidden()
+    try:
+        month = parse_month(str(filters.get("month") or ""))
+    except ValueError as e:
+        raise ValidationFailed("月份格式应为 YYYY-MM") from e
+    data = reconciliation(db, month, channel_id=_int(filters.get("channel_id")),
+                          over_only=bool(filters.get("over_only")))
+    if not data["kpis"]:
+        raise ValidationFailed(f"{fmt_month(month)} 还不能核对")
+    sh = Sheet("BI与金蝶核对", None, RECONCILE_HEADERS)
+    for r in data["rows"]:
+        local = Cell("—") if r["bi_local"] is None else Cell(
+            Decimal(r["bi_local"]).quantize(CENT, rounding="ROUND_HALF_UP"), f'"{r["currency"]} "{AMOUNT_FMT}')
+        mark = "超过 3%" if r["over"] and not r["note"] else (r["note"] or "—")
+        sh.rows.append([text(f"{r['store']} · {r['site']}（{r['channel']}）"), local,
+                        number(r["rate"], 4) if r["rate"] else text("未录入"), amount(r["bi_cny"]),
+                        amount(r["kingdee"]), amount(r["diff"]), signed_percent(r["diff_rate"], 2), text(mark)])
+    return f"BI与金蝶核对_{fmt_month(month)}.xlsx", [sh]
+
+
+# ---------------------------------------------------------------------------
 # 分发
 # ---------------------------------------------------------------------------
 VIEWS: dict[str, Callable[[Session, ScopeContext, dict], tuple[str, list[Sheet]]]] = {
@@ -508,6 +577,8 @@ VIEWS: dict[str, Callable[[Session, ScopeContext, dict], tuple[str, list[Sheet]]
     "report-category": category_sheets,
     "report-dept": dept_sheets,
     "budget-platform": budget_platform_sheets,
+    "version-compare": compare_sheets,
+    "actual-reconcile": reconcile_sheets,
 }
 
 

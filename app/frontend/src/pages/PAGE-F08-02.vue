@@ -7,6 +7,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api/client'
 import PageState from '@/components/PageState.vue'
+import ExportButton from '@/components/ExportButton.vue'
 import '@/components/g3/g3.css'
 
 interface VersionRow { id: number; label: string; type_label: string }
@@ -103,6 +104,8 @@ onMounted(init)
           <option value="customer">B端客户</option>
         </select>
         <span class="small muted">期间：全年（1–12 月）</span>
+        <span class="spacer"></span>
+        <ExportButton view="version-compare" :filters="{ a, b, dims }" :disabled="!data || same" />
       </div>
       <div v-if="same" class="notice bad section" role="alert">请选择两个不同的版本。</div>
       <PageState v-else-if="busy && !data" state="loading" />

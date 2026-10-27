@@ -18,7 +18,7 @@ from app.core.clock import clock
 from app.core.errors import Conflict, Forbidden, NotFound
 from app.core.money import fmt_amount, fmt_cny, fmt_foreign, fmt_percent
 from app.core.scope import ScopeContext, load_scope
-from app.models import (ApprovalRecord, B2bUnit, BCustomer, BudgetAccount, BudgetTask, BudgetVersion, Category,
+from app.models import (ApprovalRecord, AuditLog, B2bUnit, BCustomer, BudgetAccount, BudgetTask, BudgetVersion, Category,
                         DeptExpense, FillingUnit, FxBudget, PlatformUnit, Reserve, Site, Store, User, UserRole)
 from app.models.enums import Role, TaskStatus, UnitStatus, UnitType, VersionType
 from app.services import filling as F
@@ -293,6 +293,13 @@ def _unit_detail(db: Session, user, unit: FillingUnit) -> dict:
                          "who": T.user_name(db, r.approver_id), "at": T.fmt_dt(r.created_at)} for r in recs]}
 
 
+def _ceo_submitted_at(db: Session, task: BudgetTask):
+    """最近一次「提交 CEO 审批」的时间（审计日志 task.submit_to_ceo）。"""
+    return db.scalar(select(func.max(AuditLog.occurred_at)).where(
+        AuditLog.action == "task.submit_to_ceo", AuditLog.object_type == "budget_task",
+        AuditLog.object_id == str(task.id)))
+
+
 def _task_detail(db: Session, user, task: BudgetTask) -> dict:
     if not (Role.CEO in user.roles or Role.FINANCE_HEAD in user.roles):
         raise Forbidden()
@@ -317,7 +324,8 @@ def _task_detail(db: Session, user, task: BudgetTask) -> dict:
     status_label = ("已锁定为年初原始目标" if task.status == TaskStatus.COMPLETED else T.task_status_label(task))
     return {"type": TYPE_TASK, "id": task.id, "title": task_title(task), "kind_label": "预算编制",
             "status": task.status, "status_label": status_label,
-            "submitter": T.user_name(db, task.created_by), "submitted_at": None, "chain": chain,
+            "submitter": T.user_name(db, task.created_by), "submitted_at": T.fmt_dt(_ceo_submitted_at(db, task)),
+            "chain": chain,
             "can_act": task.status == TaskStatus.PENDING_CEO and Role.CEO in user.roles,
             "approve_label": "通过并锁定",
             "approve_hint": f"通过后保存为「年初原始目标」，此后任何角色都不能直接修改其数值；{task.year} 年度预算汇率随之冻结。",

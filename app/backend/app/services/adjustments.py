@@ -194,8 +194,9 @@ def pending_items(db, user) -> list[dict]:
         filler = db.get(User, unit.filler_id)
         prev = (f"{filler.name} 已提交" if unit.status == UnitStatus.SUBMITTED
                 else f"部门负责人 {db.get(User, unit.reviewer_id).name} 已通过")
+        step = "部门负责人审核" if unit.status == UnitStatus.SUBMITTED else "财务负责人审核"
         items.append({"type": TYPE_UNIT, "id": unit.id, "title": f"{adj.year} Q{adj.quarter} 目标调整 · {unit.name}",
-                      "kind_label": "目标调整（单位）", "prev_step": prev,
+                      "kind_label": "目标调整（单位）", "prev_step": prev, "step": step, "submitter": filler.name,
                       "submitted_at": unit.submitted_at.isoformat() if unit.submitted_at else None,
                       "link": f"/approvals/{TYPE_UNIT}/{unit.id}"})
     if actor.has_role(Role.CEO):
@@ -206,6 +207,7 @@ def pending_items(db, user) -> list[dict]:
                 ApprovalRecord.object_id.in_(select(FillingUnit.id).where(FillingUnit.adjustment_id == adj.id))))
             items.append({"type": TYPE_ADJUSTMENT, "id": adj.id, "title": f"{adj.year} Q{adj.quarter} 目标调整（整次终审）",
                           "kind_label": "目标调整（CEO 终审）", "prev_step": "全部单位已经财务负责人通过",
+                          "step": "CEO 终审", "submitter": db.get(User, adj.initiated_by).name if adj.initiated_by else None,
                           "submitted_at": last.isoformat() if last else None,
                           "link": f"/approvals/{TYPE_ADJUSTMENT}/{adj.id}"})
     return items

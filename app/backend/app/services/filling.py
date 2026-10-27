@@ -178,8 +178,9 @@ def fmt_calc(item: str, v) -> str:
         return fmt_percent(v, 2)
     if v is None:
         return "—"
-    if item == "sales_qty":
-        return _lossless(Decimal(v), 0)
+    if item == "sales_qty":  # 销量（件）统一按整数千分位显示，与原型一致
+        q = round_to(Decimal(v), 0)
+        return (MINUS if q < 0 else "") + f"{abs(q):,.0f}"
     return fmt_amount(v)
 
 

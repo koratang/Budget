@@ -147,8 +147,11 @@ async function doUsage(): Promise<void> {
     <template v-else-if="data">
       <div class="page-head">
         <div>
-          <h1 class="page-title">专项预留额度 · {{ data.department.name }}</h1>
-          <p class="sub">专项金额计入所属科目在计划月份的部门预算（见 <RouterLink v-if="data.unit" class="link" :to="{ name: 'dept-expense', query: { unitId: String(data.unit.id) } }">部门费用填报</RouterLink>）。剩余金额 = 预留金额 − 已用金额；已用金额由财务BP 按金蝶凭证登记。</p>
+          <h1 class="page-title">专项预留额度</h1>
+          <p class="sub">
+            <template v-if="data.can_register">{{ data.department.name }}<template v-if="data.year"> · {{ data.year }} 年度</template> · 登记专项实际使用（金额、日期、金蝶凭证号）</template>
+            <template v-else>{{ data.department.name }}<template v-if="data.year"> · {{ data.year }} 年度预算编制</template> · 培训、福利等临时活动提前预留额度</template>
+          </p>
         </div>
         <div class="toolbar">
           <label v-if="data.departments.length > 1" class="sub" style="margin: 0">
@@ -220,6 +223,7 @@ async function doUsage(): Promise<void> {
           </tbody>
         </table>
       </div>
+      <p class="sub" data-reserve-foot>专项金额计入所属科目在计划月份的部门预算（见 <RouterLink v-if="data.unit" class="link" :to="{ name: 'dept-expense', query: { unitId: String(data.unit.id) } }">部门费用填报</RouterLink><template v-else>部门费用填报</template>）。剩余金额 = 预留金额 − 已用金额；已用金额由财务BP 按金蝶凭证登记。</p>
     </template>
 
     <G2Modal v-if="createOpen" title="新增专项" @close="createOpen = false">

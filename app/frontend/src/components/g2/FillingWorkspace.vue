@@ -55,8 +55,28 @@ const props = withDefaults(
     channelFilter?: boolean
     foot?: string
     footRight?: string
+    /** 页头标题中的单位名（返回空串则标题只显示前缀）；默认原样显示单位名 */
+    titleName?: (unitName: string) => string
+    /** 是否提供「下载填报模板 / 上传填报文件」（部门费用不做，PAGE-F05-01 §2.4） */
+    templates?: boolean
+    /** 工具栏左侧说明（与提交按钮同一行） */
+    toolbarNote?: string
+    /** 交给表格前的行展示变换（如把历史参考行并入单元格下方灰字） */
+    rowsView?: (rows: GridRow[]) => GridRow[]
   }>(),
-  { tabs: () => [], gridUrl: undefined, apiBase: undefined, fillYear: true, channelFilter: false, foot: '', footRight: '' },
+  {
+    tabs: () => [],
+    gridUrl: undefined,
+    apiBase: undefined,
+    fillYear: true,
+    channelFilter: false,
+    foot: '',
+    footRight: '',
+    titleName: (n: string) => n,
+    templates: true,
+    toolbarNote: '',
+    rowsView: undefined,
+  },
 )
 
 const emit = defineEmits<{ loaded: [grid: GridResponse] }>()
@@ -78,15 +98,22 @@ const unit = computed(() => grid.value?.unit ?? null)
 const locked = computed(() => !unit.value?.editable)
 const isAdjust = computed(() => !!unit.value?.adjustment)
 const tabInfo = computed(() => props.tabs.find((t) => t.key === tab.value))
+const title = computed(() => {
+  const name = unit.value ? props.titleName(unit.value.name) : ''
+  return name ? `${props.titlePrefix} · ${name}` : props.titlePrefix
+})
 
 const channels = computed(() => {
   const set = new Set<string>()
   for (const r of grid.value?.rows ?? []) if (r.values.channel) set.add(String(r.values.channel))
   return [...set]
 })
-const rows = computed(() =>
-  (grid.value?.rows ?? []).filter((r) => !channel.value || !r.values.channel || r.values.channel === channel.value),
-)
+const rows = computed(() => {
+  const list = (grid.value?.rows ?? []).filter(
+    (r) => !channel.value || !r.values.channel || r.values.channel === channel.value,
+  )
+  return props.rowsView ? props.rowsView(list) : list
+})
 
 const base = computed(() => props.apiBase ?? `/api/filling-units/${props.unitId}`)
 const isRolling = computed(() => !!unit.value?.rolling)
@@ -96,6 +123,8 @@ function url(): string {
 
 function setGrid(g: GridResponse): void {
   grid.value = g
+  // 首屏显示最后保存时间（服务端单位更新时间）；本页内保存后由 onSave 改写
+  if (!saveState.value && g.unit.updated_at) saveState.value = `已保存 · ${g.unit.updated_at}`
   ui.setCrumbTitle(g.unit.name)
   emit('loaded', g)
 }
@@ -124,6 +153,7 @@ defineExpose({ reload: load, refresh })
 onMounted(load)
 watch(() => [props.unitId, props.apiBase], () => {
   grid.value = null
+  saveState.value = ''
   errors.value = {}
   conflict.value = null
   submitError.value = null
@@ -305,7 +335,7 @@ async function doSubmit(): Promise<void> {
     <template v-else-if="grid && unit">
       <div class="page-head">
         <div>
-          <h1 class="page-title">{{ titlePrefix }} · {{ unit.name }}</h1>
+          <h1 class="page-title">{{ title }}</h1>
           <p class="sub">
             <template v-if="unit.adjustment">{{ unit.adjustment.name }} · 调整模式</template>
             <template v-else-if="unit.rolling">{{ unit.rolling.name }} · 只开放本季度及以后月份</template>
@@ -362,7 +392,8 @@ async function doSubmit(): Promise<void> {
       <div class="toolbar" style="justify-content: space-between; margin-bottom: var(--space-3)">
         <div class="toolbar">
           <button v-if="fillYear && ratioRows.length" class="btn" type="button" :disabled="locked" @click="openFill">填充全年</button>
-          <template v-if="!isRolling">
+          <span v-if="toolbarNote" class="sub" style="margin: 0">{{ toolbarNote }}</span>
+          <template v-if="templates && !isRolling">
             <button class="btn" type="button" @click="downloadTemplate">下载填报模板</button>
             <button class="btn" type="button" :disabled="locked" @click="fileInput?.click()">上传填报文件</button>
           </template>

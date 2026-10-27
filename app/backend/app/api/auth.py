@@ -1,7 +1,7 @@
 """认证接口（API-F01-01~04、API-F01-06；SEQ-F01-01）。
 
 - GET  /auth/config               登录页配置（生产恒不显示开发身份切换）
-- GET  /auth/dingtalk/qr-url      扫码授权地址（redirect = 登录后回到的站内路径）
+- GET  /auth/dingtalk/qr-url      扫码授权地址与内嵌二维码地址（redirect = 登录后回到的站内路径）
 - GET  /auth/dingtalk/callback    扫码回调：默认 302 跳转（成功回原链接，失败回 /login?error=code）；format=json 返回 JSON
 - POST /auth/dingtalk/h5          工作台免登
 - POST /auth/logout               注销
@@ -85,7 +85,10 @@ def auth_config(settings: Settings = Depends(get_app_settings)):
 def qr_url(redirect: str | None = None, settings: Settings = Depends(get_app_settings),
            client: DingTalkClient = Depends(get_dingtalk)):
     callback = f"{settings.APP_BASE_URL.rstrip('/')}/api/auth/dingtalk/callback"
-    return {"url": client.qr_login_url(callback, safe_return_path(redirect))}
+    state = safe_return_path(redirect)
+    return {"url": client.qr_login_url(callback, state),
+            "embed_url": client.qr_login_url(callback, state, embed=True),
+            "origin": client.login_origin}
 
 
 @router.get("/dingtalk/callback")

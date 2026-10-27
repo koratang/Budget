@@ -30,6 +30,10 @@ export interface GridRow {
   kind?: 'input' | 'calc' | 'total'
   /** 本行只读的字段（如已提交月份） */
   readonly_fields?: string[]
+  /** 单元格下方的次级灰字（如部门费用「上年 x」「无历史数据」）：key = 字段 */
+  sub?: Record<string, string>
+  /** 次级灰字所属的服务端行 key（写入 data-cell，便于定位）；缺省为本行 key */
+  sub_key?: string
 }
 
 /** 保存变更（API-F04-03 PATCH /filling-units/{id}/cells 的一项） */
@@ -46,8 +50,12 @@ export type CellMap = Record<string, string>
 export const ROW_KEY = '__rowKey'
 export const ROW_KIND = '__rowKind'
 export const ROW_CLASS = '__rowClass'
+export const ROW_SUB = '__sub'
+export const ROW_SUB_KEY = '__subKey'
+/** 带次级灰字的行高（普通行 32） */
+export const SUB_ROW_SIZE = 46
 
-export type GridModel = Record<string, string | null | undefined> & { [ROW_KEY]: string }
+export type GridModel = Record<string, string | null | undefined | Record<string, string>> & { [ROW_KEY]: string }
 
 export function cellKey(rowKey: string, field: string): string {
   return `${rowKey}::${field}`
@@ -58,7 +66,10 @@ export function toModels(rows: GridRow[]): GridModel[] {
     ...r.values,
     [ROW_KEY]: r.key,
     [ROW_KIND]: r.kind ?? 'input',
-    [ROW_CLASS]: r.kind === 'calc' ? 'row-calc' : r.kind === 'total' ? 'row-total' : '',
+    [ROW_CLASS]: [r.kind === 'calc' ? 'row-calc' : r.kind === 'total' ? 'row-total' : '', r.sub ? 'row-sub' : '']
+      .filter(Boolean)
+      .join(' '),
+    ...(r.sub ? { [ROW_SUB]: r.sub, [ROW_SUB_KEY]: r.sub_key ?? r.key } : {}),
   }))
 }
 
@@ -138,7 +149,10 @@ export function buildColumns(defs: GridColumnDef[], ctx: BuildContext): (ColumnR
         const model = p.model as GridModel
         const key = cellKey(String(model[ROW_KEY]), col.key)
         const text = isDim ? String(p.value ?? '') : formatCell(col, (p.value as string | null | undefined) ?? null)
-        return h('span', { class: 'bg-cell-text', 'data-cell': key }, text)
+        const main = h('span', { class: 'bg-cell-text', 'data-cell': key }, text)
+        const sub = (model[ROW_SUB] as Record<string, string> | undefined)?.[col.key]
+        if (!sub) return main
+        return [main, h('span', { class: 'bg-cell-sub', 'data-cell': cellKey(String(model[ROW_SUB_KEY]), col.key) }, sub)]
       },
       cellProperties: (p: ColumnDataSchemaModel) => {
         const model = p.model as GridModel

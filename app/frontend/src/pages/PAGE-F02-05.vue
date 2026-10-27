@@ -141,8 +141,8 @@ function blurOnEnter(ev: KeyboardEvent): void {
     <div class="page-head"><h1 class="page-title">汇率</h1></div>
 
     <div class="tabs" role="tablist">
-      <button type="button" class="tab" role="tab" :aria-selected="tab === 'b'" @click="tab = 'b'">年度预算汇率</button>
-      <button type="button" class="tab" role="tab" :aria-selected="tab === 'a'" @click="tab = 'a'">月度实际汇率</button>
+      <a class="tab" href="#" role="tab" :aria-selected="tab === 'b' ? 'true' : 'false'" @click.prevent="tab = 'b'">年度预算汇率</a>
+      <a class="tab" href="#" role="tab" :aria-selected="tab === 'a' ? 'true' : 'false'" @click.prevent="tab = 'a'">月度实际汇率</a>
     </div>
 
     <PageState v-if="loading" state="loading" :rows="4" />

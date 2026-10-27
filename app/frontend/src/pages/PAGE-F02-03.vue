@@ -114,8 +114,8 @@ async function saveDept(): Promise<void> {
     <div class="page-head"><h1 class="page-title">B端客户与部门</h1></div>
 
     <div class="tabs" role="tablist">
-      <button type="button" class="tab" role="tab" :aria-selected="tab === 'cust'" @click="tab = 'cust'">B端客户</button>
-      <button type="button" class="tab" role="tab" :aria-selected="tab === 'dept'" @click="tab = 'dept'">部门</button>
+      <a class="tab" href="#" role="tab" :aria-selected="tab === 'cust' ? 'true' : 'false'" @click.prevent="tab = 'cust'">B端客户</a>
+      <a class="tab" href="#" role="tab" :aria-selected="tab === 'dept' ? 'true' : 'false'" @click.prevent="tab = 'dept'">部门</a>
     </div>
 
     <PageState v-if="loading" state="loading" :rows="3" />

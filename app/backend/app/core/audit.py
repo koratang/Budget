@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any
 from fastapi import Request
 from sqlalchemy.orm import Session
 
+from app.core.clock import clock
 from app.models import AuditLog
 
 if TYPE_CHECKING:
@@ -48,6 +49,7 @@ def write_audit(
     """写入一条审计行（不提交）。actor 为空时 actor_name 必填（如 system-bootstrap、登录被拒的钉钉用户）。"""
     user = actor.user if actor else None
     row = AuditLog(
+        occurred_at=clock.now(),  # 业务时间统一取可注入时钟（生产即当前时间）
         actor_id=user.id if user else None,
         actor_userid=user.dingtalk_userid if user else None,
         actor_name=user.name if user else (actor_name or SYSTEM_ACTOR),

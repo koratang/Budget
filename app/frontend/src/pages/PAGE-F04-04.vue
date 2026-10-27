@@ -30,6 +30,7 @@ const TABS = [
       loading-text="正在加载成本比例…"
       error-title="成本比例加载失败"
       forbidden-text="成本比例只由财务BP 填报。如需开通，请联系财务负责人。"
+      :title-name="() => ''"
       :tabs="TABS"
       channel-filter
     />

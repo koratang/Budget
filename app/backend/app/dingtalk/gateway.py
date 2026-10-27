@@ -105,11 +105,21 @@ class DingTalkClient:
         return self._request("POST", f"{self.oapi}{path}", params={"access_token": self.access_token()}, json=body)
 
     # ---- 登录 ----
-    def qr_login_url(self, redirect_uri: str, state: str) -> str:
-        q = httpx.QueryParams({"redirect_uri": redirect_uri, "response_type": "code",
-                               "client_id": self.settings.DINGTALK_APP_KEY or "", "scope": "openid",
-                               "state": state, "prompt": "consent"})
-        return f"{self.settings.dingtalk_login_url}/oauth2/auth?{q}"
+    def qr_login_url(self, redirect_uri: str, state: str, embed: bool = False) -> str:
+        """扫码登录授权地址。embed=True 为内嵌模式（页面放进 iframe，扫码后以 postMessage 回传临时登录码）；
+        父页面再带 loginTmpCode 打开不带 embed 的授权地址，钉钉 302 到 redirect_uri?authCode=&state=。"""
+        params = {"redirect_uri": redirect_uri, "response_type": "code",
+                  "client_id": self.settings.DINGTALK_APP_KEY or "", "scope": "openid",
+                  "state": state, "prompt": "consent"}
+        if embed:
+            params["iframe"] = "true"
+        return f"{self.settings.dingtalk_login_url}/oauth2/auth?{httpx.QueryParams(params)}"
+
+    @property
+    def login_origin(self) -> str:
+        """钉钉登录页的源（postMessage 只接受该源的消息）。"""
+        u = httpx.URL(self.settings.dingtalk_login_url)
+        return f"{u.scheme}://{u.netloc.decode()}"
 
     def userid_from_qr_code(self, auth_code: str) -> str:
         """扫码 OAuth2：authCode → 用户 token → unionId → 企业内 userid。"""

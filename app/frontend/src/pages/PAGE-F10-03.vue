@@ -128,7 +128,7 @@ function onSaved(note: VarianceNote): void {
               <th class="grp" colspan="3">销量（件）</th>
               <th class="grp" colspan="3">品效（折后 · 人民币元/SPU）</th>
               <th class="grp" colspan="3">收入</th>
-              <th class="grp" rowspan="2">偏差说明</th>
+              <th class="sep" rowspan="2">偏差说明</th>
             </tr>
             <tr>
               <th class="num sep">预算</th><th class="num">实际</th><th class="num">差额</th>
@@ -187,5 +187,7 @@ function onSaved(note: VarianceNote): void {
 </template>
 
 <style scoped>
-tr.subtotal td { font-weight: 600; color: var(--fg-2); background: var(--surface-warm); }
+tr.subtotal td { font-weight: 600; background: var(--surface-warm); }
+/* 小计差额保留有利绿 / 不利红，其余小计数字用次级色 */
+tr.subtotal td:not(.good):not(.bad) { color: var(--fg-2); }
 </style>

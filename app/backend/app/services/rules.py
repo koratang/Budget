@@ -358,8 +358,10 @@ def pending_items(db, user) -> list[dict]:
     for rv, rule in rows:
         prev = ("财务负责人已通过" if rv.status == RuleVersionStatus.PENDING_CEO
                 else f"{_user_name(db, rv.submitted_by)} 提交")
+        step = "CEO 审批" if rv.status == RuleVersionStatus.PENDING_CEO else "财务负责人审批"
         items.append({"type": TYPE_RULE_VERSION, "id": rv.id, "title": f"{rule.name}（v{rv.version_no}）",
-                      "kind_label": f"规则库 · {RuleType.LABELS[rule.type]}", "prev_step": prev,
+                      "kind_label": f"规则库 · {RuleType.LABELS[rule.type]}", "prev_step": prev, "step": step,
+                      "submitter": _user_name(db, rv.submitted_by),
                       "submitted_at": rv.submitted_at.isoformat() if rv.submitted_at else None,
                       "link": f"/approvals/{TYPE_RULE_VERSION}/{rv.id}"})
     return items

@@ -38,6 +38,10 @@ DINGTALK_APP_KEY=stub DINGTALK_APP_SECRET=stub DINGTALK_AGENT_ID=10001 DINGTALK_
 
 钉钉替身管理接口：`GET /_stub/messages`（已收到的工作通知）、`DELETE /_stub/messages`、`GET/POST /_stub/users`、`PATCH /_stub/users/{userid} {"active": false}`（停用）、`DELETE /_stub/users/{userid}`（移出通讯录）、`PUT /_stub/fail-receivers {"userids": [...]}`（对这些接收人返回 errcode≠0）、`GET /_stub/h5-code?userid=`、`POST /_stub/reset`。扫码页 `/oauth2/auth` 点选员工即模拟扫码，授权码 `qr-<userid>`，免登码 `h5-<userid>`。
 
+扫码登录（内嵌二维码）：登录页按钉钉「扫码登录第三方网站」的内嵌方式，用 iframe 打开 `GET /api/auth/dingtalk/qr-url` 返回的 `embed_url`（`{DINGTALK_LOGIN_BASE_URL}/oauth2/auth?redirect_uri=<APP_BASE_URL>/api/auth/dingtalk/callback&response_type=code&client_id=<AppKey>&scope=openid&state=<站内回跳路径>&prompt=consent&iframe=true`），不加载任何外部脚本；只接受来自 `origin`（钉钉登录页的源）的 `postMessage`，消息体为临时登录码字符串，收到后整页打开 `url` 并附加 `loginTmpCode=<临时码>`，由钉钉 302 到现有回调 `/api/auth/dingtalk/callback?authCode=&state=`。替身对应实现：`iframe=true` 时渲染本地生成的二维码（segno 生成 SVG，不联网）与「模拟扫码」员工列表，点选后向 redirect_uri 的源回传 `tmp-<userid>`；带 `loginTmpCode` 时换取 `authCode=qr-<userid>` 并 302 回调。iframe 15 秒内未加载完成或取授权地址失败时，登录页显示「钉钉登录暂不可用」与「重新加载」。
+
+> 待核对：内嵌模式参数（`iframe=true`）、`postMessage` 的消息格式（临时登录码字符串）与 `loginTmpCode` 换取 authCode 的方式按旧版扫码登录协议实现，需在真实钉钉凭据就绪后按钉钉开放平台官方文档逐项核对并调整。
+
 ## 依赖版本
 
 全部按技术方案 §2.3 锁定版本安装成功（Python 3.13.17 上无需替换）：FastAPI 0.162.0、SQLAlchemy 2.1.6、psycopg[binary] 3.3.6、alembic 1.20.1、pydantic 2.14.1、pydantic-settings 2.16.1、python-calamine 0.9.0、openpyxl 3.1.5、APScheduler 3.11.3、httpx 0.28.1、pytest 9.1.1、uvicorn 0.54.0。

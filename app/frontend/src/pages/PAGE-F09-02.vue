@@ -6,6 +6,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { api, ApiError } from '@/api/client'
 import PageState from '@/components/PageState.vue'
+import ExportButton from '@/components/ExportButton.vue'
 import '@/components/g3/g3.css'
 
 interface Row {
@@ -73,6 +74,12 @@ onMounted(load)
             <option v-for="c in data.channels ?? []" :key="c.id" :value="c.id">{{ c.name }}</option>
           </select>
           <label class="row small" style="gap: var(--space-1)"><input v-model="overOnly" type="checkbox"> 只看差异率超过 3%</label>
+          <span class="spacer"></span>
+          <ExportButton
+            view="actual-reconcile"
+            :filters="{ month: data.month, channel_id: channel === '' ? null : channel, over_only: overOnly }"
+            :disabled="!data.kpis"
+          />
         </div>
 
         <div v-if="!data.kpis" class="card state">

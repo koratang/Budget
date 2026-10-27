@@ -46,6 +46,11 @@ watch(tab, load)
 
 const KIND_GROUP: Record<string, string> = { unit: '预算编制', task: '预算编制', 'adjustment-unit': '目标调整', adjustment: '目标调整', 'rule-version': '规则审批' }
 const shown = computed(() => items.value.filter((it) => !kind.value || KIND_GROUP[it.type] === kind.value))
+/** 当前环节旁只注明上一级审批结果；「某人 提交」已在提交人列显示，不重复 */
+function priorStep(it: Item): string {
+  if (!it.prev_step || (it.submitter && it.prev_step.startsWith(it.submitter))) return ''
+  return it.prev_step
+}
 function waited(iso?: string | null): string {
   if (!iso) return '—'
   const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
@@ -102,7 +107,7 @@ function waited(iso?: string | null): string {
                 <td class="wrap">{{ it.title }}</td>
                 <template v-if="tab === 'pending'">
                   <td>{{ it.submitter ?? '—' }}</td>
-                  <td class="wrap">{{ it.step ?? '审批' }}<span v-if="it.prev_step" class="muted">（{{ it.prev_step }}）</span></td>
+                  <td class="wrap">{{ it.step ?? '审批' }}<span v-if="priorStep(it)" class="muted">（{{ priorStep(it) }}）</span></td>
                   <td class="num">{{ fmtTime(it.submitted_at) }}</td>
                   <td class="num">{{ waited(it.submitted_at) }}</td>
                 </template>

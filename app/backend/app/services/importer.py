@@ -620,7 +620,9 @@ def discard_batch(db: Session, actor: Actor, batch_id: int) -> dict:
 # 导入记录与概览（API-F09-04）
 # ---------------------------------------------------------------------------
 def list_records(db: Session, source: str | None = None) -> list[dict]:
+    # 只列实际数导入（金蝶月度 / 历史金蝶 / BI）；SKU 对照表、填报模板等不属于本页记录
     q = (select(ImportBatch).where(ImportBatch.parent_batch_id.is_(None),
+                                   ImportBatch.source.in_(tuple(SOURCE_LABELS)),
                                    ImportBatch.status.in_((ImportStatus.EFFECTIVE, ImportStatus.REPLACED)))
          .order_by(ImportBatch.confirmed_at.desc(), ImportBatch.id.desc()))
     if source:

@@ -174,8 +174,8 @@ async function confirmOff(): Promise<void> {
     </div>
 
     <div class="tabs" role="tablist">
-      <button type="button" class="tab" role="tab" :aria-selected="tab === 'map'" @click="tab = 'map'">科目映射</button>
-      <button type="button" class="tab" role="tab" :aria-selected="tab === 'sub'" @click="tab = 'sub'">预算科目</button>
+      <a class="tab" href="#" role="tab" :aria-selected="tab === 'map' ? 'true' : 'false'" @click.prevent="tab = 'map'">科目映射</a>
+      <a class="tab" href="#" role="tab" :aria-selected="tab === 'sub' ? 'true' : 'false'" @click.prevent="tab = 'sub'">预算科目</a>
     </div>
 
     <PageState v-if="loading" state="loading" :rows="4" />

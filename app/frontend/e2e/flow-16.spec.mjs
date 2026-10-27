@@ -19,13 +19,13 @@ await run('FLOW-16', async (browser) => {
   eq(cols.filter((c) => /^2027-\d\d$/.test(c)).length, 12, '12 个月列')
   eq((await editCell(zk, `de:${train}|amount`, '2027-04', '50,000.00')).errors, [], '培训费 2027-04 50,000.00')
   eq(await cellText(zk, `de:${train}|amount`, '2027-04'), '50,000.00', '培训费 2027-04')
-  eq(await cellText(zk, `de:${train}|prior`, '2027-04'), '35,000.00', '培训费单元下上年同月实际')
+  eq(await cellText(zk, `de:${train}|prior`, '2027-04'), '上年 35,000.00', '培训费单元下上年同月实际')
   eq(await cellText(zk, `de:${train}|amount`, 'recent12'), '420,000.00', '近 12 月实际合计')
   eq(await cellText(zk, `de:${care}|amount`, 'recent12'), '无历史数据', '员工关怀费无历史数据')
-  ok((await gridRows(zk)).find((r) => r.__rowKey === `de:${care}|prior`)?.item === '无历史数据', '员工关怀费历史行')
+  ok((await gridRows(zk)).find((r) => r.__rowKey === `de:${care}|amount`)?.__sub?.account === '无历史数据', '员工关怀费科目名下显示无历史数据')
 
   // 新增专项
-  await zk.getByRole('link', { name: '查看与新增专项' }).click()
+  await zk.getByRole('link', { name: '管理专项预留额度' }).click()
   await zk.waitForURL('**/dept-expense/reserves**')
   await zk.locator('[data-new-reserve]').click()
   await zk.locator('#r-name').fill('管理层领导力训练营')
