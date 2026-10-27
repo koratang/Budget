@@ -21,7 +21,7 @@ from app.core.audit import write_audit
 from app.core.clock import clock
 from app.core.errors import AppError, Unauthenticated
 from app.db import get_db
-from app.models import User, UserRole, UserSession
+from app.models import Department, User, UserRole, UserSession
 from app.models.enums import AuthSource, Role
 
 SESSION_COOKIE = "budget_session"
@@ -136,15 +136,21 @@ def login_user(db: Session, user: User, auth_source: str, settings: Settings, re
     if not roles:
         write_audit(db, action="login_rejected", object_type="user", object_id=user.id,
                     after={"reason": "no_role"}, actor_name=user.name, request=request, auth_source=auth_source)
-        raise NoRole()
+        raise NoRole(details={"name": user_display_name(db, user)})
     token = create_session(db, user, auth_source, settings)
     write_audit(db, action="login", object_type="user", object_id=user.id, after={"roles": sorted(roles)},
                 actor_name=user.name, request=request, auth_source=auth_source)
     return token
 
 
+def user_display_name(db: Session, user: User) -> str:
+    """登录拒绝提示用：「姓名（部门）」。"""
+    dept = db.get(Department, user.department_id).name if user.department_id else user.dingtalk_dept
+    return f"{user.name}（{dept}）" if dept else user.name
+
+
 def sync_user_from_directory(db: Session, userid: str, info) -> User | None:
-    """按钉钉通讯录实时信息更新本地用户；info 为空（不在通讯录）或停用时把本地用户标为停用并撤销会话。
+    """按钉钉通讯录实时信息更新本地用户；info 为空（不在通讯录）或停用时把本地用户标为停用（已有会话在下一次请求时失效）。
 
     返回本地用户（可能为 None：通讯录中不存在且本地也没有）。
     """
@@ -152,9 +158,9 @@ def sync_user_from_directory(db: Session, userid: str, info) -> User | None:
     now = clock.now()
     if info is None or not info.active:
         if user is not None:
+            # 会话不在此删除：下一次请求由 get_current_user 返回 401 account_disabled 并清除
             user.is_active = False
             user.synced_at = now
-            revoke_user_sessions(db, user.id)
         return user
     if user is None:
         user = User(dingtalk_userid=userid, name=info.name, union_id=info.unionid, dingtalk_dept=info.dept_name,

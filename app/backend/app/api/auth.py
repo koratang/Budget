@@ -5,7 +5,9 @@
 - GET  /auth/dingtalk/callback    扫码回调：默认 302 跳转（成功回原链接，失败回 /login?error=code）；format=json 返回 JSON
 - POST /auth/dingtalk/h5          工作台免登
 - POST /auth/logout               注销
-- GET  /auth/dev-users、POST /auth/dev-login   仅 APP_ENV=dev 且 DEV_IDENTITY_SWITCH=true 时注册（DEC-013）
+- GET  /auth/dev-users、POST /dev/login-as（别名 POST /auth/dev-login）
+                                  仅 APP_ENV=dev 且 DEV_IDENTITY_SWITCH=true 时注册（DEC-013）
+被拒错误码：no_role（details.name =「姓名（部门）」）、account_disabled、dingtalk_auth_failed、dingtalk_unavailable。
 """
 from urllib.parse import urlencode
 
@@ -28,7 +30,7 @@ from app.models import Department, User, UserRole, UserSession
 from app.models.enums import AuthSource, Role
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-dev_router = APIRouter(prefix="/auth", tags=["auth-dev"])
+dev_router = APIRouter(tags=["auth-dev"])
 
 
 class DingTalkAuthFailed(AppError):
@@ -108,7 +110,12 @@ def dingtalk_callback(request: Request, code: str | None = None,
     except AppError as e:
         if want_json:
             raise
-        return RedirectResponse("/login?" + urlencode({"error": e.code, "redirect": target}), status_code=302)
+        params = {"error": e.code}
+        if e.details.get("name"):
+            params["name"] = e.details["name"]
+        if target != "/":
+            params["redirect"] = target
+        return RedirectResponse("/login?" + urlencode(params), status_code=302)
     if want_json:
         response: Response = JSONResponse({**_user_payload(db, user), "redirect": target})
     else:
@@ -151,25 +158,30 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 # 开发身份模拟（DEC-002 / DEC-013）：仅开发配置注册
 # ---------------------------------------------------------------------------
-@dev_router.get("/dev-users")
+@dev_router.get("/auth/dev-users")
 def dev_users(db: Session = Depends(get_db)):
     users = db.scalars(select(User).where(User.is_active.is_(True)).order_by(User.id)).all()
     roles_by_user: dict[int, set[str]] = {}
     for uid, code in db.execute(select(UserRole.user_id, UserRole.role_code)):
         roles_by_user.setdefault(uid, set()).add(code)
     depts = dict(db.execute(select(Department.id, Department.name)).all())
-    return [{"id": u.id, "name": u.name, "dingtalk_userid": u.dingtalk_userid,
-             "department": depts.get(u.department_id) or u.dingtalk_dept,
-             "roles": [r for r in Role.ALL if r in roles_by_user.get(u.id, set())],
-             "role_names": [Role.LABELS[r] for r in Role.ALL if r in roles_by_user.get(u.id, set())]}
-            for u in users]
+    result = []
+    for u in users:
+        roles = [r for r in Role.ALL if r in roles_by_user.get(u.id, set())]
+        role_names = [Role.LABELS[r] for r in roles]
+        dept = depts.get(u.department_id) or u.dingtalk_dept
+        label = f"{u.name} · {'、'.join(role_names)}" if roles else f"{u.name} · 未分配角色"
+        result.append({"id": u.id, "name": u.name, "dingtalk_userid": u.dingtalk_userid, "department": dept,
+                       "roles": roles, "role_names": role_names, "label": f"{label}（{dept}）" if dept else label})
+    return result
 
 
 class DevLoginIn(BaseModel):
     user_id: int
 
 
-@dev_router.post("/dev-login")
+@dev_router.post("/dev/login-as")
+@dev_router.post("/auth/dev-login")
 def dev_login(body: DevLoginIn, request: Request, response: Response, db: Session = Depends(get_db),
               settings: Settings = Depends(get_app_settings)):
     user = db.get(User, body.user_id)

@@ -45,7 +45,7 @@ def run_overdue_check(db: Session, now: datetime | None = None) -> None:
 
 
 def run_contact_sync(db: Session, client: DingTalkClient, now: datetime | None = None) -> dict:
-    """通讯录同步：新用户建本地记录（无角色）；不在通讯录或停用的本地用户标为停用并撤销会话。"""
+    """通讯录同步：新用户建本地记录（无角色）；不在通讯录或停用的本地用户标为停用（其会话在下一次请求时失效）。"""
     directory = {u.userid: u for u in client.list_users()}
     stats = {"created": 0, "disabled": 0}
     local = {u.dingtalk_userid: u for u in db.scalars(select(User))}
