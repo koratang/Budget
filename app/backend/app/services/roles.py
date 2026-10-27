@@ -163,5 +163,39 @@ def save_user_roles(db: Session, user: User, roles: list[str], departments: list
     db.add_all([UserScope(user_id=user.id, scope_type=t, object_id=oid)
                 for t, ids in new_scopes.items() for oid in ids])
     db.flush()
+    was_head = set(before["scopes"][ScopeType.DEPARTMENT]) if Role.DEPT_HEAD in before["roles"] else set()
+    now_head = set(new_scopes[ScopeType.DEPARTMENT]) if Role.DEPT_HEAD in role_set else set()
+    _sync_department_heads(db, user, was_head, now_head)
     return before, snapshot(db, user.id)
+
+
+def _sync_department_heads(db: Session, user: User, was_head: set[int], now_head: set[int]) -> None:
+    """部门负责人（审核人）跟随角色与权限：分配即成为该部门负责人；撤销后改由该部门其余负责人担任（无则空缺）。
+    未审结的填报单位审核人随之改为新负责人。"""
+    from app.models import FillingUnit
+    from app.models.enums import UnitStatus
+    from app.services.tasking import unit_department_id
+
+    changes: dict[int, int | None] = {d: user.id for d in now_head}
+    for d in was_head - now_head:
+        dept = db.get(Department, d)
+        if dept is None or dept.head_user_id != user.id:
+            continue
+        changes[d] = db.scalar(select(User.id).join(UserRole, UserRole.user_id == User.id)
+                               .join(UserScope, UserScope.user_id == User.id)
+                               .where(UserRole.role_code == Role.DEPT_HEAD, User.is_active, User.id != user.id,
+                                      UserScope.scope_type == ScopeType.DEPARTMENT, UserScope.object_id == d)
+                               .order_by(User.id).limit(1))
+    for d, head_id in changes.items():
+        dept = db.get(Department, d)
+        if dept is None or dept.head_user_id == head_id:
+            continue
+        old = dept.head_user_id
+        dept.head_user_id = head_id
+        if old is not None and head_id is not None:
+            for unit in db.scalars(select(FillingUnit).where(FillingUnit.reviewer_id == old,
+                                                             FillingUnit.status != UnitStatus.APPROVED)):
+                if unit_department_id(db, unit) == d:
+                    unit.reviewer_id = head_id
+    db.flush()
 
