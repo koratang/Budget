@@ -1,0 +1,20 @@
+/* G4 报表页共用布局（照 PAGE-F10-0x 原型；只用 tokens 变量与 app.css 组件类） */
+.g4-report .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+.g4-report .page-head .page-title { margin-bottom: var(--space-1); }
+.g4-report .meta { font-size: var(--text-sm); color: var(--muted); }
+.g4-report .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-bottom: var(--space-3); }
+.g4-report .filters label { display: grid; gap: var(--space-1); font-size: var(--text-xs); color: var(--muted); }
+.g4-report .hint { font-size: var(--text-xs); color: var(--muted); padding-bottom: 8px; }
+.g4-report .info-strip { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-3); font-variant-numeric: tabular-nums; }
+.g4-report .info-strip b { color: var(--fg-2); font-weight: 600; }
+.g4-report .table th.grp { text-align: center; border-left: 1px solid var(--border-soft); }
+.g4-report .table thead tr:nth-child(2) th { top: 34px; }
+.g4-report .table td.sep, .g4-report .table th.sep { border-left: 1px solid var(--border-soft); }
+.g4-report .table th.dim-h { position: sticky; left: 0; z-index: 3; }
+.g4-report .muted { color: var(--muted); }
+.g4-report .cur { font-size: var(--text-xs); letter-spacing: 0.06em; color: var(--muted); }
+.g4-report .foot { font-size: var(--text-xs); color: var(--muted); }
+.g4-report .section { margin-bottom: var(--space-6); }
+.g4-report .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+.g4-report .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0; }
+.g4-report .state-actions { margin-top: var(--space-4); }
