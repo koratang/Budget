@@ -30,7 +30,7 @@ from app.core.money import MoneyError, dec_str, fmt_cny, fmt_foreign, to_decimal
 from app.models import (BCustomer, BudgetAccount, Department, ImportBatch, ImportStaging,
                         KingdeeAccountMap, Site, Sku, Spu, Store, User)
 from app.models.enums import ImportSource, ImportStatus
-from app.services import alerting
+from app.services import alerting, masterdata
 from app.services.versions import CHANNEL_ITEMS, Actor, audit, fmt_dt
 
 SOURCE_LABELS = {ImportSource.KINGDEE: "金蝶月度", ImportSource.KINGDEE_HISTORY: "历史金蝶",
@@ -160,11 +160,12 @@ def validate_kingdee(db: Session, rows: list[tuple[int, list]], source: str) -> 
     header_row, header = rows[0]
     cols = locate_columns(header, KINGDEE_COLUMNS, KINGDEE_OPTIONAL)
     depts = {d.name: d.id for d in db.scalars(select(Department))}
-    stores = {s.name: s for s in db.scalars(select(Store))}
+    stores = masterdata.import_store_lookup(db)          # 店铺名称 → (店铺 ID, 站点 ID)，含停用店铺
     sites = _site_lookup(db)
     customers = {c.name: c.id for c in db.scalars(select(BCustomer))}
     accounts = {a.id: a for a in db.scalars(select(BudgetAccount))}
-    mapping = {m.kingdee_code: m for m in db.scalars(select(KingdeeAccountMap))}
+    mapping = masterdata.account_map_lookup(db)          # 金蝶科目编码 → 预算科目 ID（只含已映射）
+    code_names = dict(db.execute(select(KingdeeAccountMap.kingdee_code, KingdeeAccountMap.kingdee_name)).all())
     errors: list[dict] = []
     staged: list[dict] = []
     periods: set[date] = set()
@@ -195,15 +196,15 @@ def validate_kingdee(db: Session, rows: list[tuple[int, list]], source: str) -> 
         site = None
         if site_name:
             site = sites.get(site_name)
-            if site is None or (store is not None and site.id != store.site_id):
+            if site is None or (store is not None and site.id != store[1]):
                 _err(errors, row_no, "site_not_found", f"{store_name} · {site_name}" if site and store else site_name)
                 ok = False
         elif store is not None:
-            site = db.get(Site, store.site_id)
+            site = db.get(Site, store[1])
         code = cell_text(_get(r, cols["code"]))
-        mapped = mapping.get(code)
-        if mapped is None or mapped.account_id is None:
-            name = cell_text(_get(r, cols.get("code_name"))) or (mapped.kingdee_name if mapped else "")
+        account_id = mapping.get(code)
+        if account_id is None:
+            name = cell_text(_get(r, cols.get("code_name"))) or code_names.get(code) or ""
             _err(errors, row_no, "account_unmapped", f"{code} {name}".strip())
             ok = False
         try:
@@ -213,13 +214,13 @@ def validate_kingdee(db: Session, rows: list[tuple[int, list]], source: str) -> 
             ok = False
         if not ok:
             continue
-        account = accounts[mapped.account_id]
+        account = accounts[account_id]
         customer_id = customers.get(cell_text(_get(r, cols.get("customer")))) if store is None else None
         unassigned = (store is None and customer_id is None and not account.is_dept_expense
                       and account.pl_item in CHANNEL_ITEMS)
         periods.add(period)
         staged.append({"row_no": row_no, "month": period.isoformat(), "department_id": dept_id,
-                       "store_id": store.id if store else None, "site_id": site.id if site else None,
+                       "store_id": store[0] if store else None, "site_id": site.id if site else None,
                        "customer_id": customer_id, "kingdee_code": code, "account_id": account.id,
                        "amount": format(amount, "f"), "unassigned": unassigned,
                        "summary": cell_text(_get(r, cols.get("summary")))[:256] or None})
@@ -241,7 +242,8 @@ def is_new_product(first_listed: date, month: date) -> bool:
 def validate_bi(db: Session, rows: list[tuple[int, list]], source: str) -> tuple[list[dict], list[dict]]:
     header_row, header = rows[0]
     cols = locate_columns(header, BI_COLUMNS)
-    stores = {s.name: s for s in db.scalars(select(Store))}
+    stores = masterdata.import_store_lookup(db)          # 含停用店铺（AC-F02-10）
+    currencies = dict(db.execute(select(Store.id, Store.currency)).all())
     sites = _site_lookup(db)
     skus = {code: (sku_id, spu_id, cat_id, first)
             for code, sku_id, spu_id, cat_id, first in db.execute(
@@ -265,7 +267,7 @@ def validate_bi(db: Session, rows: list[tuple[int, list]], source: str) -> tuple
             ok = False
         site_name = cell_text(_get(r, cols["site"]))
         site = sites.get(site_name)
-        if site is None or (store is not None and site.id != store.site_id):
+        if site is None or (store is not None and site.id != store[1]):
             _err(errors, row_no, "site_not_found", site_name)
             ok = False
         code = cell_text(_get(r, cols["sku"]))
@@ -281,13 +283,13 @@ def validate_bi(db: Session, rows: list[tuple[int, list]], source: str) -> tuple
                 _err(errors, row_no, "amount_format", cell_text(_get(r, cols[key])))
                 ok = False
         currency = cell_text(_get(r, cols["currency"])).upper()
-        if store is not None and currency != store.currency:
+        if store is not None and currency != currencies[store[0]]:
             _err(errors, row_no, "currency_mismatch", f"{store_name} · {currency or '空'}")
             ok = False
         if not ok:
             continue
         sku_id, spu_id, cat_id, first = sku
-        staged.append({"row_no": row_no, "month": month.isoformat(), "store_id": store.id, "site_id": site.id,
+        staged.append({"row_no": row_no, "month": month.isoformat(), "store_id": store[0], "site_id": site.id,
                        "sku_id": sku_id, "spu_id": spu_id, "category_id": cat_id,
                        "is_new": is_new_product(first, month), "qty": format(values["qty"], "f"),
                        "sales": format(values["sales"], "f"), "currency": currency,

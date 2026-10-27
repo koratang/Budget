@@ -58,7 +58,10 @@ def test_flow_10_progress_rate_and_overdue(seeded, client):
     run_overdue_check(db, now)
     assert len(db.scalars(select(NotificationOutbox).where(NotificationOutbox.biz_type == "task_overdue")).all()) == 15
 
-    p = client.get(f"/api/tasks/{task_id}/progress").json()
+    login(client, db, "linxiao")  # 时钟推进后旧会话已超 8 小时
+    r = client.get(f"/api/tasks/{task_id}/progress")
+    assert r.status_code == 200, r.text
+    p = r.json()
     assert p["overdue_notified_count"] == 15
     assert p["deadline_passed"] is True
     reminded = [u for u in p["units"] if u["reminded"]]
