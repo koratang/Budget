@@ -1,0 +1,32 @@
+# 预算管理平台 · Linux + Docker Compose（路径 B）
+services:
+  db:
+    image: postgres:18.6-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: budget
+      POSTGRES_USER: budget
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?请在 .env 中设置 DB_PASSWORD}
+      TZ: Asia/Shanghai
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U budget -d budget"]
+      interval: 5s
+      retries: 20
+  app:
+    image: budget-app:latest
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://budget:${DB_PASSWORD}@db:5432/budget
+      DATA_DIR: /srv/budget/data
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    volumes:
+      - ./data:/srv/budget/data
+volumes:
+  pgdata:

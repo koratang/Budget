@@ -8,3 +8,7 @@ app/frontend/dist/
 *.egg-info/
 .pytest_cache/
 data/
+deploy/images/
+deploy/data/
+deploy/.env
+backup/
