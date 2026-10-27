@@ -1,0 +1,56 @@
+== 2026-10-27T13:40:14+00:00 docker save (构建机)
+exit=0
+exit=0
+== docker load
+Loaded image: budget-app:latest
+exit=0
+Loaded image: postgres:18.6-bookworm
+exit=0
+== docker compose up -d
+ Network smoke02final_default Creating 
+ Network smoke02final_default Creating 
+ Volume smoke02final_pgdata Creating 
+ Volume smoke02final_pgdata Creating 
+ Volume smoke02final_pgdata Created 
+ Volume smoke02final_pgdata Created 
+ Network smoke02final_default Created 
+ Network smoke02final_default Created 
+ Container smoke02final-db-1 Creating 
+ Container smoke02final-db-1 Created 
+ Container smoke02final-app-1 Creating 
+ Container smoke02final-app-1 Created 
+ Container smoke02final-db-1 Starting 
+ Container smoke02final-db-1 Started 
+ Container smoke02final-db-1 Waiting 
+ Container smoke02final-db-1 Healthy 
+ Container smoke02final-app-1 Starting 
+ Container smoke02final-app-1 Started 
+exit=0
+== ps
+app running healthy 0.0.0.0:8100->8000/tcp
+db running healthy 5432/tcp
+== migration
+0002
+== health 200
+== dev login-as 404
+== db port published: [:0]
+== write data via 钉钉替身 H5 login
+{"user":{"id":1,"name":"林晓","dingtalk_userid":"linxiao"},"roles":["finance_head"],"role_names":["财务负责人"],"
+before restart: 1,1,2
+== docker compose restart
+ Container smoke02final-db-1 Restarting 
+ Container smoke02final-app-1 Restarting 
+ Container smoke02final-db-1 Started 
+ Container smoke02final-app-1 Started 
+exit=0
+app running healthy
+db running healthy
+after restart: 1,1,2
+== health 200; me(old cookie) 200
+== 补充：登录基地址指向宿主可达的替身后重建 app
+ Container smoke02final-app-1 Starting 
+ Container smoke02final-app-1 Started 
+exit=0
+app running healthy
+db running healthy
+after recreate: 1,1,2
