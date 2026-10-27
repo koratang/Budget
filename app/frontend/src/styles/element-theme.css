@@ -1,0 +1,83 @@
+/* Element Plus 主题对齐 tokens.css（只用 CSS 变量覆盖，不加载外部字体或 CDN） */
+:root {
+  --el-color-primary: var(--accent);
+  --el-color-primary-light-3: color-mix(in oklab, var(--accent), white 30%);
+  --el-color-primary-light-5: color-mix(in oklab, var(--accent), white 50%);
+  --el-color-primary-light-7: color-mix(in oklab, var(--accent), white 70%);
+  --el-color-primary-light-8: color-mix(in oklab, var(--accent), white 80%);
+  --el-color-primary-light-9: color-mix(in oklab, var(--accent), white 90%);
+  --el-color-primary-dark-2: var(--accent-hover);
+
+  --el-color-success: var(--success);
+  --el-color-success-light-3: color-mix(in oklab, var(--success), white 30%);
+  --el-color-success-light-5: color-mix(in oklab, var(--success), white 50%);
+  --el-color-success-light-7: color-mix(in oklab, var(--success), white 70%);
+  --el-color-success-light-8: color-mix(in oklab, var(--success), white 80%);
+  --el-color-success-light-9: color-mix(in oklab, var(--success), white 90%);
+  --el-color-success-dark-2: color-mix(in oklab, var(--success), black 8%);
+
+  --el-color-warning: var(--warn);
+  --el-color-warning-light-3: color-mix(in oklab, var(--warn), white 30%);
+  --el-color-warning-light-5: color-mix(in oklab, var(--warn), white 50%);
+  --el-color-warning-light-7: color-mix(in oklab, var(--warn), white 70%);
+  --el-color-warning-light-8: color-mix(in oklab, var(--warn), white 80%);
+  --el-color-warning-light-9: color-mix(in oklab, var(--warn), white 90%);
+  --el-color-warning-dark-2: color-mix(in oklab, var(--warn), black 8%);
+
+  --el-color-danger: var(--danger);
+  --el-color-danger-light-3: color-mix(in oklab, var(--danger), white 30%);
+  --el-color-danger-light-5: color-mix(in oklab, var(--danger), white 50%);
+  --el-color-danger-light-7: color-mix(in oklab, var(--danger), white 70%);
+  --el-color-danger-light-8: color-mix(in oklab, var(--danger), white 80%);
+  --el-color-danger-light-9: color-mix(in oklab, var(--danger), white 90%);
+  --el-color-danger-dark-2: color-mix(in oklab, var(--danger), black 8%);
+  --el-color-error: var(--danger);
+
+  --el-color-info: var(--muted);
+
+  --el-text-color-primary: var(--fg);
+  --el-text-color-regular: var(--fg-2);
+  --el-text-color-secondary: var(--muted);
+  --el-text-color-placeholder: color-mix(in oklab, var(--muted), white 30%);
+
+  --el-border-color: var(--border);
+  --el-border-color-light: var(--border-soft);
+  --el-border-color-lighter: var(--border-soft);
+  --el-border-color-extra-light: var(--surface-raised);
+  --el-border-color-hover: var(--muted);
+
+  --el-bg-color: var(--surface);
+  --el-bg-color-page: var(--bg);
+  --el-bg-color-overlay: var(--surface-overlay);
+  --el-fill-color-light: var(--surface-warm);
+  --el-fill-color-lighter: var(--surface-warm);
+  --el-fill-color: var(--surface-raised);
+
+  --el-border-radius-small: var(--radius-sm);
+  --el-border-radius-base: var(--radius-md);
+  --el-border-radius-round: var(--radius-lg);
+
+  --el-font-family: var(--font-body);
+  --el-font-size-extra-small: var(--text-xs);
+  --el-font-size-small: var(--text-xs);
+  --el-font-size-base: var(--text-sm);
+  --el-font-size-medium: var(--text-base);
+  --el-font-size-large: var(--text-lg);
+  --el-font-size-extra-large: var(--text-xl);
+
+  --el-component-size: 32px;
+  --el-box-shadow-light: var(--elev-float);
+  --el-box-shadow: var(--elev-float);
+  --el-transition-duration: var(--motion-base);
+  --el-transition-duration-fast: var(--motion-fast);
+}
+
+/* 表格：数字列右对齐等宽，表头与冻结列用暖底（DESIGN.md「数据表格」） */
+.el-table {
+  --el-table-header-bg-color: var(--surface-warm);
+  --el-table-header-text-color: var(--fg-2);
+  --el-table-row-hover-bg-color: var(--surface-raised);
+  --el-table-border-color: var(--border-soft);
+  font-size: var(--text-sm);
+}
+.el-table .num .cell { text-align: right; font-variant-numeric: tabular-nums; }

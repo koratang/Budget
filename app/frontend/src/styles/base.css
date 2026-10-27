@@ -1,0 +1,14 @@
+/* 全局基础（与原型 body 样式一致） */
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--leading-body);
+  color: var(--fg);
+  background: var(--bg);
+}
+.num, .tnum { font-variant-numeric: tabular-nums; }
+.page-head { display: flex; align-items: baseline; gap: var(--space-4); margin-bottom: var(--space-4); }
+.page-head .page-title { margin: 0; }
+.meta { color: var(--muted); font-size: var(--text-sm); }

@@ -1,0 +1,34 @@
+{
+  "name": "budget-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit -p tsconfig.app.json && vite build",
+    "build:dev": "vue-tsc --noEmit -p tsconfig.app.json && vite build --mode development",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.app.json"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "2.3.2",
+    "@revolist/revogrid": "4.29.1",
+    "@revolist/vue3-datagrid": "4.29.1",
+    "dingtalk-jsapi": "3.2.9",
+    "element-plus": "2.14.7",
+    "pinia": "4.1.0",
+    "vue": "3.5.44",
+    "vue-router": "5.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@vitejs/plugin-vue": "6.0.10",
+    "@vue/test-utils": "2.5.1",
+    "happy-dom": "21.0.4",
+    "typescript": "6.0.3",
+    "vite": "8.3.5",
+    "vitest": "5.0.5",
+    "vue-tsc": "3.3.13"
+  }
+}
