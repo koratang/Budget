@@ -69,10 +69,10 @@ function action(u: UnitInfo): string {
             <tr><th>填报单位</th><th>类型</th><th>编制任务</th><th class="num">截止日期</th><th>状态</th><th>退回原因</th><th class="num">最后保存</th><th>操作</th></tr>
           </thead>
           <tbody>
-            <tr v-for="u in items" :key="u.id" :data-unit="u.name">
+            <tr v-for="u in items" :key="`${u.id}-${u.rolling?.key ?? ''}`" :data-unit="u.name">
               <td>{{ u.name }}</td>
               <td>{{ u.type_label }}</td>
-              <td>{{ u.adjustment?.name ?? u.task?.name }}</td>
+              <td>{{ u.adjustment?.name ?? u.rolling?.name ?? u.task?.name }}</td>
               <td class="num">{{ u.task?.deadline ?? '—' }}</td>
               <td>
                 <span :class="UNIT_STATUS_BADGE[u.status] ?? 'badge'">{{ u.status_label }}</span>

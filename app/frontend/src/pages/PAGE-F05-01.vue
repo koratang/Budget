@@ -4,6 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api, ApiError } from '@/api/client'
 import PageState from '@/components/PageState.vue'
+import { rollingBase } from '@/components/g2/util'
 import FillingWorkspace, { type GridResponse } from '@/components/g2/FillingWorkspace.vue'
 
 interface DeptGrid extends GridResponse {
@@ -14,12 +15,13 @@ interface DeptGrid extends GridResponse {
 const route = useRoute()
 const router = useRouter()
 const unitId = computed(() => Number(route.query.unitId ?? 0))
+const apiBase = computed(() => rollingBase(route.query))
 const g = ref<DeptGrid | null>(null)
 const resolving = ref(false)
 const resolveError = ref<unknown>(null)
 
 async function resolve(): Promise<void> {
-  if (unitId.value) return
+  if (unitId.value || apiBase.value) return
   resolving.value = true
   resolveError.value = null
   try {
@@ -47,8 +49,9 @@ watch(unitId, resolve)
       @retry="resolve"
     />
     <FillingWorkspace
-      v-else-if="unitId"
+      v-else-if="unitId || apiBase"
       :unit-id="unitId"
+      :api-base="apiBase"
       title-prefix="部门费用填报"
       dims="维度：预算科目 × 月（人民币）"
       loading-text="正在加载部门费用…"

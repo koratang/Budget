@@ -70,11 +70,18 @@ export interface UnitInfo {
   task: TaskInfo | null
   adjustment: { id: number; year: number; quarter: number; status: string; name: string } | null
   adjust_reason: string | null
+  rolling: { version_id: number; key: string; year: number; quarter: number; name: string } | null
   path?: string
 }
 
-export function fillRoute(u: Pick<UnitInfo, 'id' | 'unit_type'>): { name: string; params?: Record<string, string>; query?: Record<string, string> } {
+export function fillRoute(u: Pick<UnitInfo, 'id' | 'unit_type' | 'rolling'>): { name: string; params?: Record<string, string>; query?: Record<string, string> } {
   const id = String(u.id)
+  if (u.rolling) {
+    const query = { rolling: String(u.rolling.version_id), key: u.rolling.key }
+    if (u.unit_type === 'dept_expense') return { name: 'dept-expense', query }
+    const name = { platform: 'fill-platform', b2b: 'fill-b2b', cost_ratio: 'fill-cost', logistics_ratio: 'fill-logistics' }[u.unit_type]
+    return { name, params: { unitId: '0' }, query }
+  }
   switch (u.unit_type) {
     case 'platform':
       return { name: 'fill-platform', params: { unitId: id } }
@@ -91,4 +98,12 @@ export function fillRoute(u: Pick<UnitInfo, 'id' | 'unit_type'>): { name: string
 
 export function isForbidden(e: unknown): boolean {
   return e instanceof ApiError && e.isForbidden
+}
+
+/** 滚动预测单位的接口前缀（路由 query：rolling = 版本 ID，key = 单位键）；不是滚动预测时为 undefined */
+export function rollingBase(query: Record<string, unknown>): string | undefined {
+  const v = query.rolling
+  const k = query.key
+  if (typeof v !== 'string' || typeof k !== 'string' || !v || !k) return undefined
+  return `/api/filling-units/rolling/${v}/${encodeURIComponent(k)}`
 }

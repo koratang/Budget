@@ -2,6 +2,7 @@
 /** PAGE-F04-03 B端填报：月 × B 端客户 六个输入项（AC-F04-03），人民币收入与毛利（AC-F06-05） */
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { rollingBase } from '@/components/g2/util'
 import FillingWorkspace, { type GridResponse } from '@/components/g2/FillingWorkspace.vue'
 
 interface B2bGrid extends GridResponse {
@@ -14,6 +15,7 @@ interface B2bGrid extends GridResponse {
 
 const route = useRoute()
 const unitId = computed(() => Number(route.params.unitId))
+const apiBase = computed(() => rollingBase(route.query))
 const g = ref<B2bGrid | null>(null)
 const REF_LABELS: [string, string][] = [
   ['purchase_cost_rate', '采购成本占比'],
@@ -28,6 +30,7 @@ const REF_LABELS: [string, string][] = [
   <div data-page-id="PAGE-F04-03">
     <FillingWorkspace
       :unit-id="unitId"
+      :api-base="apiBase"
       title-prefix="B端填报"
       dims="维度：月 × B 端客户"
       loading-text="正在加载 B 端填报表格…"

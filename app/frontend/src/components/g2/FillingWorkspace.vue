@@ -49,12 +49,14 @@ const props = withDefaults(
     forbiddenText: string
     tabs?: { key: string; label: string; desc?: string }[]
     gridUrl?: (unitId: number) => string
+    /** 单位接口前缀；滚动预测单位为 /api/filling-units/rolling/{版本}/{单位键} */
+    apiBase?: string
     fillYear?: boolean
     channelFilter?: boolean
     foot?: string
     footRight?: string
   }>(),
-  { tabs: () => [], gridUrl: undefined, fillYear: true, channelFilter: false, foot: '', footRight: '' },
+  { tabs: () => [], gridUrl: undefined, apiBase: undefined, fillYear: true, channelFilter: false, foot: '', footRight: '' },
 )
 
 const emit = defineEmits<{ loaded: [grid: GridResponse] }>()
@@ -86,8 +88,10 @@ const rows = computed(() =>
   (grid.value?.rows ?? []).filter((r) => !channel.value || !r.values.channel || r.values.channel === channel.value),
 )
 
+const base = computed(() => props.apiBase ?? `/api/filling-units/${props.unitId}`)
+const isRolling = computed(() => !!unit.value?.rolling)
 function url(): string {
-  return props.gridUrl ? props.gridUrl(props.unitId) : `/api/filling-units/${props.unitId}/grid`
+  return props.gridUrl && !props.apiBase ? props.gridUrl(props.unitId) : `${base.value}/grid`
 }
 
 function setGrid(g: GridResponse): void {
@@ -118,7 +122,7 @@ async function refresh(): Promise<void> {
 defineExpose({ reload: load, refresh })
 
 onMounted(load)
-watch(() => props.unitId, () => {
+watch(() => [props.unitId, props.apiBase], () => {
   grid.value = null
   errors.value = {}
   conflict.value = null
@@ -143,7 +147,7 @@ async function onSave(changes: CellChange[], source: 'edit' | 'paste'): Promise<
   saveState.value = '正在保存…'
   try {
     const res = await api.patch<{ saved: number; errors: CellErr[]; grid: GridResponse }>(
-      `/api/filling-units/${props.unitId}/cells`,
+      `${base.value}/cells`,
       changes,
       { query: tab.value ? { tab: tab.value } : undefined },
     )
@@ -190,7 +194,7 @@ async function doFill(): Promise<void> {
   }
   try {
     const res = await api.post<{ errors: CellErr[]; grid: GridResponse }>(
-      `/api/filling-units/${props.unitId}/fill-year`,
+      `${base.value}/fill-year`,
       { row_key: fillRow.value, value: v },
       { query: tab.value ? { tab: tab.value } : undefined },
     )
@@ -208,7 +212,7 @@ const fileInput = ref<HTMLInputElement | null>(null)
 const uploadErrors = ref<UploadErr[] | null>(null)
 async function downloadTemplate(): Promise<void> {
   try {
-    await download(`/api/filling-units/${props.unitId}/template`, undefined, `${unit.value?.name ?? '填报'}_模板.xlsx`)
+    await download(`${base.value}/template`, undefined, `${unit.value?.name ?? '填报'}_模板.xlsx`)
   } catch (e) {
     toast(errorText(e))
   }
@@ -222,7 +226,7 @@ async function onFile(ev: Event): Promise<void> {
   form.append('file', file)
   try {
     const res = await upload<{ status: string; errors: UploadErr[]; written: number }>(
-      `/api/filling-units/${props.unitId}/template-upload`,
+      `${base.value}/template-upload`,
       form,
     )
     if (res.status === 'failed') {
@@ -241,12 +245,13 @@ const confirmOpen = ref(false)
 const blockMsg = ref<string | null>(null)
 const submitting = ref(false)
 const submitLabel = computed(() =>
-  isAdjust.value ? '提交调整' : unit.value?.status === 'returned' ? '重新提交审核' : '提交审核',
+  isAdjust.value ? '提交调整' : isRolling.value ? '提交滚动更新' : unit.value?.status === 'returned' ? '重新提交审核' : '提交审核',
 )
 const confirmText = computed(() => {
   const reviewer = unit.value?.reviewer?.name ?? '部门负责人'
   if (isAdjust.value)
     return `提交后依次由部门负责人${reviewer}、财务负责人审核；全部单位通过后，CEO 对整次调整一次性终审，通过即生成新的「调整后目标」版本，年初原始目标保持不变。被退回之前不能再修改。`
+  if (isRolling.value) return '提交后本季度滚动更新不能再修改；财务负责人发布季度快照时按最新提交的驱动计算。'
   return `提交后状态变为「已提交」，并通知${reviewer}审核。被退回之前，你和其他人都不能再修改本单位内容。`
 })
 function startSubmit(): void {
@@ -267,7 +272,7 @@ async function doSubmit(): Promise<void> {
   if (submitting.value) return
   submitting.value = true
   try {
-    await api.post(`/api/filling-units/${props.unitId}/submit`, isAdjust.value ? { adjust_reason: adjustReason.value } : {})
+    await api.post(`${base.value}/submit`, isAdjust.value ? { adjust_reason: adjustReason.value } : {})
     confirmOpen.value = false
     toast(`已提交，已通知${unit.value?.reviewer?.name ?? '审核人'}审核`)
     await load()
@@ -303,6 +308,7 @@ async function doSubmit(): Promise<void> {
           <h1 class="page-title">{{ titlePrefix }} · {{ unit.name }}</h1>
           <p class="sub">
             <template v-if="unit.adjustment">{{ unit.adjustment.name }} · 调整模式</template>
+            <template v-else-if="unit.rolling">{{ unit.rolling.name }} · 只开放本季度及以后月份</template>
             <template v-else-if="unit.task">{{ unit.task.name }} · 截止 {{ unit.task.deadline }}</template>
             · {{ dims }}
           </p>
@@ -326,7 +332,7 @@ async function doSubmit(): Promise<void> {
       <div v-else-if="unit.locked" class="notice notice-info" role="status" data-locked>
         <span class="t">{{ unit.status === 'approved' ? '已通过，内容已锁定' : '已提交，内容已锁定' }}</span> ·
         <template v-if="unit.submitted_at">{{ unit.submitted_at }} 提交</template>
-        <template v-if="unit.status === 'submitted'">，等待{{ unit.reviewer?.name }}审核</template>；被退回之前任何人不能修改本单位内容。
+        <template v-if="unit.status === 'submitted' && !isRolling">，等待{{ unit.reviewer?.name }}审核</template>；被退回之前任何人不能修改本单位内容。
       </div>
       <div v-if="conflict" class="notice notice-bad" role="alert" data-conflict>
         {{ conflict }} <button type="button" class="btn" @click="refresh">刷新</button>
@@ -356,8 +362,10 @@ async function doSubmit(): Promise<void> {
       <div class="toolbar" style="justify-content: space-between; margin-bottom: var(--space-3)">
         <div class="toolbar">
           <button v-if="fillYear && ratioRows.length" class="btn" type="button" :disabled="locked" @click="openFill">填充全年</button>
-          <button class="btn" type="button" @click="downloadTemplate">下载填报模板</button>
-          <button class="btn" type="button" :disabled="locked" @click="fileInput?.click()">上传填报文件</button>
+          <template v-if="!isRolling">
+            <button class="btn" type="button" @click="downloadTemplate">下载填报模板</button>
+            <button class="btn" type="button" :disabled="locked" @click="fileInput?.click()">上传填报文件</button>
+          </template>
           <input ref="fileInput" type="file" accept=".xlsx" hidden @change="onFile" />
           <label v-if="channelFilter && channels.length" class="sub" style="margin: 0">
             渠道

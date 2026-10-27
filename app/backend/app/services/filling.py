@@ -39,7 +39,8 @@ from app.models import (B2bUnit, BCustomer, BudgetAccount, BudgetTask, BudgetVer
                         ChannelCategoryRatio, ChannelSiteRatio, CompanyOtherPl, Department, DeptExpense,
                         FillingUnit, FxBudget, ImportBatch, PlatformUnit, Reserve, RuleVersion, Site, Store,
                         TargetAdjustment)
-from app.models.enums import AdjustmentStatus, ImportSource, ImportStatus, OtherPlItem, Role, RuleVersionStatus, UnitStatus, UnitType
+from app.models.enums import (AdjustmentStatus, ImportSource, ImportStatus, OtherPlItem, Role, RuleVersionStatus,
+                              UnitStatus, UnitType, VersionType)
 from app.services import tasking as T
 
 ZERO = Decimal(0)
@@ -602,13 +603,34 @@ def adjustments_module():
         return None
 
 
+def versions_module():
+    """G3 的版本服务（安全导入）：open_months / plan_units / submit_rolling_unit。"""
+    try:
+        return importlib.import_module("app.services.versions")
+    except ImportError:
+        return None
+
+
 def locked_month_keys(db: Session, unit: FillingUnit, year: int) -> set[str]:
-    """调整模式：已导入金蝶实际的月份不可修改（AC-F08-02）；编制期全部月份可编辑。"""
+    """调整稿：已导入金蝶实际的月份不可修改（AC-F08-02）；滚动预测稿：只开放本季度及以后月份（AC-F08-05）；
+    编制稿全部月份可编辑。以 G3 versions.open_months 为准。"""
+    version = db.get(BudgetVersion, unit.version_id)
+    if version.type not in (VersionType.ADJUSTMENT_DRAFT, VersionType.ROLLING_DRAFT):
+        return set()
+    vmod = versions_module()
+    if vmod is not None:
+        months = vmod.open_months(db, unit.version_id)
+        if months is None:
+            return set()
+        return {fmt_month(m) for m in year_months(year)} - {fmt_month(m) for m in months}
     mod = adjustments_module() if unit.adjustment_id else None
     if mod is None:
         return set()
-    open_months = {fmt_month(m) for m in mod.adjustable_months(db, year)}
-    return {fmt_month(m) for m in year_months(year)} - open_months
+    return {fmt_month(m) for m in year_months(year)} - {fmt_month(m) for m in mod.adjustable_months(db, year)}
+
+
+def month_label_suffix(db: Session, unit: FillingUnit) -> str:
+    return "（实际）" if db.get(BudgetVersion, unit.version_id).type == VersionType.ADJUSTMENT_DRAFT else "（未开放）"
 
 
 def build_grid(db: Session, ctx: ScopeContext, unit: FillingUnit, tab: str | None = None) -> dict:
@@ -628,9 +650,10 @@ def build_grid(db: Session, ctx: ScopeContext, unit: FillingUnit, tab: str | Non
     locked = locked_month_keys(db, unit, _version(db, unit).year)
     grid["actual_months"] = sorted(locked)
     if locked:
+        suffix = month_label_suffix(db, unit)
         for col in grid["columns"]:
             if col["key"] in locked:
-                col["label"] += "（实际）"
+                col["label"] += suffix
         for row in grid["rows"]:
             if row.get("kind") == "input":
                 row["readonly_fields"] = sorted(set(row.get("readonly_fields") or []) | locked)
@@ -729,9 +752,20 @@ def _same(kind: str, base: Any, current) -> bool:
     return Decimal(b) == Decimal(cur)
 
 
-def save_cells(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: int, changes: list[dict], *,
-               check_base: bool = True, request=None, source: str = "edit") -> dict:
-    unit = T.get_unit(db, unit_id, lock=True)
+def _resolve(db: Session, unit_or_id: FillingUnit | int, *, lock: bool = False) -> FillingUnit:
+    """填报单位：库中单位按 ID 取（可加行锁）；滚动预测单位为按 G3 plan_units 推导的临时对象，原样返回。"""
+    if isinstance(unit_or_id, FillingUnit):
+        return unit_or_id
+    return T.get_unit(db, unit_or_id, lock=lock)
+
+
+def _audit_id(unit: FillingUnit) -> str | int:
+    return unit.id if unit.id else f"rolling:{unit.version_id}:{getattr(unit, 'rolling_key', '')}"
+
+
+def save_cells(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: FillingUnit | int, changes: list[dict],
+               *, check_base: bool = True, request=None, source: str = "edit") -> dict:
+    unit = _resolve(db, unit_id, lock=True)
     T.ensure_writable(db, ctx, unit)
     version = _version(db, unit)
     allowed = WRITABLE[unit.unit_type]
@@ -745,6 +779,7 @@ def save_cells(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: int,
     csr_keys: set[tuple] = set()
     touched_store = False
     locked = locked_month_keys(db, unit, version.year)
+    adj_mod = adjustments_module() if unit.adjustment_id else None
     for ch in changes:
         row_key, field = str(ch.get("row_key") or ""), str(ch.get("field") or "")
         prefix, parts, item = _parse_key(row_key)
@@ -762,9 +797,16 @@ def save_cells(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: int,
         if month.year != version.year:
             ignored.append({"row_key": row_key, "field": field})
             continue
+        if unit.adjustment_id is not None and adj_mod is not None:
+            try:
+                adj_mod.ensure_month_adjustable(db, unit, month)  # AC-F08-02：「该月已导入实际，不能调整」
+            except ValidationFailed as e:
+                errors.append({"row_key": row_key, "field": field, "code": "month_locked", "message": e.message})
+                continue
         if field in locked:
             errors.append({"row_key": row_key, "field": field, "code": "month_locked",
-                           "message": "已导入金蝶实际，不可调整"})
+                           "message": "已导入金蝶实际，不能调整" if unit.adjustment_id
+                           else "滚动预测只开放本季度及以后的月份"})
             continue
         label, kind = items[item]
         try:
@@ -814,7 +856,7 @@ def save_cells(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: int,
     changed = [s for s in saved if "after" in s]
     if changed:
         T.mark_filling(unit)
-        write_audit(db, action=f"cells.{source}", object_type="filling_unit", object_id=unit.id, actor=actor,
+        write_audit(db, action=f"cells.{source}", object_type="filling_unit", object_id=_audit_id(unit), actor=actor,
                     request=request, before=[{"row_key": s["row_key"], "field": s["field"], "value": s["before"]}
                                              for s in changed],
                     after=[{"row_key": s["row_key"], "field": s["field"], "value": s["after"]} for s in changed])
@@ -822,10 +864,10 @@ def save_cells(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: int,
     return {"saved": len(saved), "errors": errors, "ignored": ignored}
 
 
-def fill_year(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: int, row_key: str, value: Any,
-              request=None) -> dict:
-    """AC-F04-06：把一个比率写入该维度组合 12 个月中尚未提交的月份（调整模式的锁定月份由版本服务限制）。"""
-    unit = T.get_unit(db, unit_id)
+def fill_year(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: FillingUnit | int, row_key: str,
+              value: Any, request=None) -> dict:
+    """AC-F04-06：把一个比率写入该维度组合 12 个月中尚未提交的月份（调整 / 滚动的锁定月份由版本服务限制）。"""
+    unit = _resolve(db, unit_id)
     T.ensure_writable(db, ctx, unit)
     prefix, _, item = _parse_key(row_key)
     items = WRITABLE[unit.unit_type].get(prefix) or {}
@@ -837,7 +879,7 @@ def fill_year(db: Session, ctx: ScopeContext, actor: CurrentUser, unit_id: int, 
         raise ValidationFailed(e.grid_message, code="out_of_range") from None
     version = _version(db, unit)
     changes = [{"row_key": row_key, "field": fmt_month(m), "value": value} for m in year_months(version.year)]
-    return save_cells(db, ctx, actor, unit_id, changes, check_base=False, request=request, source="fill_year")
+    return save_cells(db, ctx, actor, unit, changes, check_base=False, request=request, source="fill_year")
 
 
 # ---------------------------------------------------------------------------
@@ -934,7 +976,7 @@ def my_units(db: Session, ctx: ScopeContext) -> list[dict]:
     open_adjustments = list(db.scalars(select(TargetAdjustment.id).where(
         TargetAdjustment.status.in_((AdjustmentStatus.IN_PROGRESS, AdjustmentStatus.PENDING_CEO)))))
     if not visible_tasks and not open_adjustments:
-        return []
+        return my_rolling_units(db, ctx)
     units = db.scalars(select(FillingUnit).where(or_(FillingUnit.task_id.in_(visible_tasks),
                                                      FillingUnit.adjustment_id.in_(open_adjustments)))
                        .order_by(FillingUnit.id))
@@ -945,7 +987,7 @@ def my_units(db: Session, ctx: ScopeContext) -> list[dict]:
         info = T.unit_info(db, ctx, u)
         info["path"] = T.fill_path(u)
         out.append(info)
-    return out
+    return out + my_rolling_units(db, ctx)
 
 
 # ---------------------------------------------------------------------------
@@ -1207,3 +1249,48 @@ def company_other_pl(db: Session, version_id: int) -> list[dict]:
                       .order_by(CompanyOtherPl.item, CompanyOtherPl.month))
     return [{"month": fmt_month(r.month), "item": r.item, "item_label": OtherPlItem.LABELS[r.item],
              "amount": str(r.amount), "amount_display": fmt_amount(r.amount)} for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# 滚动预测更新（AC-F08-05；对接 G3 versions：plan_units / rolling_submissions / submit_rolling_unit）
+# 滚动预测不生成 FillingUnit，这里按 G3 推导的单位构造临时单位对象，复用同一表格、保存与增量重算。
+# ---------------------------------------------------------------------------
+def rolling_unit(db: Session, version_id: int, unit_key: str) -> FillingUnit:
+    vmod = versions_module()
+    version = db.get(BudgetVersion, version_id)
+    if vmod is None or version is None or version.type not in (VersionType.ROLLING_DRAFT, VersionType.SNAPSHOT):
+        raise NotFound("滚动预测不存在")
+    plan = next((p for p in vmod.plan_units(db) if p.key == unit_key), None)
+    if plan is None or plan.filler is None or plan.reviewer is None:
+        raise NotFound("填报单位不存在")
+    submitted = unit_key in vmod.rolling_submissions(db, version_id)
+    unit = FillingUnit(id=0, version_id=version_id, unit_type=plan.unit_type, scope_object_id=plan.scope_object_id,
+                       name=plan.name, filler_id=plan.filler.id, reviewer_id=plan.reviewer.id,
+                       status=UnitStatus.SUBMITTED if submitted or version.type != VersionType.ROLLING_DRAFT
+                       else UnitStatus.FILLING, updated_at=clock.now())
+    setattr(unit, "rolling_key", unit_key)  # 临时单位标识（非映射属性）
+    return unit
+
+
+def my_rolling_units(db: Session, ctx: ScopeContext) -> list[dict]:
+    vmod = versions_module()
+    if vmod is None:
+        return []
+    out = []
+    for v in db.scalars(select(BudgetVersion).where(BudgetVersion.type == VersionType.ROLLING_DRAFT)
+                        .order_by(BudgetVersion.id)):
+        for p in vmod.plan_units(db):
+            if p.filler is None or p.reviewer is None:
+                continue
+            unit = rolling_unit(db, v.id, p.key)
+            if T.can_fill(db, ctx, unit):
+                out.append(T.unit_info(db, ctx, unit))
+    return out
+
+
+def submit_rolling(db: Session, ctx: ScopeContext, actor: CurrentUser, version_id: int, unit_key: str) -> dict:
+    unit = rolling_unit(db, version_id, unit_key)
+    T.ensure_writable(db, ctx, unit)
+    vmod = versions_module()
+    vmod.submit_rolling_unit(db, vmod.as_actor(db, actor), version_id, unit_key)
+    return T.unit_info(db, ctx, rolling_unit(db, version_id, unit_key))

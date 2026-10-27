@@ -2,10 +2,12 @@
 /** PAGE-F04-04 成本比例填报（财务BP）：采购成本占比 · 平台 / B端客户、库存索赔率与其他运营费用率、公司层其他损益 */
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { rollingBase } from '@/components/g2/util'
 import FillingWorkspace from '@/components/g2/FillingWorkspace.vue'
 
 const route = useRoute()
 const unitId = computed(() => Number(route.params.unitId))
+const apiBase = computed(() => rollingBase(route.query))
 const TABS = [
   { key: 'platform', label: '采购成本占比 · 平台', desc: '维度：月 × 渠道 × 站点 × 品类。同一渠道站点品类下的新品、老品共用该比例。' },
   { key: 'b2b', label: '采购成本占比 · B端客户', desc: '维度：月 × B 端客户。' },
@@ -22,6 +24,7 @@ const TABS = [
   <div data-page-id="PAGE-F04-04">
     <FillingWorkspace
       :unit-id="unitId"
+      :api-base="apiBase"
       title-prefix="成本比例填报"
       dims="财务BP 填报采购成本占比、库存索赔率、其他运营费用率与公司层其他损益"
       loading-text="正在加载成本比例…"

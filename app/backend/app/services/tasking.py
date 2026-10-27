@@ -164,7 +164,10 @@ def container_open(db: Session, unit: FillingUnit) -> bool:
     task = task_of(db, unit)
     if task is not None:
         return task.status == TaskStatus.IN_PROGRESS
-    adj = db.get(TargetAdjustment, unit.adjustment_id) if unit.adjustment_id else None
+    if unit.adjustment_id is None:  # 滚动预测临时单位：滚动预测稿未发布即可编辑
+        version = db.get(BudgetVersion, unit.version_id)
+        return version is not None and version.type == VersionType.ROLLING_DRAFT
+    adj = db.get(TargetAdjustment, unit.adjustment_id)
     return adj is not None and adj.status == AdjustmentStatus.IN_PROGRESS
 
 
@@ -180,6 +183,15 @@ def mark_filling(unit: FillingUnit) -> None:
 
 def approval_type(unit: FillingUnit) -> str:
     return "adjustment-unit" if unit.adjustment_id else "unit"
+
+
+def rolling_summary(db: Session, unit: FillingUnit) -> dict | None:
+    key = getattr(unit, "rolling_key", None)
+    if not key:
+        return None
+    v = db.get(BudgetVersion, unit.version_id)
+    return {"version_id": v.id, "key": key, "year": v.year, "quarter": v.quarter,
+            "name": f"{v.year} Q{v.quarter} 滚动预测更新"}
 
 
 def adjustment_summary(db: Session, unit: FillingUnit) -> dict | None:
@@ -230,6 +242,7 @@ def unit_info(db: Session, ctx: ScopeContext | None, unit: FillingUnit) -> dict:
         "version_id": unit.version_id,
         "task": task_summary(db, task) if task else None,
         "adjustment": adjustment_summary(db, unit),
+        "rolling": rolling_summary(db, unit),
         "adjust_reason": unit.adjust_reason,
     }
 

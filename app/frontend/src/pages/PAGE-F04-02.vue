@@ -4,7 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '@/api/client'
 import FillingWorkspace, { type GridResponse } from '@/components/g2/FillingWorkspace.vue'
-import { errorText, toast, type UnitInfo } from '@/components/g2/util'
+import { errorText, rollingBase, toast, type UnitInfo } from '@/components/g2/util'
 
 interface OverLimit {
   month: string
@@ -25,6 +25,7 @@ interface PlatformGrid extends GridResponse {
 const route = useRoute()
 const router = useRouter()
 const unitId = computed(() => Number(route.params.unitId))
+const apiBase = computed(() => rollingBase(route.query))
 const g = ref<PlatformGrid | null>(null)
 const ws = ref<InstanceType<typeof FillingWorkspace> | null>(null)
 const myStores = ref<UnitInfo[]>([])
@@ -40,7 +41,7 @@ function onLoaded(grid: GridResponse): void {
 onMounted(async () => {
   try {
     const res = await api.get<{ items: UnitInfo[] }>('/api/filling-units', { mine: 1 })
-    myStores.value = res.items.filter((u) => u.unit_type === 'platform')
+    myStores.value = res.items.filter((u) => u.unit_type === 'platform' && !u.rolling)
   } catch {
     myStores.value = []
   }
@@ -75,6 +76,7 @@ const REF_LABELS: [string, string][] = [
     <FillingWorkspace
       ref="ws"
       :unit-id="unitId"
+      :api-base="apiBase"
       title-prefix="平台渠道填报"
       dims="维度：月 × 店铺 × 站点 × 品类 × 新品/老品"
       loading-text="正在加载填报表格…"
@@ -85,7 +87,7 @@ const REF_LABELS: [string, string][] = [
     >
       <template #info>
         <div v-if="g" class="meta-row">
-          <label v-if="myStores.length > 1">
+          <label v-if="myStores.length > 1 && !apiBase">
             填报单位
             <select class="select" :value="String(unitId)" aria-label="切换填报单位（仅显示你负责的店铺）" @change="switchStore">
               <option v-for="s in myStores" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
@@ -124,10 +126,10 @@ const REF_LABELS: [string, string][] = [
           </div>
           <div v-for="o in g.over_limit" :key="o.month" class="ol-row">
             <span>{{ o.month }} · 店铺收入 {{ o.revenue_display }}</span>
-            <input v-model="reasons[o.month]" class="input" :disabled="!g.unit.editable" :placeholder="'必填：超出理由'" :aria-label="`${o.month} 超出理由`" />
+            <input v-model="reasons[o.month]" class="input" :disabled="!g.unit.editable || !!apiBase" :placeholder="'必填：超出理由'" :aria-label="`${o.month} 超出理由`" />
             <span></span>
           </div>
-          <button v-if="g.unit.editable" class="btn" type="button" data-save-reasons @click="saveReasons">保存超出理由</button>
+          <button v-if="g.unit.editable && !apiBase" class="btn" type="button" data-save-reasons @click="saveReasons">保存超出理由</button>
         </div>
         <details v-if="g" class="card" style="margin-top: var(--space-4)">
           <summary>毛利计算引用的比例（只读，由财务BP 与物流物控填报）</summary>

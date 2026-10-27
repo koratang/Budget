@@ -133,3 +133,47 @@ def version_pl(version_id: int, _: CurrentUser = Depends(require_roles(*MANAGEME
 def company_other_pl(version_id: int, _: CurrentUser = Depends(require_roles(*MANAGEMENT)),
                      db: Session = Depends(get_db)):
     return {"items": filling.company_other_pl(db, version_id)}
+
+
+# ---------------------------------------------------------------------------
+# 滚动预测更新（AC-F08-05，对接 G3 versions）：同一表格编辑滚动预测稿，单位键 = G3 plan_units 的 key
+# ---------------------------------------------------------------------------
+@router.get("/filling-units/rolling/{version_id}/{unit_key}/grid")
+def rolling_grid(version_id: int, unit_key: str, tab: str | None = None, ctx: ScopeContext = Depends(get_scope),
+                 db: Session = Depends(get_db)):
+    result = filling.build_grid(db, ctx, filling.rolling_unit(db, version_id, unit_key), tab)
+    db.commit()
+    return result
+
+
+@router.patch("/filling-units/rolling/{version_id}/{unit_key}/cells")
+def rolling_cells(version_id: int, unit_key: str, body: list[CellIn], request: Request, tab: str | None = None,
+                  current: CurrentUser = Depends(get_current_user), ctx: ScopeContext = Depends(get_scope),
+                  db: Session = Depends(get_db)):
+    unit = filling.rolling_unit(db, version_id, unit_key)
+    result = filling.save_cells(db, ctx, current, unit, [c.model_dump() for c in body], request=request,
+                                source="paste" if len(body) > 1 else "edit")
+    db.commit()
+    grid = filling.build_grid(db, ctx, filling.rolling_unit(db, version_id, unit_key), tab)
+    db.commit()
+    return {**result, "grid": grid}
+
+
+@router.post("/filling-units/rolling/{version_id}/{unit_key}/fill-year")
+def rolling_fill_year(version_id: int, unit_key: str, body: FillYearIn, request: Request, tab: str | None = None,
+                      current: CurrentUser = Depends(get_current_user), ctx: ScopeContext = Depends(get_scope),
+                      db: Session = Depends(get_db)):
+    unit = filling.rolling_unit(db, version_id, unit_key)
+    result = filling.fill_year(db, ctx, current, unit, body.row_key, body.value, request=request)
+    db.commit()
+    grid = filling.build_grid(db, ctx, filling.rolling_unit(db, version_id, unit_key), tab)
+    db.commit()
+    return {**result, "grid": grid}
+
+
+@router.post("/filling-units/rolling/{version_id}/{unit_key}/submit")
+def rolling_submit(version_id: int, unit_key: str, current: CurrentUser = Depends(get_current_user),
+                   ctx: ScopeContext = Depends(get_scope), db: Session = Depends(get_db)):
+    result = filling.submit_rolling(db, ctx, current, version_id, unit_key)
+    db.commit()
+    return result
