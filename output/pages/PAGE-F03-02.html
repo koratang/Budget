@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F03-02">
+  <title>编制任务详情 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+  [hidden] { display: none !important; }
+  body { font-family: var(--font-body); color: var(--fg); background: var(--bg); font-size: var(--text-base); line-height: var(--leading-body); }
+  .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); background: var(--surface); }
+  .proto-bar button { height: 24px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--fg-2); font-size: var(--text-xs); cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+  .proto-bar button:hover { background: var(--surface-raised); }
+  .proto-bar button:active { background: var(--border-soft); }
+  .proto-bar button:focus-visible, .proto-bar select:focus-visible, .proto-bar input:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .proto-bar button[aria-pressed="true"] { background: var(--fg-2); color: var(--surface); border-color: var(--fg-2); }
+  .proto-bar label { display: inline-flex; align-items: center; gap: var(--space-1); }
+  .proto-bar select { height: 24px; font-size: var(--text-xs); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--fg-2); }
+  .proto-sep { width: 1px; height: 16px; background: var(--border); margin: 0 var(--space-1); }
+  .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+  .topbar nav a, .topbar a { color: var(--fg-2); }
+  .topbar a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .page-head .page-title { margin: 0; }
+  .sub { color: var(--muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: var(--text-sm); margin-bottom: var(--space-3); }
+  .notice-bad { border-color: color-mix(in oklab, var(--danger), white 60%); background: color-mix(in oklab, var(--danger), white 95%); }
+  .notice-warn { border-color: color-mix(in oklab, var(--warn), white 60%); background: color-mix(in oklab, var(--warn), white 94%); }
+  .notice-info { border-color: color-mix(in oklab, var(--accent), white 70%); background: color-mix(in oklab, var(--accent), white 95%); }
+  .notice .t { font-weight: 600; color: var(--fg); }
+  .err-list { margin: var(--space-2) 0 0; padding-left: var(--space-6); max-height: 140px; overflow: auto; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); font-size: var(--text-sm); color: var(--muted); margin-bottom: var(--space-3); }
+  .meta-row b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+  .kpi-value.sm { font-size: var(--text-xl); }
+  .kpi-foot { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .link { color: var(--fg-2); text-decoration: underline; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+  .link:hover { color: var(--fg); }
+  .link:active { color: var(--muted); }
+  .field { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+  .field label, .field .lbl { font-size: var(--text-sm); color: var(--fg-2); }
+  .req { color: var(--danger); margin-left: 2px; }
+  .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+  .modal.wide { width: 720px; max-height: 86vh; overflow: auto; }
+  textarea.input { height: 80px; padding: var(--space-2) var(--space-3); resize: vertical; font-family: inherit; }
+  .section-title { font-size: var(--text-lg); font-weight: 600; margin: var(--space-6) 0 var(--space-3); }
+  .muted { color: var(--muted); }
+  .muted-cell { color: var(--muted); }
+  /* 类 Excel 填报表格 */
+  .grid-wrap { max-height: 62vh; }
+  .grid th.mth, .grid td.mcell { min-width: 112px; }
+  .grid .fz { position: sticky; z-index: 1; background: var(--surface-warm); overflow: hidden; text-overflow: ellipsis; }
+  .grid th.fz { z-index: 3; }
+  .grid .fz-last { border-right: 1px solid var(--border); }
+  .grid tr.blk td { border-top: 1px solid var(--border); }
+  .grid tr.row-calc td.mcell, .grid tr.row-calc td.tcell { color: var(--fg-2); background: var(--surface-warm); }
+  .grid tr.row-calc td.fz:last-of-type { color: var(--fg-2); }
+  .grid td.tcell { font-weight: 600; }
+  .grid td.mcell .cell-edit, .grid td.mcell .ed { min-height: 20px; padding: 2px 0; }
+  .grid td.mcell.cell-edit, .grid td.mcell .cell-edit { background: var(--surface); }
+  .grid .refv { font-size: var(--text-xs); color: var(--muted); line-height: 1.2; }
+  .grid td.flag { box-shadow: inset 0 0 0 2px var(--danger); }
+  .flag-note { font-size: var(--text-xs); color: var(--danger); line-height: 1.2; font-weight: 400; }
+  .grid tr.row-text td.mcell { text-align: left; max-width: 112px; overflow: hidden; text-overflow: ellipsis; }
+  .grid .cell-locked { cursor: not-allowed; }
+  .grid tr.row-text td.cell-edit:empty::before { content: "必填：超出理由"; color: var(--danger); }
+  .grid-foot { display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+  .save-state { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ratio-table td, .ratio-table th { height: 30px; }
+  .modal-backdrop { z-index: 100; }
+  .toast { z-index: 110; }
+  details.card > summary { cursor: pointer; font-weight: 600; font-size: var(--text-sm); }
+  details.card > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+  </style>
+</head>
+<body style="margin:0">
+<div class="app">
+  <aside class="sidebar">
+   <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+   <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+   <div class="nav-group">预算编制</div>
+   <a class="nav-item" href="PAGE-F03-01.html" aria-current="page">编制任务</a>
+   <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+   <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+   <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+   <div class="nav-group">预算版本</div>
+   <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+   <div class="nav-group">实际数</div>
+   <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+   <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+   <div class="nav-group">报表</div>
+   <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+   <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+   <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+   <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+   <div class="nav-group">预警与规则</div>
+   <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+   <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+   <div class="nav-group">基础数据</div>
+   <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+   <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+   <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+   <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+   <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+   <div class="nav-group">系统设置</div>
+   <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+ <div style="min-width:0">
+  <header class="topbar"><nav aria-label="面包屑">预算编制 / <a href="PAGE-F03-01.html">编制任务</a> / 2027 年度预算编制</nav><div class="who">当前用户：<span id="cur-user">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div></header>
+  <main class="main">
+
+   <div class="proto-bar" role="region" aria-label="原型说明，非产品功能">
+    <span>原型说明，非产品功能</span>
+    <button type="button" data-state="normal">正常</button><button type="button" data-state="empty">空</button><button type="button" data-state="loading">加载</button><button type="button" data-state="error">错误</button><button type="button" data-state="noperm">无权限</button>
+    <span class="proto-sep"></span><span>视角</span><button type="button" data-role="fin" aria-pressed="true">财务负责人</button><button type="button" data-role="ceo" aria-pressed="false">CEO（只读）</button>
+    <span class="proto-sep"></span>
+    <label>任务场景 <select id="sim-scene"><option value="filling">填报中（2026-12-22）</option><option value="ceo-returned">CEO 已退回（2026-12-29）</option></select></label>
+   </div>
+
+   <div id="v-normal">
+    <div class="page-head">
+     <div>
+      <h1 class="page-title">2027 年度预算编制</h1>
+      <p class="sub">林晓 发布于 2026-12-01 10:02 · 截止日期 2026-12-20 · 参与单位 28 个</p>
+     </div>
+     <div class="toolbar"><span class="badge" id="task-badge">填报中</span><button class="btn btn-primary" type="button" id="btn-ceo">提交 CEO 审批</button></div>
+    </div>
+
+    <div class="notice notice-warn" id="overdue-note" role="status"><span class="t">已过截止日期</span> · 2026-12-21 09:00 已向 <b id="od-n">9</b> 个未提交单位的填报人及其部门负责人发送钉钉逾期提醒。</div>
+    <div class="notice notice-bad" id="ceo-note" hidden role="status"><span class="t">CEO 已退回</span> · 周明远 2026-12-29 16:40：灯镜品类 2027 毛利率 24.6%，高于 2026 实际 19.8%，请复核 Amazon-US-01、Amazon-DE-01 的采购成本占比与广告费率后重新提交。<br>你可以把需要修改的单位退回给其填报人；修改后须重新经部门审核通过，再提交 CEO 审批。</div>
+
+    <div class="kpis">
+     <div class="card fade-in"><div class="kpi-label">提交率（已提交 + 已通过）</div><div class="kpi-value tnum" id="k-rate">—</div><div class="kpi-foot" id="k-rate-foot"></div></div>
+     <div class="card fade-in"><div class="kpi-label">已通过部门审核</div><div class="kpi-value tnum" id="k-pass">—</div><div class="kpi-foot">提交 CEO 审批需全部通过</div></div>
+     <div class="card fade-in"><div class="kpi-label">已提交待审核</div><div class="kpi-value tnum" id="k-sub">—</div><div class="kpi-foot">等待部门负责人审核</div></div>
+     <div class="card fade-in"><div class="kpi-label">未提交</div><div class="kpi-value tnum" id="k-un">—</div><div class="kpi-foot" id="k-un-foot"></div></div>
+    </div>
+
+    <div class="toolbar" style="margin-bottom:var(--space-3)">
+     <label class="sub" style="margin:0">状态 <select class="select" id="f-status"><option value="">全部</option><option>未开始</option><option>填报中</option><option>已提交</option><option>已退回</option><option>已通过</option></select></label>
+     <label class="sub" style="margin:0">类型 <select class="select" id="f-type"><option value="">全部</option><option>平台渠道</option><option>B端</option><option>成本比例</option><option>物流比例</option><option>部门费用</option></select></label>
+     <label class="sub" style="margin:0"><input type="checkbox" id="f-od"> 只看逾期</label>
+     <span class="sub" style="margin:0 0 0 auto" id="f-count"></span>
+    </div>
+    <div class="table-wrap">
+     <table class="table" aria-label="填报单位进度">
+      <thead><tr><th>填报单位</th><th>类型</th><th>填报人</th><th>状态</th><th class="num">最后更新</th><th>逾期</th><th>退回原因</th><th>操作</th></tr></thead>
+      <tbody id="tb"></tbody>
+     </table>
+    </div>
+   </div>
+   <div id="v-state" hidden></div>
+
+  </main>
+ </div>
+</div>
+<script>
+/* ===== 公共：工具、轻提示、弹窗、原型状态 ===== */
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+function r2(x) { return Math.round((x + (x >= 0 ? 1 : -1) * 1e-9) * 100) / 100; }
+function fmtNum(v, d) { return Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtMoney(v) { return fmtNum(v, 2); }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function nowTime() { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => String(x).padStart(2, '0')).join(':'); }
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+}
+let _modal = null;
+function openModal(html, onMount) {
+  closeModal();
+  const bd = document.createElement('div'); bd.className = 'modal-backdrop';
+  bd.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + '</div>';
+  bd.addEventListener('click', e => { if (e.target === bd) closeModal(); });
+  document.body.appendChild(bd); _modal = bd;
+  $$('[data-close]', bd).forEach(b => b.addEventListener('click', closeModal));
+  if (onMount) onMount(bd.firstChild);
+  const f = $('input,select,textarea,button', bd.firstChild); if (f) f.focus();
+  return bd.firstChild;
+}
+function closeModal() { if (_modal) { _modal.remove(); _modal = null; } }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && _modal) closeModal(); });
+
+/* 原型状态切换：正常 / 空 / 加载 / 错误 / 无权限 */
+function setupStates(cfg) {
+  const normal = $('#v-normal'), st = $('#v-state');
+  function show(s) {
+    $$('.proto-bar [data-state]').forEach(b => b.setAttribute('aria-pressed', b.dataset.state === s ? 'true' : 'false'));
+    if (s === 'normal') { normal.hidden = false; st.hidden = true; return; }
+    normal.hidden = true; st.hidden = false;
+    if (s === 'loading') {
+      let rows = ''; for (let i = 0; i < 8; i++) rows += '<div class="skeleton" style="margin:14px 0;width:' + (60 + (i * 13) % 40) + '%"></div>';
+      st.innerHTML = '<div class="card" aria-busy="true"><div class="kpi-label">' + esc(cfg.loading || '正在加载…') + '</div>' + rows + '</div>';
+      return;
+    }
+    const c = cfg[s];
+    st.innerHTML = '<div class="card"><div class="state"><div class="state-title">' + esc(c.title) + '</div><div>' + esc(c.desc) + '</div>' +
+      (c.btn ? '<div style="margin-top:16px"><button class="btn ' + (c.primary ? 'btn-primary' : '') + '" type="button" id="state-btn">' + esc(c.btn) + '</button></div>' : '') + '</div></div>';
+    const b = $('#state-btn'); if (b) b.addEventListener('click', () => { if (c.onClick) c.onClick(); else show('normal'); });
+  }
+  $$('.proto-bar [data-state]').forEach(b => b.addEventListener('click', () => show(b.dataset.state)));
+  show('normal');
+  return show;
+}
+
+
+
+// [单位, 类型, 填报人, 状态, 最后更新, 退回原因, 填报页]
+const UNITS = [
+  ['Amazon-US-01', '平台渠道', '王浩', '填报中', '2026-12-22 14:31', '', 'PAGE-F04-02.html'],
+  ['Amazon-CA-01', '平台渠道', '王浩', '已退回', '2026-12-21 17:05', '赵磊：加拿大站 10–12 月老品平均单价高于 2026 实际 18%，请核实或补充依据。', 'PAGE-F04-02.html'],
+  ['Amazon-UK-01', '平台渠道', '王浩', '已提交', '2026-12-19 18:22', '', 'PAGE-F04-02.html'],
+  ['Amazon-DE-01', '平台渠道', '王浩', '已通过', '2026-12-18 11:02', '', 'PAGE-F04-02.html'],
+  ['Wayfair-US-01', '平台渠道', '李娜', '已通过', '2026-12-17 16:40', '', 'PAGE-F04-02.html'],
+  ['HomeDepot-US-01', '平台渠道', '马骏', '已提交', '2026-12-20 20:15', '', 'PAGE-F04-02.html'],
+  ['Lowes-US-01', '平台渠道', '马骏', '未开始', '—', '', 'PAGE-F04-02.html'],
+  ['Shopify-US-01', '平台渠道', '李娜', '已通过', '2026-12-16 10:28', '', 'PAGE-F04-02.html'],
+  ['TikTok-US-01', '平台渠道', '王浩', '填报中', '2026-12-22 14:05', '', 'PAGE-F04-02.html'],
+  ['B端 · 美国业务部', 'B端', '孙婷', '填报中', '2026-12-22 11:08', '', 'PAGE-F04-03.html'],
+  ['B端 · 外贸部', 'B端', '刘洋', '已通过', '2026-12-18 15:47', '', 'PAGE-F04-03.html'],
+  ['成本比例（财务BP）', '成本比例', '陈思雨', '填报中', '2026-12-22 10:26', '', 'PAGE-F04-04.html'],
+  ['物流比例（物流物控）', '物流比例', '蒋帆', '已提交', '2026-12-20 17:58', '', 'PAGE-F04-05.html'],
+  ['产品作战部', '部门费用', '许嘉', '已通过', '2026-12-15 09:51', '', 'PAGE-F05-01.html'],
+  ['开发部', '部门费用', '宋宇', '已通过', '2026-12-16 14:12', '', 'PAGE-F05-01.html'],
+  ['研发部', '部门费用', '韩冰', '已提交', '2026-12-20 11:36', '', 'PAGE-F05-01.html'],
+  ['供应中心', '部门费用', '冯涛', '已通过', '2026-12-17 09:20', '', 'PAGE-F05-01.html'],
+  ['运营部', '部门费用', '曹敏', '已提交', '2026-12-19 16:03', '', 'PAGE-F05-01.html'],
+  ['市场部', '部门费用', '邓琳', '已退回', '2026-12-21 09:44', '市场部负责人：展会费全年 ¥ 1,260,000.00 高于 2026 实际 46%，请拆分到具体展会并补充依据。', 'PAGE-F05-01.html'],
+  ['美国业务部', '部门费用', '孙婷', '已提交', '2026-12-20 18:47', '', 'PAGE-F05-01.html'],
+  ['视觉部', '部门费用', '彭悦', '已通过', '2026-12-18 13:25', '', 'PAGE-F05-01.html'],
+  ['外贸部', '部门费用', '刘洋', '已通过', '2026-12-18 15:50', '', 'PAGE-F05-01.html'],
+  ['物流物控部', '部门费用', '蒋帆', '已提交', '2026-12-20 17:30', '', 'PAGE-F05-01.html'],
+  ['项目管理部', '部门费用', '唐瑶', '已通过', '2026-12-17 11:14', '', 'PAGE-F05-01.html'],
+  ['信息数字化部', '部门费用', '董杰', '已提交', '2026-12-20 15:09', '', 'PAGE-F05-01.html'],
+  ['人力资源部', '部门费用', '郑可', '填报中', '2026-12-22 16:02', '', 'PAGE-F05-01.html'],
+  ['财务部', '部门费用', '陈思雨', '已通过', '2026-12-16 17:33', '', 'PAGE-F05-01.html'],
+  ['总经办', '部门费用', '袁芳', '未开始', '—', '', 'PAGE-F05-01.html']
+];
+const STATUS_BADGE = { '未开始': 'badge', '填报中': 'badge', '已提交': 'badge badge-info', '已退回': 'badge badge-bad', '已通过': 'badge badge-good' };
+const DEADLINE = '2026-12-20';
+const isOverdue = s => s !== '已提交' && s !== '已通过'; // 场景日期 2026-12-22 已过截止日
+
+let viewer = 'fin', scene = 'filling', data = UNITS.map(u => u.slice()), taskStatus = '填报中';
+function render() {
+  const fs = $('#f-status').value, ft = $('#f-type').value, fo = $('#f-od').checked;
+  const list = data.filter(u => (!fs || u[3] === fs) && (!ft || u[1] === ft) && (!fo || (scene === 'filling' && isOverdue(u[3]))));
+  $('#tb').innerHTML = list.length ? list.map(u => {
+    const od = scene === 'filling' && isOverdue(u[3]);
+    const act = (viewer === 'fin' && scene === 'ceo-returned' && u[3] === '已通过')
+      ? '<button class="btn" type="button" data-ret="' + esc(u[0]) + '">退回给填报人</button>'
+      : '<a class="link" href="PAGE-F07-02.html">查看</a>';
+    return '<tr><td>' + esc(u[0]) + '</td><td>' + u[1] + '</td><td>' + u[2] + '</td><td><span class="' + STATUS_BADGE[u[3]] + '">' + u[3] + '</span></td><td class="num">' + u[4] + '</td><td>' +
+      (od ? '<span class="badge badge-warn">逾期 · 已提醒</span>' : '<span class="muted">—</span>') + '</td><td style="white-space:normal;min-width:240px;max-width:380px">' + (u[5] ? esc(u[5]) : '<span class="muted">—</span>') + '</td><td>' + act + '</td></tr>';
+  }).join('') : '<tr><td colspan="8"><div class="state"><div class="state-title">没有符合条件的填报单位</div><div>调整状态、类型或逾期筛选后再看。</div></div></td></tr>';
+  $('#f-count').textContent = '共 ' + list.length + ' 个单位';
+  $$('[data-ret]').forEach(b => b.addEventListener('click', () => returnUnit(b.dataset.ret)));
+  const n = s => data.filter(u => u[3] === s).length, total = data.length;
+  const done = n('已提交') + n('已通过');
+  $('#k-rate').textContent = (done / total * 100).toFixed(1) + '%';
+  $('#k-rate-foot').textContent = done + ' / ' + total + ' 个单位';
+  $('#k-pass').textContent = n('已通过'); $('#k-sub').textContent = n('已提交');
+  const un = n('未开始') + n('填报中') + n('已退回');
+  $('#k-un').textContent = un; $('#k-un').classList.toggle('bad', un > 0 && scene === 'filling');
+  $('#k-un-foot').textContent = '未开始 ' + n('未开始') + ' · 填报中 ' + n('填报中') + ' · 已退回 ' + n('已退回');
+  $('#od-n').textContent = data.filter(u => isOverdue(u[3])).length;
+  $('#task-badge').textContent = taskStatus;
+  $('#task-badge').className = 'badge' + (taskStatus === 'CEO 已退回' ? ' badge-bad' : taskStatus === '待 CEO 审批' ? ' badge-info' : '');
+  $('#btn-ceo').disabled = taskStatus === '待 CEO 审批';
+  $('#btn-ceo').textContent = taskStatus === '待 CEO 审批' ? '已提交 CEO 审批' : '提交 CEO 审批';
+}
+function returnUnit(name) {
+  const u = data.find(x => x[0] === name);
+  const m = openModal('<h2>把「' + esc(name) + '」退回给填报人？</h2><p class="sub">退回后该单位状态变为「已退回」并解除锁定，系统通过钉钉通知填报人 ' + u[2] + '。</p>' +
+    '<div class="field"><label for="ret-reason">退回原因<span class="req">*</span></label><textarea class="input" id="ret-reason" placeholder="例如：按 CEO 意见复核灯镜采购成本占比与广告费率"></textarea><div class="field-error" id="ret-err" hidden></div></div>' +
+    '<div class="modal-actions"><button class="btn" type="button" data-close>取消</button><button class="btn btn-danger" type="button" id="ret-ok">确认退回</button></div>');
+  $('#ret-ok', m).addEventListener('click', () => {
+    const r = $('#ret-reason', m).value.trim();
+    if (!r) { $('#ret-err', m).hidden = false; $('#ret-err', m).textContent = '请填写退回原因'; $('#ret-reason', m).setAttribute('aria-invalid', 'true'); return; }
+    u[3] = '已退回'; u[4] = '2026-12-29 17:12'; u[5] = '林晓：' + r; closeModal(); render(); toast('已退回给 ' + u[2] + '，并发送钉钉工作通知');
+  });
+}
+
+$$('.proto-bar [data-role]').forEach(b => b.addEventListener('click', () => {
+  viewer = b.dataset.role;
+  $$('.proto-bar [data-role]').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+  $('#cur-user').textContent = viewer === 'ceo' ? '周明远（CEO）' : '林晓（财务负责人）';
+  $('#btn-ceo').hidden = viewer === 'ceo';
+  render();
+}));
+$('#btn-ceo').addEventListener('click', () => {
+  const notPass = data.filter(u => u[3] !== '已通过');
+  if (notPass.length) {
+    openModal('<h2>还不能提交 CEO 审批</h2><p>以下 ' + notPass.length + ' 个单位尚未通过部门审核：</p><ul class="err-list" style="max-height:240px">' + notPass.map(u => '<li>' + esc(u[0]) + '（' + u[3] + '）</li>').join('') + '</ul><div class="modal-actions"><button class="btn btn-primary" type="button" data-close>知道了</button></div>');
+    return;
+  }
+  const m = openModal('<h2>提交 CEO 审批？</h2><p>全部 ' + data.length + ' 个单位已通过部门审核。提交后由 CEO 周明远审批，审批通过即锁定为「年初原始目标」。</p><div class="modal-actions"><button class="btn" type="button" data-close>取消</button><button class="btn btn-primary" type="button" id="ceo-ok">确认提交</button></div>');
+  $('#ceo-ok', m).addEventListener('click', () => { closeModal(); taskStatus = '待 CEO 审批'; $('#ceo-note').hidden = true; render(); toast('已提交 CEO 审批，已通知周明远'); });
+});
+$('#sim-scene').addEventListener('change', e => {
+  scene = e.target.value;
+  if (scene === 'filling') { data = UNITS.map(u => u.slice()); taskStatus = '填报中'; }
+  else { data = UNITS.map(u => { const x = u.slice(); x[3] = '已通过'; x[5] = ''; if (x[4] === '—') x[4] = '2026-12-24 10:00'; return x; }); taskStatus = 'CEO 已退回'; }
+  $('#overdue-note').hidden = scene !== 'filling'; $('#ceo-note').hidden = scene !== 'ceo-returned';
+  render();
+});
+['#f-status', '#f-type', '#f-od'].forEach(s => $(s).addEventListener('change', render));
+render();
+setupStates({
+  loading: '正在加载编制任务进度…',
+  empty: { title: '该编制任务没有参与单位', desc: '发布任务时未选择填报单位。请返回编制任务列表重新发布。', btn: '返回编制任务', onClick: () => location.href = 'PAGE-F03-01.html' },
+  error: { title: '编制任务加载失败', desc: '网络异常或服务暂不可用，请稍后重试。', btn: '重试', primary: true },
+  noperm: { title: '无权限', desc: '编制任务只对财务负责人开放。如需查看填报进度，请联系财务负责人。', btn: '返回工作台', onClick: () => location.href = 'PAGE-F00-01.html' }
+});
+
+</script>
+</body>
+</html>

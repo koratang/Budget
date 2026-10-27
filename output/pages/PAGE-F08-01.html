@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F08-01">
+  <title>预算版本</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    .app > div { min-width: 0; }
+    .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .brand { font-weight: 600; padding: var(--space-2) var(--space-3) var(--space-3); }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar nav a, .topbar .who a, .link { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; border-radius: var(--radius-sm); transition: color var(--motion-fast) var(--ease-standard); }
+    .topbar nav a:hover, .topbar .who a:hover, .link:hover { color: var(--fg); }
+    .topbar nav a:active, .topbar .who a:active, .link:active { color: var(--muted); }
+    .topbar nav a:focus-visible, .topbar .who a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-1); }
+    .btn-xs { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .btn-sm { height: 28px; padding: 0 var(--space-3); }
+    .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    .section { margin-bottom: var(--section-y-desktop); }
+    .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); line-height: var(--leading-tight); }
+    .muted { color: var(--muted); }
+    .small { font-size: var(--text-xs); }
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .modal-backdrop { z-index: 20; }
+    .modal-backdrop[hidden] { display: none; }
+    .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+    .modal-wide { width: 640px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+    .notice { border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+    .notice.bad { border-left-color: var(--danger); }
+    .notice.warn { border-left-color: var(--warn); }
+    .notice.good { border-left-color: var(--success); }
+    .table td.wrap { white-space: normal; min-width: 220px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table td.w-n { white-space: normal; min-width: 96px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table tr.is-bad td { background: color-mix(in oklab, var(--danger), white 94%); }
+    .table tr.is-bad:hover td { background: color-mix(in oklab, var(--danger), white 90%); }
+    .chain { display: flex; gap: 0; list-style: none; padding: 0; margin: 0; }
+    .chain li { flex: 1; position: relative; padding: 0 var(--space-3) 0 var(--space-6); font-size: var(--text-sm); }
+    .chain li::before { content: ""; position: absolute; left: var(--space-1); top: 5px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--border); }
+    .chain li.done::before { background: var(--success); }
+    .chain li.now::before { background: var(--warn); }
+    .chain li.back::before { background: var(--danger); }
+    .chain .who { color: var(--fg); font-weight: 600; }
+    .chain .when { color: var(--muted); font-size: var(--text-xs); }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; color: var(--fg); }
+    .skel-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    [hidden] { display: none !important; }
+    .q-card h3 { font-size: var(--text-base); margin: 0 0 var(--space-2); }
+    .q-card .kv { grid-template-columns: 112px 1fr; margin-bottom: var(--space-3); }
+    .block-note { font-size: var(--text-xs); color: var(--muted); max-width: 360px; line-height: var(--leading-tight); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">预算管理平台</div>
+      <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+      <div class="nav-group">预算编制</div>
+      <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+      <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+      <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+      <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+      <div class="nav-group">预算版本</div>
+      <a class="nav-item" href="PAGE-F08-01.html" aria-current="page">版本管理</a>
+      <div class="nav-group">实际数</div>
+      <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+      <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+      <div class="nav-group">报表</div>
+      <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+      <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+      <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+      <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+      <div class="nav-group">预警与规则</div>
+      <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+      <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+      <div class="nav-group">基础数据</div>
+      <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+      <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+      <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+      <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+      <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+      <div class="nav-group">系统设置</div>
+      <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+    </aside>
+    <div>
+      <header class="topbar">
+        <nav aria-label="面包屑"><a href="PAGE-F00-01.html">工作台</a> / 预算版本 / 版本管理</nav>
+        <div class="who">当前用户：<span id="who-name">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+      </header>
+      <main class="main">
+        <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+          <strong>原型说明，非产品功能</strong>
+          <span>页面状态：</span>
+          <span id="proto-states" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-set-state="normal" aria-pressed="true">正常</button>
+            <button class="btn btn-xs" type="button" data-set-state="empty" aria-pressed="false">空</button>
+            <button class="btn btn-xs" type="button" data-set-state="loading" aria-pressed="false">加载</button>
+            <button class="btn btn-xs" type="button" data-set-state="error" aria-pressed="false">错误</button>
+            <button class="btn btn-xs" type="button" data-set-state="noperm" aria-pressed="false">无权限</button>
+          </span>
+          <span class="sep" aria-hidden="true"></span>
+          <span>示例时点：</span>
+          <span id="proto-time" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-t="t1" aria-pressed="false">2027-01-08（第一季度）</button>
+            <button class="btn btn-xs" type="button" data-t="t2" aria-pressed="true">2027-05-12（Q2 调整审批中）</button>
+            <button class="btn btn-xs" type="button" data-t="t3" aria-pressed="false">2027-06-20（Q2 调整已通过）</button>
+          </span>
+          <span class="sep" aria-hidden="true"></span>
+          <span>视角：</span>
+          <span id="proto-role" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-r="fin" aria-pressed="true">林晓（财务负责人）</button>
+            <button class="btn btn-xs" type="button" data-r="op" aria-pressed="false">王浩（运营 · 填报人）</button>
+          </span>
+        </div>
+        <h1 class="page-title">预算版本</h1>
+        <div data-state="normal">
+          <!-- 财务负责人视角 -->
+          <div id="v-fin">
+            <div class="row section">
+              <label class="small muted" for="f-year">预算年度</label>
+              <select class="select" id="f-year"><option>2027</option></select>
+              <span class="small muted" id="today">当前日期 2027-05-12 · 第二季度 · 金蝶实际已导入至 2027-04</span>
+              <span class="spacer"></span>
+              <div class="row" style="gap: var(--space-2)">
+                <span class="block-note" id="adj-block" hidden></span>
+                <button class="btn btn-primary" type="button" id="btn-adj">发起季度调整</button>
+                <button class="btn" type="button" id="btn-roll">发起滚动更新</button>
+                <button class="btn" type="button" id="btn-q1" hidden>以年初原始目标发布</button>
+              </div>
+            </div>
+
+            <section class="section" aria-labelledby="h-q">
+              <h2 class="section-title" id="h-q">本季度进行中</h2>
+              <div class="grid-2" id="q-cards"></div>
+            </section>
+
+            <section class="section" aria-labelledby="h-v">
+              <div class="row" style="margin-bottom: var(--space-3)">
+                <h2 class="section-title" id="h-v" style="margin: 0">版本列表</h2>
+                <span class="small muted">版本只增不改；年初原始目标与快照不可修改</span>
+                <span class="spacer"></span>
+                <span class="small muted" id="sel-hint">勾选两个版本后对比</span>
+                <button class="btn" type="button" id="btn-cmp" disabled>对比所选</button>
+              </div>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead><tr><th style="width: 36px"><span class="sr-only">选择</span></th><th>版本</th><th>类型</th><th>所属季度</th><th>状态</th><th>审批 / 发布</th><th>时间</th><th>调整原因 / 发布方式</th></tr></thead>
+                  <tbody id="v-rows"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <!-- 填报人视角 -->
+          <div id="v-op" hidden>
+            <section class="section" aria-labelledby="h-my">
+              <h2 class="section-title" id="h-my">我的目标调整（2027 Q2）</h2>
+              <div class="notice">目标调整在各填报表格中以「调整模式」编辑：已导入金蝶实际的 1–4 月锁定，只能修改 5–12 月；提交时须填写调整原因。每个单位依次经部门负责人、财务负责人审核，全部通过后由 CEO 对整次调整一次性终审。</div>
+              <div class="table-wrap section">
+                <table class="table">
+                  <thead><tr><th>填报单位</th><th>状态</th><th>提交时间</th><th>当前环节</th><th>操作</th></tr></thead>
+                  <tbody>
+                    <tr><td>Amazon-US-01</td><td><span class="badge badge-warn">审批中</span></td><td class="num">2027-05-08 16:20</td><td>财务负责人审核（部门负责人赵磊已通过）</td><td><a class="link" href="PAGE-F04-02.html#adjust">查看</a></td></tr>
+                    <tr><td>Amazon-CA-01</td><td><span class="badge badge-warn">审批中</span></td><td class="num">2027-05-11 18:02</td><td>部门负责人审核</td><td><a class="link" href="PAGE-F04-02.html#adjust">查看</a></td></tr>
+                    <tr><td>Amazon-UK-01</td><td><span class="badge">填报中</span></td><td class="num">—</td><td>待提交</td><td><a class="link" href="PAGE-F04-02.html#adjust">继续调整</a></td></tr>
+                    <tr><td>Amazon-DE-01</td><td><span class="badge">未开始</span></td><td class="num">—</td><td>待提交</td><td><a class="link" href="PAGE-F04-02.html#adjust">开始调整</a></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+            <section class="section">
+              <h2 class="section-title">2027 Q2 滚动预测更新</h2>
+              <div class="notice">财务负责人已于 2027-04-22 发起本季度滚动更新，开放 4–12 月驱动；4 月已导入金蝶实际，快照中按实际数计。请在 <a class="link" href="PAGE-F04-02.html">平台渠道填报表格</a> 中更新并提交。</div>
+            </section>
+          </div>
+        </div>
+        <div data-state="empty" hidden>
+          <div class="card state">
+            <div class="state-title">2027 年度还没有预算版本</div>
+            <p>CEO 审批通过全公司预算后，系统会自动生成「年初原始目标」版本并显示在这里。</p>
+            <a class="btn" href="PAGE-F03-01.html">查看编制任务</a>
+          </div>
+        </div>
+        <div data-state="loading" hidden aria-busy="true">
+          <p class="muted small">正在加载…</p>
+          <div class="table-wrap">
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+        <div data-state="error" hidden>
+          <div class="card state" role="alert">
+            <div class="state-title">数据加载失败</div>
+            <p>服务器暂时无法返回数据，已录入的内容不受影响。请稍后重试；多次失败请联系信息数字化部。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click()">重试</button>
+          </div>
+        </div>
+        <div data-state="noperm" hidden>
+          <div class="card state">
+            <div class="state-title">你没有访问该页面的权限</div>
+            <p>预算版本只对有预算查看权限的角色开放。发起调整、滚动更新和发布快照仅限财务负责人。</p>
+            <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+          </div>
+        </div>
+        <div class="modal-backdrop" id="m-adj" hidden>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-adj-t">
+            <h2 id="m-adj-t">发起季度目标调整</h2>
+            <dl class="kv">
+              <dt>所属季度</dt><dd id="m-adj-q">2027 Q1</dd>
+              <dt>可调整月份</dt><dd id="m-adj-m">1–12 月（尚未导入金蝶实际的月份）</dd>
+              <dt>开放单位</dt><dd>全部填报单位（每个启用店铺、B 端各负责部门、成本比例、物流比例、各部门部门费用），钉钉工作通知各填报人</dd>
+              <dt>审批顺序</dt><dd>每个单位：部门负责人 → 财务负责人逐个审核；全部通过后 CEO 对整次调整一次性终审</dd>
+            </dl>
+            <p class="small muted">每个自然季度最多一次经 CEO 审批通过的目标调整；调整审批结束前不能再发起。填报人在各自填报表格中以「调整模式」修改，提交时须填写调整原因；审批通过后生成新的「调整后目标」版本，年初原始目标和此前版本保持不变。</p>
+            <div class="modal-actions"><button class="btn" type="button" data-close="m-adj">取消</button><button class="btn btn-primary" type="button" id="m-adj-ok">确认发起</button></div>
+          </div>
+        </div>
+        <div class="modal-backdrop" id="m-roll" hidden>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-roll-t">
+            <h2 id="m-roll-t">发起滚动预测更新</h2>
+            <dl class="kv">
+              <dt>所属季度</dt><dd id="m-roll-q">2027 Q1</dd>
+              <dt>开放月份</dt><dd id="m-roll-m">1–12 月（本季度及以后）</dd>
+              <dt>通知对象</dt><dd>运营、B端业务、物流物控、财务BP（钉钉工作通知）</dd>
+            </dl>
+            <p class="small muted">已导入金蝶实际的月份在快照中直接使用实际数；其余月份使用最新提交的驱动计算值。</p>
+            <div class="modal-actions"><button class="btn" type="button" data-close="m-roll">取消</button><button class="btn btn-primary" type="button" id="m-roll-ok">确认发起</button></div>
+          </div>
+        </div>
+        <div class="modal-backdrop" id="m-q1" hidden>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-q1-t">
+            <h2 id="m-q1-t">以年初原始目标发布 2027 Q1 快照</h2>
+            <p>系统将直接用年初原始目标 V1 的月度数据生成「2027 Q1 滚动预测快照」，不需要各填报人重新提交。快照发布后不可修改，用于预测准确度计算。</p>
+            <div class="modal-actions"><button class="btn" type="button" data-close="m-q1">取消</button><button class="btn btn-primary" type="button" id="m-q1-ok">确认发布</button></div>
+          </div>
+        </div>
+        <div class="modal-backdrop" id="m-pub" hidden>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-pub-t">
+            <h2 id="m-pub-t">发布 2027 Q2 滚动预测快照</h2>
+            <p>1–4 月使用已导入的金蝶实际；5–12 月使用各填报人最新提交的驱动计算值。</p>
+            <p class="small muted">仍有 3 位填报人未提交本季度更新：B端业务刘洋（外贸部）、物流物控何建国、运营王浩（独立站）。未提交者按其最近一次提交的驱动计算。</p>
+            <p class="small muted">快照发布后不可修改，标注发布日期 2027-05-12 和所属季度 2027 Q2。</p>
+            <div class="modal-actions"><button class="btn" type="button" data-close="m-pub">取消</button><button class="btn btn-primary" type="button" id="m-pub-ok">确认发布</button></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var bar = document.getElementById('proto-states');
+    if (bar) bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-set-state]');
+      if (!b) return;
+      bar.querySelectorAll('[data-set-state]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-state]').forEach(function (s) { s.hidden = s.getAttribute('data-state') !== b.getAttribute('data-set-state'); });
+    });
+  })();
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3000);
+  }
+  function openModal(id) { var m = document.getElementById(id); m.hidden = false; var f = m.querySelector('textarea, input, select, button'); if (f) f.focus(); }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(function (m) { m.hidden = true; });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-close]');
+    if (c) closeModal(c.getAttribute('data-close'));
+  });
+  function fmt(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n < 0 ? '−' : '') + '¥ ' + s; }
+  function fmtSigned(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n > 0 ? '+' : n < 0 ? '−' : '') + '¥ ' + s; }
+  var T = {
+    t1: {
+      today: '当前日期 2027-01-08 · 第一季度 · 尚未导入 2027 年金蝶实际',
+      adjBlock: '', rollBlock: '', q1: true, q: '2027 Q1', adjMonths: '1–12 月（尚未导入金蝶实际的月份）', rollMonths: '1–12 月（本季度及以后）',
+      cards: '<div class="card q-card"><h3>2027 Q1 目标调整</h3><p class="muted small">本季度尚未发起目标调整。</p></div><div class="card q-card"><h3>2027 Q1 滚动预测</h3><p class="muted small">第一季度可直接「以年初原始目标发布」快照，不需要各填报人重新提交；也可发起滚动更新。</p></div>',
+      versions: [['V1', '年初原始目标', '—', '<span class="badge">已锁定</span>', '周明远（CEO 审批）', '2026-12-28 17:30', '2027 年度全公司预算经 CEO 审批通过']]
+    },
+    t2: {
+      today: '当前日期 2027-05-12 · 第二季度 · 金蝶实际已导入至 2027-04',
+      adjBlock: '2027 Q2 目标调整正在审批中，审批结束前不能再发起。', rollBlock: '2027 Q2 滚动更新已发起。', q1: false,
+      cards: '<div class="card q-card"><div class="row"><h3>2027 Q2 目标调整</h3><span class="badge badge-warn">审批中</span></div><dl class="kv"><dt>发起</dt><dd class="num">林晓 · 2027-04-20</dd><dt>可调整月份</dt><dd>5–12 月（1–4 月已导入金蝶实际）</dd><dt>进度</dt><dd class="num">28 个单位中已提交 24 个；部门负责人已通过 19 个；财务负责人已通过 12 个</dd><dt>下一步</dt><dd>全部单位经财务负责人通过后，CEO 对整次调整一次性终审</dd></dl><a class="link" href="PAGE-F07-01.html">去待我审批处理</a></div>'
+        + '<div class="card q-card"><div class="row"><h3>2027 Q2 滚动预测</h3><span class="badge">填报中</span></div><dl class="kv"><dt>发起</dt><dd class="num">林晓 · 2027-04-22</dd><dt>开放月份</dt><dd>4–12 月（4 月已导入实际，快照中按实际计）</dd><dt>提交进度</dt><dd class="num">10 位填报人中已提交 7 位</dd><dt>快照口径</dt><dd>已导入实际月份用实际数，其余月份用最新提交的驱动计算值</dd></dl><button class="btn" type="button" id="btn-pub">发布快照</button></div>',
+      versions: [
+        ['V1', '年初原始目标', '—', '<span class="badge">已锁定</span>', '周明远（CEO 审批）', '2026-12-28 17:30', '2027 年度全公司预算经 CEO 审批通过'],
+        ['V2', '调整后目标', '2027 Q1', '<span class="badge badge-info">当前目标</span>', '部门负责人 → 林晓 → 周明远', '2027-03-26 16:05', 'Wayfair-US-01 1–2 月收入达成率 82.0%，下调 3–12 月销量；Amazon-US-01、HomeDepot-US-01 上调 3–12 月销量'],
+        ['Q1 快照', '滚动预测快照', '2027 Q1', '<span class="badge">不可修改</span>', '林晓 发布', '2027-01-08 10:30', '以年初原始目标发布']
+      ]
+    },
+    t3: {
+      today: '当前日期 2027-06-20 · 第二季度 · 金蝶实际已导入至 2027-05',
+      adjBlock: '本季度已有一次经 CEO 审批通过的目标调整（V3，2027-06-12），2027-07-01 起可发起下季度调整。', rollBlock: '2027 Q2 快照已发布。', q1: false,
+      cards: '<div class="card q-card"><div class="row"><h3>2027 Q2 目标调整</h3><span class="badge badge-good">已生效 V3</span></div><dl class="kv"><dt>审批完成</dt><dd class="num">周明远 · 2027-06-12 15:20</dd><dt>调整月份</dt><dd>5–12 月</dd></dl></div>'
+        + '<div class="card q-card"><div class="row"><h3>2027 Q2 滚动预测</h3><span class="badge">已发布快照</span></div><dl class="kv"><dt>发布</dt><dd class="num">林晓 · 2027-06-15 11:00</dd><dt>口径</dt><dd>1–5 月实际 + 6–12 月驱动计算值</dd></dl></div>',
+      versions: [
+        ['V1', '年初原始目标', '—', '<span class="badge">已锁定</span>', '周明远（CEO 审批）', '2026-12-28 17:30', '2027 年度全公司预算经 CEO 审批通过'],
+        ['V2', '调整后目标', '2027 Q1', '<span class="badge">已被 V3 替代</span>', '部门负责人 → 林晓 → 周明远', '2027-03-26 16:05', 'Wayfair-US-01 1–2 月收入达成率 82.0%，下调 3–12 月销量；Amazon-US-01、HomeDepot-US-01 上调 3–12 月销量'],
+        ['V3', '调整后目标', '2027 Q2', '<span class="badge badge-info">当前目标</span>', '部门负责人 → 林晓 → 周明远', '2027-06-12 15:20', 'Amazon-US-01 Prime Day 提前至 6 月；Amazon-DE-01 1–4 月收入达成率 78.0%，下调 5–12 月单 SPU 平均销量 10%'],
+        ['Q1 快照', '滚动预测快照', '2027 Q1', '<span class="badge">不可修改</span>', '林晓 发布', '2027-01-08 10:30', '以年初原始目标发布'],
+        ['Q2 快照', '滚动预测快照', '2027 Q2', '<span class="badge">不可修改</span>', '林晓 发布', '2027-06-15 11:00', '1–5 月实际 + 6–12 月最新提交驱动']
+      ]
+    }
+  };
+  var cur = 't2';
+  function renderFin() {
+    var d = T[cur];
+    document.getElementById('today').textContent = d.today;
+    var adj = document.getElementById('btn-adj'), roll = document.getElementById('btn-roll'), blk = document.getElementById('adj-block');
+    adj.disabled = !!d.adjBlock; roll.disabled = !!d.rollBlock;
+    blk.hidden = !d.adjBlock; blk.textContent = d.adjBlock;
+    document.getElementById('btn-q1').hidden = !d.q1;
+    document.getElementById('q-cards').innerHTML = d.cards;
+    var pub = document.getElementById('btn-pub'); if (pub) pub.addEventListener('click', function () { openModal('m-pub'); });
+    document.getElementById('v-rows').innerHTML = d.versions.map(function (v) {
+      return '<tr><td><input type="checkbox" class="vsel" value="' + v[0] + '" aria-label="选择 ' + v[0] + '"></td><td><strong>' + v[0] + '</strong></td><td>' + v[1] + '</td><td>' + v[2] + '</td><td>' + v[3] + '</td><td>' + v[4] + '</td><td class="num">' + v[5] + '</td><td class="wrap">' + v[6] + '</td></tr>';
+    }).join('');
+    updateCmp();
+  }
+  function updateCmp() {
+    var sel = Array.prototype.slice.call(document.querySelectorAll('.vsel:checked')).map(function (x) { return x.value; });
+    var b = document.getElementById('btn-cmp');
+    b.disabled = sel.length !== 2;
+    document.getElementById('sel-hint').textContent = sel.length === 2 ? '已选 ' + sel.join('、') : '勾选两个版本后对比（已选 ' + sel.length + ' 个）';
+    b.onclick = function () { location.href = 'PAGE-F08-02.html#' + encodeURIComponent(sel.join('|')); };
+  }
+  document.getElementById('v-rows').addEventListener('change', function (e) {
+    if (e.target.classList.contains('vsel')) {
+      var all = document.querySelectorAll('.vsel:checked');
+      if (all.length > 2) e.target.checked = false;
+      updateCmp();
+    }
+  });
+  document.getElementById('btn-adj').addEventListener('click', function () { openModal('m-adj'); });
+  document.getElementById('btn-roll').addEventListener('click', function () { openModal('m-roll'); });
+  document.getElementById('btn-q1').addEventListener('click', function () { openModal('m-q1'); });
+  document.getElementById('m-adj-ok').addEventListener('click', function () { closeModal('m-adj'); T.t1.adjBlock = '2027 Q1 目标调整已发起，审批结束前不能再发起。'; T.t1.cards = T.t1.cards.replace('本季度尚未发起目标调整。', '已发起，可调整 1–12 月；等待各填报单位提交（钉钉工作通知已发送）。'); renderFin(); toast('已发起 2027 Q1 目标调整'); });
+  document.getElementById('m-roll-ok').addEventListener('click', function () { closeModal('m-roll'); T.t1.rollBlock = '2027 Q1 滚动更新已发起。'; renderFin(); toast('已发起 2027 Q1 滚动更新，已通知运营、B端业务、物流物控和财务BP'); });
+  document.getElementById('m-q1-ok').addEventListener('click', function () {
+    closeModal('m-q1'); T.t1.q1 = false; T.t1.rollBlock = '2027 Q1 快照已发布。';
+    T.t1.versions.push(['Q1 快照', '滚动预测快照', '2027 Q1', '<span class="badge">不可修改</span>', '林晓 发布', '2027-01-08 10:30', '以年初原始目标发布']);
+    renderFin(); toast('已发布 2027 Q1 滚动预测快照');
+  });
+  document.getElementById('m-pub-ok').addEventListener('click', function () {
+    closeModal('m-pub'); T.t2.rollBlock = '2027 Q2 快照已发布。';
+    T.t2.cards = T.t2.cards.replace(/<button class="btn" type="button" id="btn-pub">发布快照<\/button>/, '<span class="badge">已发布 · 2027-05-12</span>');
+    T.t2.versions.push(['Q2 快照', '滚动预测快照', '2027 Q2', '<span class="badge">不可修改</span>', '林晓 发布', '2027-05-12 15:40', '1–4 月实际 + 5–12 月最新提交驱动']);
+    renderFin(); toast('已发布 2027 Q2 滚动预测快照');
+  });
+  document.getElementById('proto-time').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-t]'); if (!b) return;
+    this.querySelectorAll('[data-t]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    cur = b.getAttribute('data-t'); renderFin();
+  });
+  document.getElementById('proto-role').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-r]'); if (!b) return;
+    this.querySelectorAll('[data-r]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    var op = b.getAttribute('data-r') === 'op';
+    document.getElementById('v-fin').hidden = op; document.getElementById('v-op').hidden = !op;
+    document.getElementById('who-name').textContent = op ? '王浩（运营）' : '林晓（财务负责人）';
+  });
+  renderFin();
+
+  </script>
+</body>
+</html>

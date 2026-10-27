@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F09-01">
+  <title>实际数导入</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    .app > div { min-width: 0; }
+    .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .brand { font-weight: 600; padding: var(--space-2) var(--space-3) var(--space-3); }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar nav a, .topbar .who a, .link { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; border-radius: var(--radius-sm); transition: color var(--motion-fast) var(--ease-standard); }
+    .topbar nav a:hover, .topbar .who a:hover, .link:hover { color: var(--fg); }
+    .topbar nav a:active, .topbar .who a:active, .link:active { color: var(--muted); }
+    .topbar nav a:focus-visible, .topbar .who a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-1); }
+    .btn-xs { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .btn-sm { height: 28px; padding: 0 var(--space-3); }
+    .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    .section { margin-bottom: var(--section-y-desktop); }
+    .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); line-height: var(--leading-tight); }
+    .muted { color: var(--muted); }
+    .small { font-size: var(--text-xs); }
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .field { margin-bottom: var(--space-4); }
+    .field > label, .field > .label { display: block; font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-1); }
+    .req::after { content: " *"; color: var(--danger); }
+    textarea.input { width: 100%; height: auto; min-height: 88px; padding: var(--space-2) var(--space-3); font-family: inherit; line-height: var(--leading-body); resize: vertical; box-sizing: border-box; }
+    .modal-backdrop { z-index: 20; }
+    .modal-backdrop[hidden] { display: none; }
+    .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+    .modal-wide { width: 640px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+    .notice { border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+    .notice.bad { border-left-color: var(--danger); }
+    .notice.warn { border-left-color: var(--warn); }
+    .notice.good { border-left-color: var(--success); }
+    .table td.wrap { white-space: normal; min-width: 220px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table td.w-n { white-space: normal; min-width: 96px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table tr.is-bad td { background: color-mix(in oklab, var(--danger), white 94%); }
+    .table tr.is-bad:hover td { background: color-mix(in oklab, var(--danger), white 90%); }
+    .chain { display: flex; gap: 0; list-style: none; padding: 0; margin: 0; }
+    .chain li { flex: 1; position: relative; padding: 0 var(--space-3) 0 var(--space-6); font-size: var(--text-sm); }
+    .chain li::before { content: ""; position: absolute; left: var(--space-1); top: 5px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--border); }
+    .chain li.done::before { background: var(--success); }
+    .chain li.now::before { background: var(--warn); }
+    .chain li.back::before { background: var(--danger); }
+    .chain .who { color: var(--fg); font-weight: 600; }
+    .chain .when { color: var(--muted); font-size: var(--text-xs); }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; color: var(--fg); }
+    .skel-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    [hidden] { display: none !important; }
+    .upload { display: grid; grid-template-columns: 1fr auto; gap: var(--space-4); align-items: end; }
+    .drop { border: 1px dashed var(--border); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--surface-warm); display: flex; align-items: center; gap: var(--space-3); transition: border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+    .drop:hover { border-color: var(--muted); background: var(--surface-raised); }
+    .drop:focus-within { border-color: var(--accent); box-shadow: var(--focus-ring); }
+    .drop svg { width: 28px; height: 28px; color: var(--muted); flex: none; }
+    .drop input[type=file] { font-size: var(--text-sm); }
+    .cols { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+    .months { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--space-1); }
+    .months div { border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: var(--space-1); text-align: center; font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+    .months div.ok { background: color-mix(in oklab, var(--success), white 92%); color: var(--success); }
+    .type-sum { display: flex; gap: var(--space-2); flex-wrap: wrap; margin: var(--space-3) 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">预算管理平台</div>
+      <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+      <div class="nav-group">预算编制</div>
+      <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+      <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+      <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+      <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+      <div class="nav-group">预算版本</div>
+      <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+      <div class="nav-group">实际数</div>
+      <a class="nav-item" href="PAGE-F09-01.html" aria-current="page">实际数导入</a>
+      <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+      <div class="nav-group">报表</div>
+      <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+      <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+      <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+      <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+      <div class="nav-group">预警与规则</div>
+      <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+      <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+      <div class="nav-group">基础数据</div>
+      <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+      <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+      <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+      <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+      <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+      <div class="nav-group">系统设置</div>
+      <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+    </aside>
+    <div>
+      <header class="topbar">
+        <nav aria-label="面包屑"><a href="PAGE-F00-01.html">工作台</a> / 实际数 / 实际数导入</nav>
+        <div class="who">当前用户：<span id="who-name">陈思雨（财务BP）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+      </header>
+      <main class="main">
+        <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+          <strong>原型说明，非产品功能</strong>
+          <span>页面状态：</span>
+          <span id="proto-states" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-set-state="normal" aria-pressed="true">正常</button>
+            <button class="btn btn-xs" type="button" data-set-state="empty" aria-pressed="false">空</button>
+            <button class="btn btn-xs" type="button" data-set-state="loading" aria-pressed="false">加载</button>
+            <button class="btn btn-xs" type="button" data-set-state="error" aria-pressed="false">错误</button>
+            <button class="btn btn-xs" type="button" data-set-state="noperm" aria-pressed="false">无权限</button>
+          </span>
+          <span class="sep" aria-hidden="true"></span>
+          <span>上传结果示例：</span>
+          <span id="proto-res" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-res="fail" aria-pressed="true">校验未通过</button>
+            <button class="btn btn-xs" type="button" data-res="pass" aria-pressed="false">校验通过（期间已有数据）</button>
+          </span>
+        </div>
+        <h1 class="page-title">实际数导入</h1>
+        <div data-state="normal">
+          <div class="tabs" role="tablist">
+            <a class="tab" href="#" role="tab" data-tab="kd" aria-selected="true">金蝶月度</a>
+            <a class="tab" href="#" role="tab" data-tab="bi" aria-selected="false">BI 双月</a>
+            <a class="tab" href="#" role="tab" data-tab="his" aria-selected="false">历史金蝶（最多 24 个月）</a>
+          </div>
+
+          <section class="card section" aria-labelledby="up-t">
+            <div class="row" style="margin-bottom: var(--space-3)">
+              <h2 class="section-title" id="up-t" style="margin: 0">上传金蝶月度实际</h2>
+              <span class="spacer"></span>
+              <span class="small muted" id="up-latest">最近导入期间：2027-04（2027-05-10 16:42）</span>
+            </div>
+            <div class="upload">
+              <div>
+                <label class="drop">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>
+                  <span>选择 Excel 文件（.xlsx）<br><span class="small muted">5 万行以内 60 秒内给出校验结果</span></span>
+                  <input type="file" accept=".xlsx" id="file" aria-label="选择 Excel 文件">
+                </label>
+                <div class="cols" id="up-cols">必需列：期间（YYYY-MM）、金蝶科目、部门、平台/店铺、站点、发生额。科目余额表或利润表导出均可。</div>
+              </div>
+              <button class="btn btn-primary" type="button" id="btn-check">上传并校验</button>
+            </div>
+          </section>
+
+          <section class="section" id="checking" hidden aria-busy="true">
+            <div class="card"><div class="row"><div class="skeleton" style="width: 220px"></div><span class="small muted" id="checking-t">正在校验…</span></div></div>
+          </section>
+
+          <!-- 校验未通过 -->
+          <section class="section" id="res-fail" hidden aria-labelledby="fail-t">
+            <div class="notice bad" role="alert">
+              <strong id="fail-t">校验未通过，本文件没有写入任何数据。</strong>
+              <span id="fail-sum"></span> 修正后请重新上传整份文件。
+            </div>
+            <div class="type-sum" id="fail-types"></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead id="fail-head"></thead>
+                <tbody id="fail-rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- 校验通过 -->
+          <section class="section" id="res-pass" hidden aria-labelledby="pass-t">
+            <div class="notice good"><strong id="pass-t">校验通过，尚未写入。</strong>请核对下方摘要后确认导入。</div>
+            <div class="grid-2" style="margin-top: var(--space-4)">
+              <div class="card">
+                <h3 class="section-title">导入摘要</h3>
+                <dl class="kv" id="pass-kv"></dl>
+              </div>
+              <div class="card" id="pass-side"></div>
+            </div>
+            <div class="notice warn" id="overwrite-note" style="margin-top: var(--space-4)"></div>
+            <div class="row" style="margin-top: var(--space-4)">
+              <span class="spacer"></span>
+              <button class="btn" type="button" id="btn-cancel">放弃本次上传</button>
+              <button class="btn btn-primary" type="button" id="btn-import">确认覆盖导入</button>
+            </div>
+          </section>
+
+          <!-- 历史 -->
+          <section class="card section" id="his-grid" hidden aria-labelledby="his-t">
+            <h3 class="section-title" id="his-t">历史期间入库情况（2025-01 至 2026-12）</h3>
+            <div class="months" id="months"></div>
+            <p class="small muted" style="margin-bottom: 0">按期间逐月入库，用于部门费用历史参考和同比计算。单个文件最多包含 24 个期间。</p>
+          </section>
+
+          <section class="section" aria-labelledby="rec-t">
+            <div class="row" style="margin-bottom: var(--space-3)">
+              <h2 class="section-title" id="rec-t" style="margin: 0">导入记录</h2>
+              <span class="small muted">被覆盖的导入保留原文件名、导入人和导入时间，不能删除</span>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>类型</th><th>期间</th><th>文件名</th><th class="num">行数</th><th>导入人</th><th>导入时间</th><th>状态</th></tr></thead>
+                <tbody id="rec-rows"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+        <div data-state="empty" hidden>
+          <div class="card state">
+            <div class="state-title">还没有导入过实际数</div>
+            <p>先导入最多 24 个月的历史金蝶数据，用于历史参考和同比；之后每月关账后导入金蝶月度实际，每两个月导入 BI 数据。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click(); document.querySelector('[data-tab=his]').click();">导入历史金蝶数据</button>
+          </div>
+        </div>
+        <div data-state="loading" hidden aria-busy="true">
+          <p class="muted small">正在加载导入记录…</p>
+          <div class="table-wrap">
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+        <div data-state="error" hidden>
+          <div class="card state" role="alert">
+            <div class="state-title">数据加载失败</div>
+            <p>服务器暂时无法返回数据，已录入的内容不受影响。请稍后重试；多次失败请联系信息数字化部。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click()">重试</button>
+          </div>
+        </div>
+        <div data-state="noperm" hidden>
+          <div class="card state">
+            <div class="state-title">你没有访问该页面的权限</div>
+            <p>实际数导入仅对财务BP开放。如需查看实际数，请前往报表页面。</p>
+            <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+          </div>
+        </div>
+        <div class="modal-backdrop" id="m-over" hidden>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-over-t">
+            <h2 id="m-over-t">确认覆盖</h2>
+            <p id="m-over-desc"></p>
+            <p class="small muted">原导入记录会保留在导入记录中，状态改为「已被替换」。导入完成后系统会用全部生效的预警规则重新评估受影响月份。</p>
+            <div class="modal-actions"><button class="btn" type="button" data-close="m-over">取消</button><button class="btn btn-primary" type="button" id="m-over-ok">确认覆盖</button></div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var bar = document.getElementById('proto-states');
+    if (bar) bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-set-state]');
+      if (!b) return;
+      bar.querySelectorAll('[data-set-state]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-state]').forEach(function (s) { s.hidden = s.getAttribute('data-state') !== b.getAttribute('data-set-state'); });
+    });
+  })();
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3000);
+  }
+  function openModal(id) { var m = document.getElementById(id); m.hidden = false; var f = m.querySelector('textarea, input, select, button'); if (f) f.focus(); }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(function (m) { m.hidden = true; });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-close]');
+    if (c) closeModal(c.getAttribute('data-close'));
+  });
+  function fmt(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n < 0 ? '−' : '') + '¥ ' + s; }
+  function fmtSigned(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n > 0 ? '+' : n < 0 ? '−' : '') + '¥ ' + s; }
+  var REC = [
+    ['金蝶月度', '2027-04', '金蝶_2027-04_利润表.xlsx', '3,858', '陈思雨', '2027-05-10 16:42', '生效'],
+    ['BI 双月', '2027-03 至 2027-04', 'BI_SKU销售_2027-03-04.xlsx', '18,426', '陈思雨', '2027-05-08 10:15', '生效'],
+    ['金蝶月度', '2027-03', '金蝶_2027-03_利润表_更正.xlsx', '3,790', '陈思雨', '2027-04-21 09:30', '生效'],
+    ['金蝶月度', '2027-03', '金蝶_2027-03_利润表.xlsx', '3,786', '陈思雨', '2027-04-19 17:05', '已被替换（2027-04-21 09:30 由陈思雨覆盖）'],
+    ['金蝶月度', '2027-02', '金蝶_2027-02_利润表.xlsx', '3,612', '陈思雨', '2027-03-22 15:48', '生效'],
+    ['BI 双月', '2027-01 至 2027-02', 'BI_SKU销售_2027-01-02.xlsx', '17,958', '陈思雨', '2027-03-09 11:20', '生效'],
+    ['金蝶月度', '2027-01', '金蝶_2027-01_利润表.xlsx', '3,705', '陈思雨', '2027-02-23 16:02', '生效'],
+    ['历史金蝶', '2026-01 至 2026-12（12 个期间）', '金蝶_历史_2026.xlsx', '44,860', '陈思雨', '2026-11-20 14:36', '生效'],
+    ['历史金蝶', '2025-01 至 2025-12（12 个期间）', '金蝶_历史_2025.xlsx', '42,307', '陈思雨', '2026-11-20 14:05', '生效']
+  ];
+  var TAB = {
+    kd: {
+      title: '上传金蝶月度实际', latest: '最近导入期间：2027-04（2027-05-10 16:42）', file: '金蝶_2027-04_利润表_v2.xlsx', rows: '3,862',
+      cols: '必需列：期间（YYYY-MM）、金蝶科目、部门、平台/店铺、站点、发生额。科目余额表或利润表导出均可。',
+      failHead: '<tr><th class="num">行号</th><th>问题类型</th><th>涉及编码或名称</th><th>处理方式</th></tr>',
+      fail: [
+        ['15', '期间格式错误', '2027/4', '期间须为 YYYY-MM，例如 2027-04', ''],
+        ['128', '店铺不在主数据中', 'US-Amazon-03', '先在渠道与店铺中添加该店铺', 'PAGE-F02-01.html'],
+        ['129', '店铺不在主数据中', 'US-Amazon-03', '先在渠道与店铺中添加该店铺', 'PAGE-F02-01.html'],
+        ['402', '站点不在主数据中', '墨西哥', '先在渠道与店铺中维护该站点', 'PAGE-F02-01.html'],
+        ['1,206', '部门不在主数据中', '跨境直播部', '先在 B端客户与部门中添加部门', 'PAGE-F02-03.html'],
+        ['2,311', '金蝶科目未映射', '6601.18 销售费用-达人佣金', '先在科目映射中映射到预算科目', 'PAGE-F02-04.html']
+      ],
+      kv: '<dt>期间</dt><dd>2027-04</dd><dt>文件</dt><dd>金蝶_2027-04_利润表_v2.xlsx</dd><dt>行数</dt><dd class="num">3,862</dd><dt>收入合计</dt><dd class="num">¥ 27,642,108.37</dd><dt>成本费用合计</dt><dd class="num">¥ 25,918,446.20</dd>',
+      side: '<h3 class="section-title">未归属渠道</h3><p class="small muted" style="margin-top: 0">没有平台/店铺辅助核算、且不属于部门费用科目的成本费用行，计入 2027-04「未归属渠道」，在偏差报告中单列。</p><div class="table-wrap"><table class="table"><thead><tr><th>金蝶科目</th><th class="num">行数</th><th class="num">金额</th></tr></thead><tbody><tr><td>6401.03 主营业务成本-运费调整</td><td class="num">5</td><td class="num">¥ 98,214.60</td></tr><tr><td>6601.05 销售费用-仓储杂费</td><td class="num">4</td><td class="num">¥ 61,385.12</td></tr><tr><td>6601.09 销售费用-退货处理费</td><td class="num">3</td><td class="num">¥ 26,820.63</td></tr><tr class="total"><td>合计</td><td class="num">12</td><td class="num">¥ 186,420.35</td></tr></tbody></table></div>',
+      over: '2027-04 已有导入数据：金蝶_2027-04_利润表.xlsx（陈思雨，2027-05-10 16:42）。确认后将用新文件替换该期间的全部金蝶实际数。',
+      newRec: ['金蝶月度', '2027-04', '金蝶_2027-04_利润表_v2.xlsx', '3,862', '陈思雨', '2027-05-12 15:20', '生效'], replaceIdx: 0
+    },
+    bi: {
+      title: '上传 BI 双月实际', latest: '最近 BI 数据截至：2027-04（2027-05-08 10:15 导入 2027-03 至 2027-04）', file: 'BI_SKU销售_2027-03-04_v2.xlsx', rows: '18,431',
+      cols: '必需列：月份（YYYY-MM）、店铺、站点、SKU、销量、本币销售额、币种、广告费、平台费用。月份格式错误、店铺或站点不在主数据中、SKU 不在对照表中任一出现，整份文件不写入。系统按 SKU 对照表归集到品类与新品/老品。',
+      failHead: '<tr><th>行号</th><th>问题类型</th><th>涉及名称或 SKU</th><th>处理方式</th></tr>',
+      fail: [
+        ['第 36 行', '月份格式错误', '2027年3月', '月份须为 YYYY-MM，例如 2027-03', ''],
+        ['第 1,524 行', '店铺不在主数据中', 'Amazon-MX-01', '先在渠道与店铺中添加该店铺', 'PAGE-F02-01.html'],
+        ['第 3,301 行', '站点不在主数据中', '墨西哥', '先在渠道与店铺中维护该站点', 'PAGE-F02-01.html'],
+        ['第 2,048 行起 · 共 12 行', 'SKU 未映射', 'BM-FM-6090-BK', '先在 SKU 对照表中补充该 SKU', 'PAGE-F02-02.html'],
+        ['第 5,113 行起 · 共 8 行', 'SKU 未映射', 'BM-LM-8070-LED2', '先在 SKU 对照表中补充该 SKU', 'PAGE-F02-02.html'],
+        ['第 9,620 行起 · 共 3 行', 'SKU 未映射', 'BM-MC-6075-WH', '先在 SKU 对照表中补充该 SKU', 'PAGE-F02-02.html'],
+        ['第 17,302 行', 'SKU 未映射', 'BM-SD-1200-CL', '先在 SKU 对照表中补充该 SKU', 'PAGE-F02-02.html']
+      ],
+      kv: '<dt>期间</dt><dd>2027-03 至 2027-04</dd><dt>文件</dt><dd>BI_SKU销售_2027-03-04_v2.xlsx</dd><dt>行数</dt><dd class="num">18,431</dd><dt>SKU 数</dt><dd class="num">1,284</dd><dt>新老品判定</dt><dd>按 SKU 首次上架日期，某月最后一天早于首次上架日加 12 个月为新品</dd>',
+      side: '<h3 class="section-title">归集预览（月 × 店铺 × 站点 × 品类 × 新品/老品）</h3><div class="table-wrap"><table class="table"><thead><tr><th>月</th><th>店铺 · 站点</th><th>品类</th><th>新/老</th><th class="num">销量</th><th class="num">本币销售额</th></tr></thead><tbody>'
+        + '<tr><td>2027-04</td><td>Amazon-US-01 · 美国</td><td>框镜</td><td>老品</td><td class="num">4,182</td><td class="num">$ 352,946.80 USD</td></tr>'
+        + '<tr><td>2027-04</td><td>Amazon-US-01 · 美国</td><td>框镜</td><td>新品</td><td class="num">1,906</td><td class="num">$ 171,045.40 USD</td></tr>'
+        + '<tr><td>2027-04</td><td>Amazon-US-01 · 美国</td><td>灯镜</td><td>老品</td><td class="num">2,671</td><td class="num">$ 372,193.65 USD</td></tr>'
+        + '<tr><td>2027-04</td><td>Amazon-DE-01 · 德国</td><td>镜柜</td><td>老品</td><td class="num">198</td><td class="num">€ 34,214.40 EUR</td></tr>'
+        + '<tr><td>2027-04</td><td>TikTok-US-01 · 美国</td><td>框镜</td><td>新品</td><td class="num">402</td><td class="num">$ 31,758.00 USD</td></tr>'
+        + '</tbody></table></div><p class="small muted">共 286 个归集组合，此处显示前 5 个。</p>',
+      over: '2027-03 至 2027-04 已有 BI 数据：BI_SKU销售_2027-03-04.xlsx（陈思雨，2027-05-08 10:15）。确认后将用新文件替换这两个月的全部 BI 实际数；导入记录保留被替换文件的文件名、导入人和导入时间。',
+      newRec: ['BI 双月', '2027-03 至 2027-04', 'BI_SKU销售_2027-03-04_v2.xlsx', '18,431', '陈思雨', '2027-05-12 15:20', '生效'], replaceIdx: 1
+    },
+    his: {
+      title: '上传历史金蝶数据', latest: '已入库：2025-01 至 2026-12（24 个期间）', file: '金蝶_历史_2025-2026_补充.xlsx', rows: '9,214',
+      cols: '与金蝶月度使用同一模板；一个文件最多包含 24 个期间，按期间逐月入库。',
+      failHead: '<tr><th class="num">行号</th><th>问题类型</th><th>涉及编码或名称</th><th>处理方式</th></tr>',
+      fail: [
+        ['3,417', '金蝶科目未映射', '6602.31 管理费用-咨询服务费（已停用科目）', '先在科目映射中映射到预算科目', 'PAGE-F02-04.html'],
+        ['7,880', '店铺不在主数据中', 'Ebay-US-01', '历史店铺需在渠道与店铺中登记（可登记为停用）', 'PAGE-F02-01.html']
+      ],
+      kv: '<dt>期间</dt><dd>2025-07 至 2025-08（2 个期间）</dd><dt>文件</dt><dd>金蝶_历史_2025-2026_补充.xlsx</dd><dt>行数</dt><dd class="num">9,214</dd>',
+      side: '<h3 class="section-title">用途</h3><p class="small muted">入库后用于部门费用填报的历史参考（上年同月、近 12 个月合计）和偏差报告中的同比计算。</p>',
+      over: '2025-07、2025-08 已有历史导入数据：金蝶_历史_2025.xlsx（陈思雨，2026-11-20 14:05）。确认后将用新文件替换这两个期间的全部金蝶实际数。',
+      newRec: ['历史金蝶', '2025-07 至 2025-08（2 个期间）', '金蝶_历史_2025-2026_补充.xlsx', '9,214', '陈思雨', '2027-05-12 15:20', '生效'], replaceIdx: -1
+    }
+  };
+  var tab = 'kd', res = 'fail';
+  function renderRec() {
+    document.getElementById('rec-rows').innerHTML = REC.map(function (r) {
+      var st = r[6] === '生效' ? '<span class="badge badge-good">生效</span>' : '<span class="badge">已被替换</span><div class="small muted">' + r[6].replace('已被替换', '') + '</div>';
+      return '<tr><td>' + r[0] + '</td><td>' + r[1] + '</td><td>' + r[2] + '</td><td class="num">' + r[3] + '</td><td>' + r[4] + '</td><td class="num">' + r[5] + '</td><td class="w-n" style="min-width: 150px">' + st + '</td></tr>';
+    }).join('');
+  }
+  function resetResult() { ['checking', 'res-fail', 'res-pass'].forEach(function (id) { document.getElementById(id).hidden = true; }); }
+  function renderTab() {
+    var d = TAB[tab];
+    document.getElementById('up-t').textContent = d.title;
+    document.getElementById('up-latest').textContent = d.latest;
+    document.getElementById('up-cols').textContent = d.cols;
+    document.getElementById('his-grid').hidden = tab !== 'his';
+    resetResult();
+  }
+  document.querySelector('.tabs').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-tab]'); if (!t) return; e.preventDefault();
+    this.querySelectorAll('[data-tab]').forEach(function (x) { x.setAttribute('aria-selected', x === t ? 'true' : 'false'); });
+    tab = t.getAttribute('data-tab'); renderTab();
+  });
+  document.getElementById('proto-res').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-res]'); if (!b) return;
+    this.querySelectorAll('[data-res]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    res = b.getAttribute('data-res'); resetResult();
+  });
+  document.getElementById('btn-check').addEventListener('click', function () {
+    var d = TAB[tab], f = document.getElementById('file').files[0];
+    resetResult();
+    document.getElementById('checking').hidden = false;
+    document.getElementById('checking-t').textContent = '正在校验 ' + (f ? f.name : d.file) + '（' + d.rows + ' 行）…';
+    var btn = this; btn.disabled = true; btn.textContent = '正在校验…';
+    setTimeout(function () {
+      btn.disabled = false; btn.textContent = '上传并校验';
+      document.getElementById('checking').hidden = true;
+      if (res === 'fail') {
+        document.getElementById('res-fail').hidden = false;
+        document.getElementById('fail-head').innerHTML = d.failHead;
+        var types = {};
+        d.fail.forEach(function (r) { var k = r[1]; types[k] = (types[k] || 0) + 1; });
+        var nSku = tab === 'bi' ? d.fail.filter(function (r) { return r[1] === 'SKU 未映射'; }).length : 0;
+        document.getElementById('fail-sum').textContent = tab === 'bi' ? '共 ' + (d.fail.length - nSku) + ' 个问题行、' + nSku + ' 个 SKU 不在 SKU 对照表中。' : '共 ' + d.fail.length + ' 个问题行。';
+        document.getElementById('fail-types').innerHTML = Object.keys(types).map(function (k) { return '<span class="badge badge-bad">' + k + ' ' + types[k] + '</span>'; }).join('');
+        document.getElementById('fail-rows').innerHTML = d.fail.map(function (r) {
+          var fix = r[4] ? '<a class="link" href="' + r[4] + '">' + r[3] + '</a>' : r[3];
+          return tab === 'bi'
+            ? '<tr><td class="num">' + r[0] + '</td><td>' + r[1] + '</td><td class="mono">' + r[2] + '</td><td>' + fix + '</td></tr>'
+            : '<tr><td class="num">第 ' + r[0] + ' 行</td><td>' + r[1] + '</td><td class="mono">' + r[2] + '</td><td>' + fix + '</td></tr>';
+        }).join('');
+      } else {
+        document.getElementById('res-pass').hidden = false;
+        document.getElementById('pass-kv').innerHTML = d.kv;
+        document.getElementById('pass-side').innerHTML = d.side;
+        document.getElementById('overwrite-note').textContent = d.over;
+        document.getElementById('btn-import').disabled = false;
+      }
+    }, 900);
+  });
+  document.getElementById('btn-cancel').addEventListener('click', function () { resetResult(); toast('已放弃本次上传，未写入任何数据'); });
+  document.getElementById('btn-import').addEventListener('click', function () { document.getElementById('m-over-desc').textContent = TAB[tab].over; openModal('m-over'); });
+  document.getElementById('m-over-ok').addEventListener('click', function () {
+    var d = TAB[tab]; closeModal('m-over');
+    if (d.replaceIdx >= 0) REC[d.replaceIdx][6] = '已被替换（2027-05-12 15:20 由陈思雨覆盖）';
+    else REC.forEach(function (r) { if (r[2] === '金蝶_历史_2025.xlsx') r[6] = '已被替换（2025-07、2025-08 于 2027-05-12 15:20 由陈思雨覆盖）'; });
+    REC.unshift(d.newRec); renderRec(); resetResult();
+    document.getElementById('res-pass').hidden = true;
+    toast('已导入，预警已按生效规则重新评估');
+  });
+  (function months() {
+    var h = '';
+    [2025, 2026].forEach(function (y) { for (var m = 1; m <= 12; m++) h += '<div class="ok">' + y + '-' + (m < 10 ? '0' : '') + m + '<br>已入库</div>'; });
+    document.getElementById('months').innerHTML = h;
+  })();
+  renderRec(); renderTab();
+  </script>
+</body>
+</html>

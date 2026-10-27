@@ -1,0 +1,448 @@
+{
+  "state_schema_version": 1,
+  "project_name": "预算管理平台",
+  "project_started_at_utc": "2026-10-27T04:16:19Z",
+  "last_updated_at_utc": "2026-10-27T08:46:40Z",
+  "work_type": "feature",
+  "workflow_mode": "standard",
+  "delivery_target": "tdd",
+  "stage_confirmations": {
+    "stage1_shared_understanding": {
+      "status": "confirmed",
+      "confirmed_at_utc": "2026-10-27T06:54:53Z",
+      "source": "用户回复「确认」（scene-anchor.md V1）"
+    },
+    "stage4_5_v1": {
+      "status": "confirmed",
+      "confirmed_at_utc": "2026-10-27T06:55:41Z",
+      "source": "方向与功能沿用 stage1 确认；V1 修订为 AI 授权内默认与假设，交付时向用户说明"
+    },
+    "stage4_6_mvp": {
+      "status": "confirmed",
+      "confirmed_at_utc": "2026-10-27T06:55:41Z",
+      "source": "OQ-1 选 A 完整闭环 + scene-anchor V1 确认"
+    }
+  },
+  "contract_revision": 4,
+  "source_ids_changed": [
+    "REQ-F02-03",
+    "AC-F02-12",
+    "REQ-F02-04",
+    "AC-F02-08",
+    "AC-F02-11",
+    "REQ-F03-01",
+    "AC-F03-05",
+    "REQ-F08-01",
+    "AC-F08-04",
+    "REQ-F08-03",
+    "AC-F08-08",
+    "REQ-F09-02",
+    "AC-F09-07",
+    "AC-F09-08",
+    "AC-F09-09",
+    "REQ-F10-01",
+    "AC-F10-12",
+    "REQ-F10-03",
+    "AC-F10-06",
+    "REQ-F10-05",
+    "AC-F10-08",
+    "REQ-F12-02",
+    "AC-F12-07",
+    "REQ-F02-04",
+    "AC-F02-11"
+  ],
+  "current_stage": "design",
+  "current_substep": "handoff",
+  "completed_stages": [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4.1",
+    "4.2",
+    "4.3",
+    "4.4",
+    "4.5",
+    "4.6",
+    "5"
+  ],
+  "skipped_stages": [
+    {
+      "stage": "3",
+      "reason": "无会改变当前方案的外部未知；复用 solution/evidence/先例调研.md"
+    }
+  ],
+  "upstream": {
+    "solution": "output/解题方案书.md",
+    "solution_state": "solution/state.json",
+    "gate": "passed：方案书已完成、停止闸门满足、用户确认（solution/state.json decisions 交接记录）"
+  },
+  "open_questions": [
+    {
+      "id": "OQ-6",
+      "title": "金蝶星空 WebAPI 是否开通",
+      "kind": "fact",
+      "category": "system_dependency",
+      "priority": "P2",
+      "depends_on": [],
+      "owner": "信息数字化部",
+      "status": "pending_user",
+      "evidence_needed": "星空账套是否启用 WebAPI/第三方系统登录授权",
+      "acceptance_threshold": "能用接口查询凭证/科目余额（含辅助核算）",
+      "note": "导入方式已选Excel，WebAPI仅影响下一期自动取数，非阻塞"
+    }
+  ],
+  "key_decisions_made": [
+    {
+      "id": "D-0",
+      "decision": "继承解题方案书全部已确认节点（决策、指标、路线二、输出形态B、规则库、成功标准、最小切口）",
+      "stage": "0",
+      "rationale": "用户确认方案书并回复继续进入PRD"
+    },
+    {
+      "id": "D-OQ-1",
+      "decision": "A 完整闭环：编制→审批→锁定目标版→月度导入实际→偏差报告与预警→滚动预测→规则库，覆盖全部渠道与15个部门",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-2",
+      "decision": "A 现金流预算本次不做，后置下一期",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-3",
+      "decision": "A 部门费用设专项预留额度并显示历史同类支出参考，不做独立审批流",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-5",
+      "decision": "按推荐：CEO/财务负责人/财务BP看全公司；部门负责人与预算专员只看只填本部门，销售部门看自己负责的渠道；部门负责人审本部门、财务负责人审汇总、CEO拍板目标与额度",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-8",
+      "decision": "B 公共费用不往渠道/品类分摊，渠道看到贡献利润，公共费用在公司层面",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-9",
+      "decision": "B 允许每季度正式调整一次目标版",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-10",
+      "decision": "A 本次由财务BP每月上传金蝶与BI导出的Excel，系统校验后入库；WebAPI 后置",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-11",
+      "decision": "A 钉钉登录：信息数字化部在钉钉开放平台建企业内部应用，提供AppKey/AppSecret，部署时配置（deployment-secret）",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-14",
+      "decision": "运营每季度更新剩余月份的滚动预测（用户自定义，非每月）",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-15",
+      "decision": "B 不向外部大模型发送财务数据；偏差说明由财务BP手写，本次不接入LLM",
+      "stage": "1"
+    },
+    {
+      "id": "D-LLM",
+      "decision": "与方案书差异：方案书中LLM起草偏差说明，用户在PRD决定本次不接入外部LLM；不改变路线二与输出形态",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-16",
+      "decision": "A（用户「其他部分同意」接受推荐）：标准改为每季度初预测的该季度3个月，各月净利润率偏差均在±1.5个百分点内",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-17",
+      "decision": "A（接受推荐）：保留原始与各次调整版本；试运行达成率按年初原始目标，部门日常对比用最新调整目标；季度调整走部门负责人→财务负责人→CEO并须写原因",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-18",
+      "decision": "按默认方案确认（编制流程、新渠道标记、钉钉预警通知、科目映射、品类清单、Excel导出、明确不做清单）；补充：品类销售预算区分新品/老品，品类收入=SPU数量×平均销量×平均单价，平均销量×平均单价=品效",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-19",
+      "decision": "B 物流费（头程、尾程、关税、仓储）也按收入比例计算；其余公式按推荐",
+      "stage": "1"
+    },
+    {
+      "id": "D-OQ-20",
+      "decision": "A 首次上架未满12个月为新品，满12个月自动转老品",
+      "stage": "1"
+    },
+    {
+      "id": "D-GM",
+      "decision": "毛利率=(收入−退款−采购成本−平台佣金−推广费用−头程−尾程−关税−仓储+库存索赔−其他运营费用)÷收入，B端同口径；用户确认其他 AI 默认口径无异议",
+      "stage": "5"
+    },
+    {
+      "id": "D-OQ-23",
+      "decision": "B 库存索赔率、其他运营费用率由财务BP按月×渠道×站点填",
+      "stage": "5"
+    },
+    {
+      "id": "D-OQ-24",
+      "decision": "A B端按同口径拆分：B端业务填销售额/退款率/推广费用率/其他运营费用率/佣金率与库存索赔率（默认0）；财务BP采购成本占比；物流物控物流四项",
+      "stage": "5"
+    },
+    {
+      "id": "D-OQ-25",
+      "decision": "A 2026-12-01 发布编制任务，2026-12-31 前 CEO 审批锁定",
+      "stage": "5"
+    },
+    {
+      "id": "D-R3",
+      "decision": "Design 回传：1A 原始目标锁定后预算汇率冻结；2A 品效折后；3B 实际汇率取当月平均；4A CEO 整次终审目标调整；5A 填报单位按店铺/B端部门/成本比例/物流比例/部门",
+      "stage": "design-feedback",
+      "source": "用户 2026-10-27"
+    },
+    {
+      "id": "D-R4",
+      "decision": "渠道范围自动包含新店铺；新渠道标记可改（审计）；客户转部门数据随转并退回；锁定后可补录新币种汇率；最新滚动预测已导入月份取实际",
+      "stage": "design",
+      "source": "用户 2026-10-27 / AC-F08-06"
+    }
+  ],
+  "constraints": [
+    "2026-12-01 发布编制任务，2026-12-31 前 CEO 审批锁定；2027 年 1–6 月试运行",
+    "钉钉应用 2026-11-30 前就绪（信息数字化部）"
+  ],
+  "category": "saas",
+  "next_action": {
+    "type": "user_action",
+    "description": "TDD 契约已完成；等待用户在同一项目新 Code 对话中执行完整 /goal 开发验收"
+  },
+  "deliverables": {
+    "scene_anchor": "scene-anchor.md",
+    "proposal_v0": "proposal-v0.md",
+    "proposal_v1": "proposal-v1.md",
+    "debate_log": "debate-log.md",
+    "assumptions": "assumptions.md",
+    "conversation": null,
+    "evidence": [
+      "solution/evidence/先例调研.md"
+    ],
+    "drafts": [],
+    "final_prd": "output/PRD详细版.md",
+    "requirements_contract": "output/requirements.md",
+    "requirements_analysis": "output/requirements-analysis.md",
+    "bugfix_contract": null,
+    "prd_summary": null,
+    "prd_dev": null,
+    "ppt_outline": null,
+    "ppt_pages": []
+  },
+  "resolved": [
+    {
+      "id": "OQ-1",
+      "title": "本次交付范围：完整预算闭环 / 先编制后滚动 / 只做回测工具",
+      "answer": "A 完整闭环：编制→审批→锁定目标版→月度导入实际→偏差报告与预警→滚动预测→规则库，覆盖全部渠道与15个部门",
+      "source": "用户",
+      "at": "2026-10-27T06:17:00Z"
+    },
+    {
+      "id": "OQ-2",
+      "title": "现金流预算是否纳入本次",
+      "answer": "A 现金流预算本次不做，后置下一期",
+      "source": "用户",
+      "at": "2026-10-27T06:17:00Z"
+    },
+    {
+      "id": "OQ-3",
+      "title": "临时大额费用（培训、福利）如何纳入",
+      "answer": "A 部门费用设专项预留额度并显示历史同类支出参考，不做独立审批流",
+      "source": "用户",
+      "at": "2026-10-27T06:17:00Z"
+    },
+    {
+      "id": "OQ-4",
+      "title": "收入侧（渠道×站点×品类销售目标）由哪些部门填报",
+      "answer": "运营负责填各渠道×站点×品类销量及订单量、客单价、折扣率、广告费率、退款率、渠道佣金率；美国业务部、外贸部负责B端客户拓展",
+      "source": "用户",
+      "at": "2026-10-27T06:17:00Z"
+    },
+    {
+      "id": "OQ-5",
+      "title": "角色与数据可见范围",
+      "answer": "按推荐：CEO/财务负责人/财务BP看全公司；部门负责人与预算专员只看只填本部门，销售部门看自己负责的渠道；部门负责人审本部门、财务负责人审汇总、CEO拍板目标与额度",
+      "source": "用户",
+      "at": "2026-10-27T06:17:00Z"
+    },
+    {
+      "id": "OQ-7",
+      "title": "预算币种与汇率口径",
+      "answer": "本位币人民币；站点收入本币记账折人民币；预算统一人民币编制，渠道收入同时展示本币与人民币；预算汇率取2026-09-30中国银行人民币外币汇率中间价",
+      "source": "用户",
+      "at": "2026-10-27T06:17:00Z"
+    },
+    {
+      "id": "OQ-6a",
+      "answer": "办公平台钉钉；可部署内部网页系统；WebAPI 不确定",
+      "source": "用户",
+      "at": "2026-10-27T06:17:00Z"
+    },
+    {
+      "id": "OQ-8",
+      "title": "公共费用向渠道/品类分摊规则",
+      "answer": "B 公共费用不往渠道/品类分摊，渠道看到贡献利润，公共费用在公司层面",
+      "source": "用户",
+      "at": "2026-10-27T06:29:09Z"
+    },
+    {
+      "id": "OQ-9",
+      "title": "年内预算调整与审批流",
+      "answer": "B 允许每季度正式调整一次目标版",
+      "source": "用户",
+      "at": "2026-10-27T06:29:09Z"
+    },
+    {
+      "id": "OQ-10",
+      "title": "实际数导入方式（Excel 上传 / 星空 WebAPI）",
+      "answer": "A 本次由财务BP每月上传金蝶与BI导出的Excel，系统校验后入库；WebAPI 后置",
+      "source": "用户",
+      "at": "2026-10-27T06:29:09Z"
+    },
+    {
+      "id": "OQ-11",
+      "title": "登录方式（钉钉）",
+      "answer": "A 钉钉登录：信息数字化部在钉钉开放平台建企业内部应用，提供AppKey/AppSecret，部署时配置（deployment-secret）",
+      "source": "用户",
+      "at": "2026-10-27T06:29:09Z"
+    },
+    {
+      "id": "OQ-12",
+      "title": "B端客户（HD/Lowe's/外贸客户）的销量预测由谁填",
+      "answer": "B端客户销量由美国业务部、外贸部预估总量；Home Depot、Lowe's 作为平台卖家仍归运营部",
+      "source": "用户",
+      "at": "2026-10-27T06:29:09Z"
+    },
+    {
+      "id": "OQ-13",
+      "title": "成本侧驱动（采购单价、头程、尾程/平台仓配、仓储、关税）由谁填",
+      "answer": "采购成本占比由财务BP负责；头程运费、尾程运费、仓储费、关税由物流物控部负责",
+      "source": "用户",
+      "at": "2026-10-27T06:29:09Z"
+    },
+    {
+      "id": "OQ-14",
+      "title": "滚动预测由谁更新、与PMC 4个月预测的关系",
+      "answer": "运营每季度更新剩余月份的滚动预测（用户自定义，非每月）",
+      "source": "用户",
+      "at": "2026-10-27T06:29:09Z"
+    },
+    {
+      "id": "OQ-15",
+      "title": "是否允许把汇总财务数据发给外部大模型起草偏差说明",
+      "answer": "B 不向外部大模型发送财务数据；偏差说明由财务BP手写，本次不接入LLM",
+      "source": "用户",
+      "at": "2026-10-27T06:29:09Z"
+    },
+    {
+      "id": "OQ-16",
+      "title": "季度滚动与「月初当月净利润预测±1.5个点」成功标准的口径冲突",
+      "answer": "A（用户「其他部分同意」接受推荐）：标准改为每季度初预测的该季度3个月，各月净利润率偏差均在±1.5个百分点内",
+      "source": "用户",
+      "at": "2026-10-27T06:38:06Z"
+    },
+    {
+      "id": "OQ-17",
+      "title": "季度调整目标后，净利润达成率按哪个版本算；季度调整审批链",
+      "answer": "A（接受推荐）：保留原始与各次调整版本；试运行达成率按年初原始目标，部门日常对比用最新调整目标；季度调整走部门负责人→财务负责人→CEO并须写原因",
+      "source": "用户",
+      "at": "2026-10-27T06:38:06Z"
+    },
+    {
+      "id": "OQ-18",
+      "title": "默认方案确认：编制流程、预警通知、科目映射、品类清单、导出",
+      "answer": "按默认方案确认（编制流程、新渠道标记、钉钉预警通知、科目映射、品类清单、Excel导出、明确不做清单）；补充：品类销售预算区分新品/老品，品类收入=SPU数量×平均销量×平均单价，平均销量×平均单价=品效",
+      "source": "用户",
+      "at": "2026-10-27T06:38:06Z"
+    },
+    {
+      "id": "OQ-19",
+      "title": "收入与成本计算公式口径（品效公式与渠道驱动如何合并、物流费按件或按比例）",
+      "answer": "B 物流费（头程、尾程、关税、仓储）也按收入比例计算；其余公式按推荐",
+      "source": "用户",
+      "at": "2026-10-27T06:44:30Z"
+    },
+    {
+      "id": "OQ-20",
+      "title": "新品/老品界定标准",
+      "answer": "A 首次上架未满12个月为新品，满12个月自动转老品",
+      "source": "用户",
+      "at": "2026-10-27T06:44:30Z"
+    },
+    {
+      "id": "OQ-21",
+      "title": "BI/SKU对照表是否带SPU与上市日期（实际数能否拆新老品）",
+      "answer": "SKU→品类对照表/BI 含 SPU 编码与首次上架日期，实际数可拆新品老品",
+      "source": "用户",
+      "at": "2026-10-27T06:44:30Z"
+    },
+    {
+      "id": "OQ-22",
+      "title": "信息数字化部承诺何时创建钉钉企业内部应用并提供 AppKey/AppSecret",
+      "answer": "信息数字化部 2026-11-30 前建好钉钉应用（用户告知）",
+      "source": "用户",
+      "at": "2026-10-27T07:15:26Z"
+    },
+    {
+      "id": "OQ-23",
+      "title": "库存索赔、其他运营费用由谁填、以何口径",
+      "answer": "B 库存索赔率、其他运营费用率由财务BP按月×渠道×站点填",
+      "source": "用户",
+      "at": "2026-10-27T07:20:19Z"
+    },
+    {
+      "id": "OQ-24",
+      "title": "B端按同口径拆分后各项由谁填",
+      "answer": "A B端按同口径拆分：B端业务填销售额/退款率/推广费用率/其他运营费用率/佣金率与库存索赔率（默认0）；财务BP采购成本占比；物流物控物流四项",
+      "source": "用户",
+      "at": "2026-10-27T07:20:19Z"
+    },
+    {
+      "id": "OQ-25",
+      "title": "钉钉应用11-30就绪与11-12月编制时间冲突",
+      "answer": "A 2026-12-01 发布编制任务，2026-12-31 前 CEO 审批锁定",
+      "source": "用户",
+      "at": "2026-10-27T07:20:19Z"
+    }
+  ],
+  "validation": {
+    "at": "2026-10-27T08:02:49Z",
+    "check_evidence": "pass",
+    "check_format": "pass",
+    "check_consistency": "pass",
+    "check_requirements_contract": "pass (revision 3, 167 objects)"
+  },
+  "design": {
+    "entry_check": "passed (requirements r2, P0/P1=0, validators pass)",
+    "blueprint": "output/设计决策蓝图.md",
+    "blueprint_confirmed_at_utc": "2026-10-27T07:28:12Z",
+    "blueprint_confirm_source": "用户 AskUserQuestion「确认，按蓝图展开」",
+    "runtime": "Windows 本机开发验收；12-01 前部署公司服务器",
+    "status": "completed",
+    "completed_at_utc": "2026-10-27T08:35:42Z",
+    "pages": 30,
+    "local_links": 779,
+    "broken_links": 0,
+    "trace_rows": 148,
+    "trace_status": "all covered, revision 4 aligned",
+    "tech_plan": "output/技术方案.md v1.1",
+    "change_impact": "output/change-impact.md (resolved)"
+  },
+  "tdd": {
+    "contract": "output/tests/TDD验收契约.md",
+    "validator": "pass: 148 required source / 30 scope pages / 75 acceptance rows",
+    "at": "2026-10-27T08:46:40Z"
+  }
+}

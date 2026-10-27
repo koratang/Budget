@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F04-01">
+  <title>我的填报 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+  [hidden] { display: none !important; }
+  body { font-family: var(--font-body); color: var(--fg); background: var(--bg); font-size: var(--text-base); line-height: var(--leading-body); }
+  .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); background: var(--surface); }
+  .proto-bar button { height: 24px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--fg-2); font-size: var(--text-xs); cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+  .proto-bar button:hover { background: var(--surface-raised); }
+  .proto-bar button:active { background: var(--border-soft); }
+  .proto-bar button:focus-visible, .proto-bar select:focus-visible, .proto-bar input:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .proto-bar button[aria-pressed="true"] { background: var(--fg-2); color: var(--surface); border-color: var(--fg-2); }
+  .proto-bar label { display: inline-flex; align-items: center; gap: var(--space-1); }
+  .proto-bar select { height: 24px; font-size: var(--text-xs); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--fg-2); }
+  .proto-sep { width: 1px; height: 16px; background: var(--border); margin: 0 var(--space-1); }
+  .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+  .topbar nav a, .topbar a { color: var(--fg-2); }
+  .topbar a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .page-head .page-title { margin: 0; }
+  .sub { color: var(--muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: var(--text-sm); margin-bottom: var(--space-3); }
+  .notice-bad { border-color: color-mix(in oklab, var(--danger), white 60%); background: color-mix(in oklab, var(--danger), white 95%); }
+  .notice-warn { border-color: color-mix(in oklab, var(--warn), white 60%); background: color-mix(in oklab, var(--warn), white 94%); }
+  .notice-info { border-color: color-mix(in oklab, var(--accent), white 70%); background: color-mix(in oklab, var(--accent), white 95%); }
+  .notice .t { font-weight: 600; color: var(--fg); }
+  .err-list { margin: var(--space-2) 0 0; padding-left: var(--space-6); max-height: 140px; overflow: auto; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); font-size: var(--text-sm); color: var(--muted); margin-bottom: var(--space-3); }
+  .meta-row b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+  .kpi-value.sm { font-size: var(--text-xl); }
+  .kpi-foot { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .link { color: var(--fg-2); text-decoration: underline; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+  .link:hover { color: var(--fg); }
+  .link:active { color: var(--muted); }
+  .field { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+  .field label, .field .lbl { font-size: var(--text-sm); color: var(--fg-2); }
+  .req { color: var(--danger); margin-left: 2px; }
+  .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+  .modal.wide { width: 720px; max-height: 86vh; overflow: auto; }
+  textarea.input { height: 80px; padding: var(--space-2) var(--space-3); resize: vertical; font-family: inherit; }
+  .section-title { font-size: var(--text-lg); font-weight: 600; margin: var(--space-6) 0 var(--space-3); }
+  .muted { color: var(--muted); }
+  .muted-cell { color: var(--muted); }
+  /* 类 Excel 填报表格 */
+  .grid-wrap { max-height: 62vh; }
+  .grid th.mth, .grid td.mcell { min-width: 112px; }
+  .grid .fz { position: sticky; z-index: 1; background: var(--surface-warm); overflow: hidden; text-overflow: ellipsis; }
+  .grid th.fz { z-index: 3; }
+  .grid .fz-last { border-right: 1px solid var(--border); }
+  .grid tr.blk td { border-top: 1px solid var(--border); }
+  .grid tr.row-calc td.mcell, .grid tr.row-calc td.tcell { color: var(--fg-2); background: var(--surface-warm); }
+  .grid tr.row-calc td.fz:last-of-type { color: var(--fg-2); }
+  .grid td.tcell { font-weight: 600; }
+  .grid td.mcell .cell-edit, .grid td.mcell .ed { min-height: 20px; padding: 2px 0; }
+  .grid td.mcell.cell-edit, .grid td.mcell .cell-edit { background: var(--surface); }
+  .grid .refv { font-size: var(--text-xs); color: var(--muted); line-height: 1.2; }
+  .grid td.flag { box-shadow: inset 0 0 0 2px var(--danger); }
+  .flag-note { font-size: var(--text-xs); color: var(--danger); line-height: 1.2; font-weight: 400; }
+  .grid tr.row-text td.mcell { text-align: left; max-width: 112px; overflow: hidden; text-overflow: ellipsis; }
+  .grid .cell-locked { cursor: not-allowed; }
+  .grid tr.row-text td.cell-edit:empty::before { content: "必填：超出理由"; color: var(--danger); }
+  .grid-foot { display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+  .save-state { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ratio-table td, .ratio-table th { height: 30px; }
+  .modal-backdrop { z-index: 100; }
+  .toast { z-index: 110; }
+  details.card > summary { cursor: pointer; font-weight: 600; font-size: var(--text-sm); }
+  details.card > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+  </style>
+</head>
+<body style="margin:0">
+<div class="app">
+  <aside class="sidebar">
+   <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+   <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+   <div class="nav-group">预算编制</div>
+   <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+   <a class="nav-item" href="PAGE-F04-01.html" aria-current="page">我的填报</a>
+   <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+   <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+   <div class="nav-group">预算版本</div>
+   <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+   <div class="nav-group">实际数</div>
+   <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+   <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+   <div class="nav-group">报表</div>
+   <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+   <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+   <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+   <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+   <div class="nav-group">预警与规则</div>
+   <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+   <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+   <div class="nav-group">基础数据</div>
+   <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+   <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+   <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+   <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+   <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+   <div class="nav-group">系统设置</div>
+   <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+ <div style="min-width:0">
+  <header class="topbar"><nav aria-label="面包屑">预算编制 / 我的填报</nav><div class="who">当前用户：王浩（运营 · Amazon 负责人） · <a href="PAGE-F01-01.html">退出</a></div></header>
+  <main class="main">
+
+   <div class="proto-bar" role="region" aria-label="原型说明，非产品功能">
+    <span>原型说明，非产品功能 · 场景日期 2026-12-22</span>
+    <button type="button" data-state="normal">正常</button><button type="button" data-state="empty">空</button><button type="button" data-state="loading">加载</button><button type="button" data-state="error">错误</button><button type="button" data-state="noperm">无权限</button>
+    <span class="proto-sep"></span>
+    <label>查看视角 <select id="sim-who"><option value="王浩">王浩（运营）</option><option value="孙婷">孙婷（B端业务 · 美国业务部）</option><option value="陈思雨">陈思雨（财务BP）</option><option value="蒋帆">蒋帆（物流物控）</option><option value="郑可">郑可（部门预算专员）</option></select></label>
+   </div>
+
+   <div id="v-normal">
+    <div class="page-head">
+     <div>
+      <h1 class="page-title">我的填报</h1>
+      <p class="sub" id="summary"></p>
+     </div>
+    </div>
+    <div class="notice notice-warn" id="od-note" role="status"></div>
+    <div class="table-wrap">
+     <table class="table" aria-label="我负责的填报单位">
+      <thead><tr><th>填报单位</th><th>类型</th><th>编制任务</th><th class="num">截止日期</th><th>状态</th><th>退回原因</th><th class="num">最后保存</th><th>操作</th></tr></thead>
+      <tbody id="tb"></tbody>
+     </table>
+    </div>
+    <p class="sub">已提交、已通过的单位内容已锁定，被退回之前任何人都不能修改，只能查看。</p>
+   </div>
+   <div id="v-state" hidden></div>
+
+  </main>
+ </div>
+</div>
+<script>
+/* ===== 公共：工具、轻提示、弹窗、原型状态 ===== */
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+function r2(x) { return Math.round((x + (x >= 0 ? 1 : -1) * 1e-9) * 100) / 100; }
+function fmtNum(v, d) { return Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtMoney(v) { return fmtNum(v, 2); }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function nowTime() { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => String(x).padStart(2, '0')).join(':'); }
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+}
+let _modal = null;
+function openModal(html, onMount) {
+  closeModal();
+  const bd = document.createElement('div'); bd.className = 'modal-backdrop';
+  bd.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + '</div>';
+  bd.addEventListener('click', e => { if (e.target === bd) closeModal(); });
+  document.body.appendChild(bd); _modal = bd;
+  $$('[data-close]', bd).forEach(b => b.addEventListener('click', closeModal));
+  if (onMount) onMount(bd.firstChild);
+  const f = $('input,select,textarea,button', bd.firstChild); if (f) f.focus();
+  return bd.firstChild;
+}
+function closeModal() { if (_modal) { _modal.remove(); _modal = null; } }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && _modal) closeModal(); });
+
+/* 原型状态切换：正常 / 空 / 加载 / 错误 / 无权限 */
+function setupStates(cfg) {
+  const normal = $('#v-normal'), st = $('#v-state');
+  function show(s) {
+    $$('.proto-bar [data-state]').forEach(b => b.setAttribute('aria-pressed', b.dataset.state === s ? 'true' : 'false'));
+    if (s === 'normal') { normal.hidden = false; st.hidden = true; return; }
+    normal.hidden = true; st.hidden = false;
+    if (s === 'loading') {
+      let rows = ''; for (let i = 0; i < 8; i++) rows += '<div class="skeleton" style="margin:14px 0;width:' + (60 + (i * 13) % 40) + '%"></div>';
+      st.innerHTML = '<div class="card" aria-busy="true"><div class="kpi-label">' + esc(cfg.loading || '正在加载…') + '</div>' + rows + '</div>';
+      return;
+    }
+    const c = cfg[s];
+    st.innerHTML = '<div class="card"><div class="state"><div class="state-title">' + esc(c.title) + '</div><div>' + esc(c.desc) + '</div>' +
+      (c.btn ? '<div style="margin-top:16px"><button class="btn ' + (c.primary ? 'btn-primary' : '') + '" type="button" id="state-btn">' + esc(c.btn) + '</button></div>' : '') + '</div></div>';
+    const b = $('#state-btn'); if (b) b.addEventListener('click', () => { if (c.onClick) c.onClick(); else show('normal'); });
+  }
+  $$('.proto-bar [data-state]').forEach(b => b.addEventListener('click', () => show(b.dataset.state)));
+  show('normal');
+  return show;
+}
+
+
+
+// [单位, 类型, 填报人, 状态, 最后更新, 退回原因, 填报页]
+const UNITS = [
+  ['Amazon-US-01', '平台渠道', '王浩', '填报中', '2026-12-22 14:31', '', 'PAGE-F04-02.html'],
+  ['Amazon-CA-01', '平台渠道', '王浩', '已退回', '2026-12-21 17:05', '赵磊：加拿大站 10–12 月老品平均单价高于 2026 实际 18%，请核实或补充依据。', 'PAGE-F04-02.html'],
+  ['Amazon-UK-01', '平台渠道', '王浩', '已提交', '2026-12-19 18:22', '', 'PAGE-F04-02.html'],
+  ['Amazon-DE-01', '平台渠道', '王浩', '已通过', '2026-12-18 11:02', '', 'PAGE-F04-02.html'],
+  ['Wayfair-US-01', '平台渠道', '李娜', '已通过', '2026-12-17 16:40', '', 'PAGE-F04-02.html'],
+  ['HomeDepot-US-01', '平台渠道', '马骏', '已提交', '2026-12-20 20:15', '', 'PAGE-F04-02.html'],
+  ['Lowes-US-01', '平台渠道', '马骏', '未开始', '—', '', 'PAGE-F04-02.html'],
+  ['Shopify-US-01', '平台渠道', '李娜', '已通过', '2026-12-16 10:28', '', 'PAGE-F04-02.html'],
+  ['TikTok-US-01', '平台渠道', '王浩', '填报中', '2026-12-22 14:05', '', 'PAGE-F04-02.html'],
+  ['B端 · 美国业务部', 'B端', '孙婷', '填报中', '2026-12-22 11:08', '', 'PAGE-F04-03.html'],
+  ['B端 · 外贸部', 'B端', '刘洋', '已通过', '2026-12-18 15:47', '', 'PAGE-F04-03.html'],
+  ['成本比例（财务BP）', '成本比例', '陈思雨', '填报中', '2026-12-22 10:26', '', 'PAGE-F04-04.html'],
+  ['物流比例（物流物控）', '物流比例', '蒋帆', '已提交', '2026-12-20 17:58', '', 'PAGE-F04-05.html'],
+  ['产品作战部', '部门费用', '许嘉', '已通过', '2026-12-15 09:51', '', 'PAGE-F05-01.html'],
+  ['开发部', '部门费用', '宋宇', '已通过', '2026-12-16 14:12', '', 'PAGE-F05-01.html'],
+  ['研发部', '部门费用', '韩冰', '已提交', '2026-12-20 11:36', '', 'PAGE-F05-01.html'],
+  ['供应中心', '部门费用', '冯涛', '已通过', '2026-12-17 09:20', '', 'PAGE-F05-01.html'],
+  ['运营部', '部门费用', '曹敏', '已提交', '2026-12-19 16:03', '', 'PAGE-F05-01.html'],
+  ['市场部', '部门费用', '邓琳', '已退回', '2026-12-21 09:44', '市场部负责人：展会费全年 ¥ 1,260,000.00 高于 2026 实际 46%，请拆分到具体展会并补充依据。', 'PAGE-F05-01.html'],
+  ['美国业务部', '部门费用', '孙婷', '已提交', '2026-12-20 18:47', '', 'PAGE-F05-01.html'],
+  ['视觉部', '部门费用', '彭悦', '已通过', '2026-12-18 13:25', '', 'PAGE-F05-01.html'],
+  ['外贸部', '部门费用', '刘洋', '已通过', '2026-12-18 15:50', '', 'PAGE-F05-01.html'],
+  ['物流物控部', '部门费用', '蒋帆', '已提交', '2026-12-20 17:30', '', 'PAGE-F05-01.html'],
+  ['项目管理部', '部门费用', '唐瑶', '已通过', '2026-12-17 11:14', '', 'PAGE-F05-01.html'],
+  ['信息数字化部', '部门费用', '董杰', '已提交', '2026-12-20 15:09', '', 'PAGE-F05-01.html'],
+  ['人力资源部', '部门费用', '郑可', '填报中', '2026-12-22 16:02', '', 'PAGE-F05-01.html'],
+  ['财务部', '部门费用', '陈思雨', '已通过', '2026-12-16 17:33', '', 'PAGE-F05-01.html'],
+  ['总经办', '部门费用', '袁芳', '未开始', '—', '', 'PAGE-F05-01.html']
+];
+const STATUS_BADGE = { '未开始': 'badge', '填报中': 'badge', '已提交': 'badge badge-info', '已退回': 'badge badge-bad', '已通过': 'badge badge-good' };
+const DEADLINE = '2026-12-20';
+const isOverdue = s => s !== '已提交' && s !== '已通过'; // 场景日期 2026-12-22 已过截止日
+
+const WHO = { '王浩': '王浩（运营 · Amazon 负责人）', '孙婷': '孙婷（B端业务 · 美国业务部）', '陈思雨': '陈思雨（财务BP）', '蒋帆': '蒋帆（物流物控）', '郑可': '郑可（部门预算专员 · 人力资源部）' };
+const ORDER = { '已退回': 0, '未开始': 1, '填报中': 2, '已提交': 3, '已通过': 4 };
+function render(who) {
+  $('.topbar .who').firstChild.textContent = '当前用户：' + WHO[who] + ' · ';
+  const list = UNITS.filter(u => u[2] === who).sort((a, b) => ORDER[a[3]] - ORDER[b[3]]);
+  const todo = list.filter(u => isOverdue(u[3]));
+  $('#summary').textContent = '你负责 ' + list.length + ' 个填报单位，待处理 ' + todo.length + ' 个（未开始、填报中或已退回）。';
+  $('#od-note').hidden = !todo.length;
+  $('#od-note').innerHTML = '<span class="t">已过截止日期 2026-12-20</span> · 还有 ' + todo.length + ' 个单位未提交，请尽快完成。';
+  $('#tb').innerHTML = list.map(u => {
+    const locked = u[3] === '已提交' || u[3] === '已通过';
+    const act = locked ? '<a class="link" href="' + u[6] + '">查看</a> <span class="muted">· 已锁定</span>' : '<a class="btn' + (u[3] === '已退回' ? ' btn-primary' : '') + '" href="' + u[6] + '">' + (u[3] === '未开始' ? '开始填报' : u[3] === '已退回' ? '修改后重新提交' : '继续填报') + '</a>';
+    return '<tr><td>' + esc(u[0]) + '</td><td>' + u[1] + '</td><td>2027 年度预算编制</td><td class="num">' + DEADLINE + '</td><td><span class="' + STATUS_BADGE[u[3]] + '">' + u[3] + '</span>' +
+      (isOverdue(u[3]) ? ' <span class="badge badge-warn">逾期</span>' : '') + '</td><td style="white-space:normal;min-width:240px;max-width:420px">' + (u[5] ? esc(u[5]) : '<span class="muted">—</span>') + '</td><td class="num">' + u[4] + '</td><td>' + act + '</td></tr>';
+  }).join('');
+  $$('#tb a.btn').forEach(a => a.style.textDecoration = 'none');
+}
+$('#sim-who').addEventListener('change', e => render(e.target.value));
+render('王浩');
+setupStates({
+  loading: '正在加载我的填报…',
+  empty: { title: '你目前没有需要填报的单位', desc: '财务负责人发布编制任务后，你负责的填报单位会出现在这里，同时你会收到钉钉工作通知。', btn: '返回工作台', onClick: () => location.href = 'PAGE-F00-01.html' },
+  error: { title: '我的填报加载失败', desc: '网络异常或服务暂不可用，请稍后重试。', btn: '重试', primary: true },
+  noperm: { title: '无权限', desc: '你的账号没有任何填报角色。如需填报，请联系财务负责人分配。', btn: '返回工作台', onClick: () => location.href = 'PAGE-F00-01.html' }
+});
+
+</script>
+</body>
+</html>

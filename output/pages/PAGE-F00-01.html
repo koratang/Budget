@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F00-01">
+  <title>工作台 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); color: var(--fg); background: var(--bg); }
+    .drawer-mask, .drawer { z-index: 10; }
+    .modal-backdrop { z-index: 20; }
+    .toast { z-index: 30; }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-4); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-2); }
+    .topbar nav { color: var(--muted); font-size: var(--text-sm); }
+    .topbar a { color: var(--fg-2); }
+    .page-head { display: flex; align-items: baseline; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .page-head .page-title { margin: 0; }
+    .meta { color: var(--muted); font-size: var(--text-sm); }
+    .sec-title { font-size: var(--text-lg); font-weight: 600; margin: var(--space-6) 0 var(--space-3); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); }
+    .todo-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-3); }
+    .todo-head a { font-size: var(--text-sm); color: var(--fg-2); }
+    .todo-count { font-size: var(--text-3xl); font-variant-numeric: tabular-nums; letter-spacing: var(--tracking-display); line-height: var(--leading-tight); margin-bottom: var(--space-3); }
+    .todo-list { list-style: none; margin: 0; padding: 0; }
+    .todo-list li { border-top: 1px solid var(--border-soft); }
+    .todo-list a { display: block; padding: var(--space-2) 0; color: var(--fg); text-decoration: none; border-radius: var(--radius-sm); transition: background var(--motion-fast) var(--ease-standard); }
+    .todo-list a:hover { background: var(--surface-raised); }
+    .todo-list a:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .todo-list .t1 { font-size: var(--text-sm); }
+    .todo-list .t2 { font-size: var(--text-xs); color: var(--muted); }
+    .todo-empty { font-size: var(--text-sm); color: var(--muted); padding: var(--space-2) 0; border-top: 1px solid var(--border-soft); }
+    .kpi-sub { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); font-variant-numeric: tabular-nums; }
+    .kpi-row { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); }
+    .kpi-card a { color: var(--fg-2); font-size: var(--text-xs); }
+    .mini { width: 100%; border-collapse: collapse; font-size: var(--text-sm); margin-top: var(--space-2); }
+    .mini td { padding: var(--space-1) 0; border-top: 1px solid var(--border-soft); }
+    .mini td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .kpi-card .kpi-value.small { font-size: var(--text-2xl); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html" aria-current="page">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html" data-vis="fin">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group" data-vis="fin bp">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html" data-vis="fin bp">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html" data-vis="fin bp">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html" data-vis="fin bp">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html" data-vis="fin bp">规则库</a>
+    <div class="nav-group" data-vis="fin bp">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html" data-vis="fin bp">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html" data-vis="fin bp">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html" data-vis="fin bp">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html" data-vis="fin bp">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html" data-vis="fin bp">汇率</a>
+    <div class="nav-group" id="nav-sys">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html" id="nav-sys-item">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">工作台</nav>
+      <div>当前用户：<span id="cur-user">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型切换">
+        <strong>原型说明，非产品功能：</strong>
+        <span>角色</span>
+        <button class="btn" data-role="fin" aria-pressed="true">CEO / 财务负责人</button>
+        <button class="btn" data-role="bp" aria-pressed="false">财务BP</button>
+        <button class="btn" data-role="ops" aria-pressed="false">运营</button>
+        <button class="btn" data-role="dept" aria-pressed="false">部门预算专员</button>
+        <span class="sep"></span>
+        <span>状态</span>
+        <button class="btn" data-proto-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-proto-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-proto-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-proto-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-proto-state="noperm" aria-pressed="false">无权限</button>
+      </div>
+
+      <div class="page-head">
+        <h1 class="page-title">工作台</h1>
+        <span class="meta">2027-05-12 · 预算年度 2027 · 最近金蝶导入期间 2027-04</span>
+      </div>
+
+      <!-- 正常 -->
+      <div data-view="normal">
+        <h2 class="sec-title" style="margin-top:0">我的待办</h2>
+        <div class="grid-3" id="todos"></div>
+
+        <div id="kpi-fin">
+          <h2 class="sec-title">关键数</h2>
+          <div class="grid-4">
+            <div class="card kpi-card fade-in">
+              <div class="kpi-label">累计净利润达成率 · 年初原始目标</div>
+              <div class="kpi-value">88.0%</div>
+              <div class="kpi-row"><div class="attain is-warn" aria-label="达成 88.0%"><div class="fill" style="width:73.3%"></div></div><span class="kpi-sub" style="margin:0">2027-01～04</span></div>
+              <div class="kpi-sub">实际 ¥ 4,965,429.67 / 目标 ¥ 5,645,600.00</div>
+              <div class="kpi-sub">1–4 月实际净利润合计 ÷ 同期目标合计；目标合计 ≤ 0 时显示「—」</div>
+            </div>
+            <div class="card kpi-card fade-in">
+              <div class="kpi-label">累计净利润达成率 · 调整后目标</div>
+              <div class="kpi-value">91.5%</div>
+              <div class="kpi-row"><div class="attain" aria-label="达成 91.5%"><div class="fill" style="width:76.3%"></div></div><span class="kpi-sub" style="margin:0">2027 第一季度调整版</span></div>
+              <div class="kpi-sub">实际 ¥ 4,965,429.67 / 目标 ¥ 5,424,200.00</div>
+              <div class="kpi-sub">1–4 月实际净利润合计 ÷ 同期目标合计；目标合计 ≤ 0 时显示「—」</div>
+            </div>
+            <div class="card kpi-card fade-in">
+              <div class="kpi-label">最近季度预测偏差 · 2027 第一季度快照</div>
+              <table class="mini" aria-label="各月预测偏差（百分点）">
+                <tr><td>2027-01</td><td class="num">0.6 个百分点</td></tr>
+                <tr><td>2027-02</td><td class="num">1.2 个百分点</td></tr>
+                <tr><td>2027-03</td><td class="num bad">1.9 个百分点</td></tr>
+              </table>
+              <div class="kpi-sub">|快照预测净利润率 − 实际净利润率|，大于 1.5 个百分点标红 · <a href="PAGE-F10-01.html">公司汇总</a></div>
+            </div>
+            <div class="card kpi-card fade-in">
+              <div class="kpi-label">编制任务提交率</div>
+              <div class="kpi-value small">无进行中的任务</div>
+              <div class="kpi-sub">最近：2027 年度预算编制 · 已通过 CEO 审批<br>提交率 100.0%（20 / 20 个单位）</div>
+              <div class="kpi-sub"><a href="PAGE-F03-01.html">编制任务</a></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="kpi-bp" hidden>
+          <h2 class="sec-title">导入与核对</h2>
+          <div class="grid-4">
+            <div class="card kpi-card">
+              <div class="kpi-label">金蝶实际 · 最近导入期间</div>
+              <div class="kpi-value">2027-04</div>
+              <div class="kpi-sub"><a href="PAGE-F09-01.html">实际数导入</a></div>
+            </div>
+            <div class="card kpi-card">
+              <div class="kpi-label">BI 数据 · 最近导入批次</div>
+              <div class="kpi-value">2027-04</div>
+              <div class="kpi-sub">双月批次 2027-03～04，已覆盖 1–4 月</div>
+            </div>
+            <div class="card kpi-card">
+              <div class="kpi-label">BI 与金蝶差异超 3% 的组合</div>
+              <div class="kpi-value bad">2</div>
+              <div class="kpi-sub">2027-04 · 店铺 × 站点 · <a href="PAGE-F09-02.html">去核对</a></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 空 -->
+      <div data-view="empty" hidden>
+        <h2 class="sec-title" style="margin-top:0">我的待办</h2>
+        <div class="grid-3">
+          <div class="card"><div class="todo-head"><span class="kpi-label">待填报</span></div><div class="todo-count">0</div><div class="todo-empty">当前没有需要你填报的单位</div></div>
+          <div class="card"><div class="todo-head"><span class="kpi-label">待审批</span></div><div class="todo-count">0</div><div class="todo-empty">当前没有待你审批的事项</div></div>
+          <div class="card"><div class="todo-head"><span class="kpi-label">未处理预警</span></div><div class="todo-count">0</div><div class="todo-empty">你的数据范围内没有未处理预警</div></div>
+        </div>
+        <div class="card state" style="margin-top:var(--space-6)">
+          <div class="state-title">还没有可计算的关键数</div>
+          <p>年初原始目标经 CEO 审批、且导入第一个月金蝶实际后，这里显示净利润达成率与预测偏差。</p>
+          <a class="btn btn-primary" href="PAGE-F03-01.html">发布编制任务</a>
+        </div>
+      </div>
+
+      <!-- 加载 -->
+      <div data-view="loading" hidden aria-busy="true">
+        <div class="grid-3">
+          <div class="card"><div class="skeleton" style="width:40%"></div><div class="skeleton" style="width:30%;height:28px;margin:16px 0"></div><div class="skeleton"></div><div class="skeleton" style="margin-top:12px"></div></div>
+          <div class="card"><div class="skeleton" style="width:40%"></div><div class="skeleton" style="width:30%;height:28px;margin:16px 0"></div><div class="skeleton"></div><div class="skeleton" style="margin-top:12px"></div></div>
+          <div class="card"><div class="skeleton" style="width:40%"></div><div class="skeleton" style="width:30%;height:28px;margin:16px 0"></div><div class="skeleton"></div><div class="skeleton" style="margin-top:12px"></div></div>
+        </div>
+      </div>
+
+      <!-- 错误 -->
+      <div data-view="error" hidden>
+        <div class="card state" role="alert">
+          <div class="state-title">工作台数据加载失败</div>
+          <p>网络异常或服务暂时不可用，请重试。</p>
+          <button class="btn" data-goto="normal">重试</button>
+        </div>
+      </div>
+
+      <!-- 无权限 -->
+      <div data-view="noperm" hidden>
+        <div class="card state" role="alert">
+          <div class="state-title">未开通预算权限，请联系财务负责人</div>
+          <p>你的预算角色已被撤销，本次请求未返回任何数据。</p>
+          <a class="btn" href="PAGE-F01-01.html">返回登录页</a>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+  var ROLES = {
+    fin: {
+      user: '林晓（财务负责人）', kpi: 'fin', sys: true,
+      fill: { all: 'PAGE-F04-01.html', items: [] , empty: '财务负责人没有填报单位' },
+      appr: { all: 'PAGE-F07-01.html', items: [
+        ['2027 年第二季度目标调整 · 运营部', '目标调整 · 部门负责人赵磊已通过 · 2027-05-10 提交', 'PAGE-F07-02.html'],
+        ['规则「品类毛利率比预算低 3 个百分点」v2', '规则审批 · 陈思雨 2027-05-09 提交', 'PAGE-F07-02.html']
+      ] },
+      warn: { all: 'PAGE-F11-01.html', items: [
+        ['TikTok-US-01 新渠道连续 2 个月收入达成率 < 70%', '2027-03～04 · 新渠道放量预警 v1', 'PAGE-F11-01.html'],
+        ['人力资源部 · 培训费 额度使用率超出时间进度 10 个百分点', '2027-04 · 部门费用预警 v1', 'PAGE-F11-01.html'],
+        ['灯镜 · 毛利率比预算低 3 个百分点', '2027-04 · 品类毛利预警 v1', 'PAGE-F11-01.html']
+      ] }
+    },
+    bp: {
+      user: '陈思雨（财务BP）', kpi: 'bp', sys: false,
+      fill: { all: 'PAGE-F04-01.html', items: [
+        ['2027 年第二季度滚动预测 · 成本比例', '填报中 · 截止 2027-05-20', 'PAGE-F04-04.html']
+      ] },
+      appr: { all: 'PAGE-F07-01.html', items: [], empty: '当前没有待你审批的事项' },
+      warn: { all: 'PAGE-F11-01.html', items: [
+        ['TikTok-US-01 新渠道连续 2 个月收入达成率 < 70%', '2027-03～04 · 新渠道放量预警 v1', 'PAGE-F11-01.html'],
+        ['人力资源部 · 培训费 额度使用率超出时间进度 10 个百分点', '2027-04 · 部门费用预警 v1', 'PAGE-F11-01.html'],
+        ['灯镜 · 毛利率比预算低 3 个百分点', '2027-04 · 品类毛利预警 v1', 'PAGE-F11-01.html']
+      ] }
+    },
+    ops: {
+      user: '王浩（运营）', kpi: null, sys: false,
+      fill: { all: 'PAGE-F04-01.html', items: [
+        ['2027 年第二季度滚动预测 · Amazon 平台渠道', '填报中 · 截止 2027-05-20 · 4 个店铺', 'PAGE-F04-02.html']
+      ] },
+      appr: { all: 'PAGE-F07-01.html', items: [], empty: '当前没有待你审批的事项' },
+      warn: { all: 'PAGE-F11-01.html', items: [], empty: '你负责的渠道当前没有未处理预警' }
+    },
+    dept: {
+      user: '郑可（部门预算专员 · 人力资源部）', kpi: null, sys: false,
+      fill: { all: 'PAGE-F05-01.html', items: [], empty: '当前没有需要你填报的单位' },
+      appr: { all: 'PAGE-F07-01.html', items: [], empty: '当前没有待你审批的事项' },
+      warn: { all: 'PAGE-F11-01.html', items: [
+        ['人力资源部 · 培训费 额度使用率超出时间进度 10 个百分点', '2027-04 · 部门费用预警 v1', 'PAGE-F11-01.html']
+      ] }
+    }
+  };
+
+  function card(title, block) {
+    var html = '<div class="card"><div class="todo-head"><span class="kpi-label">' + title + '</span><a href="' + block.all + '">查看全部</a></div>';
+    html += '<div class="todo-count">' + block.items.length + '</div>';
+    if (!block.items.length) {
+      html += '<div class="todo-empty">' + (block.empty || '暂无') + '</div>';
+    } else {
+      html += '<ul class="todo-list">' + block.items.map(function (it) {
+        return '<li><a href="' + it[2] + '"><div class="t1">' + it[0] + '</div><div class="t2">' + it[1] + '</div></a></li>';
+      }).join('') + '</ul>';
+    }
+    return html + '</div>';
+  }
+
+  function setRole(key) {
+    var r = ROLES[key];
+    document.getElementById('cur-user').textContent = r.user;
+    document.getElementById('todos').innerHTML = card('待填报', r.fill) + card('待审批', r.appr) + card('未处理预警', r.warn);
+    document.getElementById('kpi-fin').hidden = r.kpi !== 'fin';
+    document.getElementById('kpi-bp').hidden = r.kpi !== 'bp';
+    document.getElementById('nav-sys').hidden = !r.sys;
+    document.getElementById('nav-sys-item').hidden = !r.sys;
+    document.querySelectorAll('[data-vis]').forEach(function (n) { n.hidden = n.dataset.vis.split(' ').indexOf(key) < 0; });
+    document.querySelectorAll('[data-role]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.role === key); });
+  }
+
+  function show(state) {
+    document.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.dataset.view !== state; });
+    document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.protoState === state); });
+  }
+
+  document.querySelectorAll('[data-role]').forEach(function (b) { b.addEventListener('click', function () { setRole(b.dataset.role); }); });
+  document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.protoState); }); });
+  document.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.goto); }); });
+  setRole('fin');
+</script>
+</body>
+</html>

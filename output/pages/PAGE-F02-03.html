@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F02-03">
+  <title>B端客户与部门 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); color: var(--fg); background: var(--bg); }
+    .drawer-mask, .drawer { z-index: 10; }
+    .modal-backdrop { z-index: 20; }
+    .toast { z-index: 30; }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-4); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .topbar nav { color: var(--muted); font-size: var(--text-sm); }
+    .topbar a { color: var(--fg-2); }
+    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+    .page-head .page-title { margin: 0; }
+    .tabs button.tab { background: none; border-width: 0 0 2px; font: inherit; cursor: pointer; }
+    .bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); }
+    .meta { color: var(--muted); font-size: var(--text-sm); }
+    .cur { letter-spacing: 0.06em; }
+    .link-btn { background: none; border: 0; padding: 0; color: var(--fg-2); text-decoration: underline; cursor: pointer; font: inherit; border-radius: var(--radius-sm); }
+    .link-btn:hover { color: var(--fg); }
+    .link-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .modal h3 { margin: 0 0 var(--space-4); font-size: var(--text-lg); }
+    .modal .acts { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+    .field { margin-bottom: var(--space-4); }
+    .radio { display: flex; gap: var(--space-4); font-size: var(--text-sm); }
+    .field > label, .field > .flabel { display: block; font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-1); }
+    .field .input, .field .select { width: 100%; box-sizing: border-box; }
+    .req { color: var(--danger); }
+    .hint { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); }
+    .warn-line { font-size: var(--text-xs); color: var(--warn); margin-top: var(--space-1); }
+    .warn-line a { color: var(--fg-2); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html" aria-current="page">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">基础数据 / B端客户与部门</nav>
+      <div>当前用户：<span id="cur-user">陈思雨（财务BP）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型状态切换">
+        <strong>原型说明，非产品功能：</strong>
+        <span>视角</span>
+        <button class="btn" data-role="bp" aria-pressed="true">财务BP</button>
+        <button class="btn" data-role="ro" aria-pressed="false">CEO / 财务负责人（只读）</button>
+        <span>状态</span>
+        <button class="btn" data-proto-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-proto-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-proto-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-proto-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-proto-state="noperm" aria-pressed="false">无权限</button>
+      </div>
+
+      <div class="page-head"><h1 class="page-title">B端客户与部门</h1></div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="t-cust" aria-selected="true" aria-controls="p-cust">B端客户</button>
+        <button class="tab" role="tab" id="t-dept" aria-selected="false" aria-controls="p-dept">部门</button>
+      </div>
+
+      <div data-view="normal">
+        <section id="p-cust" role="tabpanel" aria-labelledby="t-cust">
+          <div class="bar">
+            <span class="meta" id="c-count"></span>
+            <button class="btn btn-primary" id="add-cust">新增客户</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table" aria-label="B端客户">
+              <thead><tr><th>客户名称</th><th>负责部门</th><th>结算币种</th><th>B端业务负责人</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody id="c-rows"></tbody>
+            </table>
+          </div>
+          <p class="meta">B端业务负责人取自「角色与权限」中分配了该客户范围的员工。</p>
+        </section>
+
+        <section id="p-dept" role="tabpanel" aria-labelledby="t-dept" hidden>
+          <div class="bar">
+            <span class="meta" id="d-count"></span>
+            <button class="btn btn-primary" id="add-dept">新增部门</button>
+          </div>
+          <div class="table-wrap">
+            <table class="table" aria-label="部门清单">
+              <thead><tr><th class="num">序号</th><th>部门名称</th><th>部门负责人</th><th>部门预算专员</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody id="d-rows"></tbody>
+            </table>
+          </div>
+          <p class="meta">部门负责人、部门预算专员取自「角色与权限」，在 <a href="PAGE-F01-02.html" style="color:var(--fg-2)">角色与权限</a> 中修改。</p>
+        </section>
+      </div>
+
+      <div data-view="empty" hidden>
+        <div class="table-wrap"><div class="state">
+          <div class="state-title">还没有 B端客户</div>
+          <p>新增客户并指定负责部门与结算币种后，该客户会出现在负责部门的 B端填报中。</p>
+          <button class="btn" data-goto-add>新增客户</button>
+        </div></div>
+      </div>
+
+      <div data-view="loading" hidden aria-busy="true">
+        <div class="table-wrap" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:30%"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px;width:70%"></div>
+        </div>
+      </div>
+
+      <div data-view="error" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">数据加载失败</div>
+          <p>网络异常或服务暂时不可用，请重试。</p>
+          <button class="btn" data-goto="normal">重试</button>
+        </div></div>
+      </div>
+
+      <div data-view="noperm" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">无权限</div>
+          <p>B端客户与部门清单由财务BP 维护。</p>
+          <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+        </div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="c-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cm-title">
+    <h3 id="cm-title">新增 B端客户</h3>
+    <div class="field">
+      <label for="cm-name"><span class="req">*</span> 客户名称</label>
+      <input class="input" id="cm-name" placeholder="如 Home Hardware">
+      <div class="field-error" id="e-cname" hidden>请填写客户名称</div>
+      <div class="hint">客户名称不能重复</div>
+    </div>
+    <div class="field">
+      <label for="cm-dept"><span class="req">*</span> 负责部门</label>
+      <select class="select" id="cm-dept"><option value="">请选择</option><option>美国业务部</option><option>外贸部</option></select>
+      <div class="field-error" id="e-cdept" hidden>请选择负责部门</div>
+      <div class="hint">保存后，该客户出现在负责部门的 B端填报中</div>
+    </div>
+    <div class="field">
+      <label for="cm-cur"><span class="req">*</span> 结算币种</label>
+      <select class="select" id="cm-cur"><option value="">请选择</option><option>USD</option><option>CAD</option><option>EUR</option><option>GBP</option><option>AUD</option></select>
+      <div class="field-error" id="e-ccur" hidden>请选择结算币种</div>
+      <div class="warn-line" id="w-cur" hidden>2027 年度尚无该币种的预算汇率，涉及该币种的填报将无法提交。<a href="PAGE-F02-05.html">去汇率页补录</a></div>
+    </div>
+    <div class="field" id="cm-st-wrap">
+      <span class="flabel">状态</span>
+      <div class="radio"><label><input type="radio" name="cm-st" value="on" checked> 启用</label><label><input type="radio" name="cm-st" value="off"> 停用</label></div>
+      <div class="hint">停用后不再出现在新的 B端填报中；已有预算与实际数据保留。客户不可删除</div>
+    </div>
+    <div class="acts"><button class="btn" id="cm-cancel">取消</button><button class="btn btn-primary" id="cm-ok">保存</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="d-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dm-title">
+    <h3 id="dm-title">新增部门</h3>
+    <div class="field">
+      <label for="dm-name"><span class="req">*</span> 部门名称</label>
+      <input class="input" id="dm-name" placeholder="如 品牌部">
+      <div class="field-error" id="e-dname" hidden></div>
+      <div class="hint">部门名称不能重复，且须与金蝶辅助核算中的部门名称一致，否则金蝶导入会校验失败</div>
+    </div>
+    <div class="field" id="dm-st-wrap">
+      <span class="flabel">状态</span>
+      <div class="radio"><label><input type="radio" name="dm-st" value="on" checked> 启用</label><label><input type="radio" name="dm-st" value="off"> 停用</label></div>
+      <div class="hint">停用后不再出现在新的编制任务与部门费用填报中；已有预算与实际数据保留。部门不可删除</div>
+    </div>
+    <div class="acts"><button class="btn" id="dm-cancel">取消</button><button class="btn btn-primary" id="dm-ok">保存</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+  var RATES = ['USD', 'CAD', 'EUR', 'GBP'];
+  var custs = [
+    { n: 'Ferguson', d: '美国业务部', c: 'USD', o: '孙婷' },
+    { n: 'Menards', d: '美国业务部', c: 'USD', o: '孙婷' },
+    { n: 'Bauhaus', d: '外贸部', c: 'EUR', o: '刘洋' },
+    { n: 'Rona', d: '外贸部', c: 'CAD', o: '刘洋', off: true }
+  ];
+  var depts = [
+    ['产品作战部', '黄志强', '许曼'], ['开发部', '冯磊', '韩雪'], ['研发部', '曹立新', '彭雯'], ['供应中心', '蒋涛', '沈佳'],
+    ['运营部', '赵磊', '杨帆'], ['市场部', '罗斌', '钱文斌（已停用）'], ['美国业务部', '高峰', '孙婷'], ['视觉部', '梁晨', '—'],
+    ['外贸部', '潘宇', '刘洋'], ['物流物控部', '何建国', '邓敏'], ['项目管理部', '袁航', '唐悦'], ['信息数字化部', '谢云峰', '叶子轩'],
+    ['人力资源部', '吴静', '郑可'], ['财务部', '林晓', '陈思雨'], ['总经办', '周明远', '苏琪']
+  ];
+  var editing = null;
+
+  var role = 'bp';
+  function st(off) { return off ? '<span class="badge">停用</span>' : '<span class="badge badge-good">启用</span>'; }
+  function act(k, i) { return role === 'bp' ? '<button class="link-btn" data-' + k + '="' + i + '">编辑</button>' : '<span class="meta">只读</span>'; }
+  function same(a, b) { return a.toLowerCase() === b.toLowerCase(); }
+  function renderC() {
+    document.getElementById('c-rows').innerHTML = custs.map(function (x, i) {
+      return '<tr><td>' + x.n + '</td><td>' + x.d + '</td><td class="cur">' + x.c + '</td><td>' + (x.o || '<span class="meta">未分配</span>') + '</td><td>' + st(x.off) + '</td><td>' + act('ce', i) + '</td></tr>';
+    }).join('');
+    var us = custs.filter(function (x) { return x.d === '美国业务部'; }).length;
+    document.getElementById('c-count').textContent = '共 ' + custs.length + ' 个客户 · 美国业务部 ' + us + ' · 外贸部 ' + (custs.length - us);
+    document.querySelectorAll('[data-ce]').forEach(function (b) { b.addEventListener('click', function () { openC(+b.dataset.ce); }); });
+  }
+  function renderD() {
+    document.getElementById('d-rows').innerHTML = depts.map(function (d, i) {
+      return '<tr><td class="num">' + (i + 1) + '</td><td>' + d[0] + '</td><td>' + d[1] + '</td><td>' + d[2] + '</td><td>' + st(d[3]) + '</td><td>' + act('de', i) + '</td></tr>';
+    }).join('');
+    document.getElementById('d-count').textContent = '共 ' + depts.length + ' 个部门';
+    document.querySelectorAll('[data-de]').forEach(function (b) { b.addEventListener('click', function () { openD(+b.dataset.de); }); });
+  }
+
+  function clr(m) { m.querySelectorAll('.field-error').forEach(function (e) { e.hidden = true; }); m.querySelectorAll('[aria-invalid]').forEach(function (e) { e.removeAttribute('aria-invalid'); }); }
+  function bad(id, err, msg) { var e = document.getElementById(err); if (msg) e.textContent = msg; e.hidden = false; document.getElementById(id).setAttribute('aria-invalid', 'true'); }
+
+  var cm = document.getElementById('c-modal'), dm = document.getElementById('d-modal');
+  function openC(i) {
+    editing = i; clr(cm);
+    var x = i == null ? { n: '', d: '', c: '' } : custs[i];
+    document.getElementById('cm-title').textContent = i == null ? '新增 B端客户' : '编辑 B端客户 · ' + x.n;
+    document.getElementById('cm-name').value = x.n; document.getElementById('cm-dept').value = x.d; document.getElementById('cm-cur').value = x.c;
+    document.getElementById('cm-st-wrap').hidden = i == null;
+    document.querySelector('input[name="cm-st"][value="' + (x.off ? 'off' : 'on') + '"]').checked = true;
+    syncCur(); cm.hidden = false; document.getElementById('cm-name').focus();
+  }
+  function syncCur() { var v = document.getElementById('cm-cur').value; document.getElementById('w-cur').hidden = !v || RATES.indexOf(v) >= 0; }
+  document.getElementById('cm-cur').addEventListener('change', syncCur);
+  document.getElementById('add-cust').addEventListener('click', function () { openC(null); });
+  document.querySelectorAll('[data-goto-add]').forEach(function (b) { b.addEventListener('click', function () { show('normal'); openC(null); }); });
+  document.getElementById('cm-cancel').addEventListener('click', function () { cm.hidden = true; });
+  document.getElementById('cm-ok').addEventListener('click', function () {
+    clr(cm);
+    var v = { n: document.getElementById('cm-name').value.trim(), d: document.getElementById('cm-dept').value, c: document.getElementById('cm-cur').value }, ok = true;
+    v.off = editing != null && document.querySelector('input[name="cm-st"]:checked').value === 'off';
+    if (!v.n) { bad('cm-name', 'e-cname', '请填写客户名称'); ok = false; }
+    else if (custs.some(function (x, k) { return k !== editing && same(x.n, v.n); })) { bad('cm-name', 'e-cname', '客户名称已存在'); ok = false; }
+    if (!v.d) { bad('cm-dept', 'e-cdept'); ok = false; }
+    if (!v.c) { bad('cm-cur', 'e-ccur'); ok = false; }
+    if (!ok) return;
+    if (editing == null) custs.push(v); else { v.o = custs[editing].o; custs[editing] = v; }
+    cm.hidden = true; renderC();
+    toast(editing == null ? '已新增客户 ' + v.n + '，已加入' + v.d + '的 B端填报' : '已保存 ' + v.n);
+  });
+
+  function openD(i) {
+    editing = i; clr(dm);
+    document.getElementById('dm-title').textContent = i == null ? '新增部门' : '编辑部门 · ' + depts[i][0];
+    document.getElementById('dm-name').value = i == null ? '' : depts[i][0];
+    document.getElementById('dm-st-wrap').hidden = i == null;
+    document.querySelector('input[name="dm-st"][value="' + (i != null && depts[i][3] ? 'off' : 'on') + '"]').checked = true;
+    dm.hidden = false; document.getElementById('dm-name').focus();
+  }
+  document.getElementById('add-dept').addEventListener('click', function () { openD(null); });
+  document.getElementById('dm-cancel').addEventListener('click', function () { dm.hidden = true; });
+  document.getElementById('dm-ok').addEventListener('click', function () {
+    clr(dm);
+    var n = document.getElementById('dm-name').value.trim();
+    if (!n) { bad('dm-name', 'e-dname', '请填写部门名称'); return; }
+    if (depts.some(function (d, k) { return k !== editing && same(d[0], n); })) { bad('dm-name', 'e-dname', '部门名称已存在'); return; }
+    if (editing == null) depts.push([n, '—', '—']); else { depts[editing][0] = n; depts[editing][3] = document.querySelector('input[name="dm-st"]:checked').value === 'off'; }
+    dm.hidden = true; renderD(); toast(editing == null ? '已新增部门 ' + n + '，请在角色与权限中指定负责人' : '已保存');
+  });
+
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { cm.hidden = true; dm.hidden = true; } });
+  function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function () { t.hidden = true; }, 3000); }
+
+  var tabC = document.getElementById('t-cust'), tabD = document.getElementById('t-dept');
+  function setTab(c) {
+    tabC.setAttribute('aria-selected', c); tabD.setAttribute('aria-selected', !c);
+    document.getElementById('p-cust').hidden = !c; document.getElementById('p-dept').hidden = c;
+  }
+  tabC.addEventListener('click', function () { setTab(true); });
+  tabD.addEventListener('click', function () { setTab(false); });
+
+  function show(state) {
+    document.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.dataset.view !== state; });
+    document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.protoState === state); });
+    if (state === 'empty') setTab(true);
+    ['add-cust', 'add-dept'].forEach(function (id) { document.getElementById(id).hidden = role !== 'bp'; });
+  }
+  function setRole(r) {
+    role = r;
+    document.getElementById('cur-user').textContent = r === 'bp' ? '陈思雨（财务BP）' : '林晓（财务负责人）';
+    document.querySelectorAll('[data-role]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.role === r); });
+    show('normal'); renderC(); renderD();
+  }
+  document.querySelectorAll('[data-role]').forEach(function (b) { b.addEventListener('click', function () { setRole(b.dataset.role); }); });
+  document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.protoState); }); });
+  document.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.goto); }); });
+  renderC(); renderD();
+</script>
+</body>
+</html>

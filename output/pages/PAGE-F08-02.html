@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F08-02">
+  <title>版本对比</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    .app > div { min-width: 0; }
+    .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .brand { font-weight: 600; padding: var(--space-2) var(--space-3) var(--space-3); }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar nav a, .topbar .who a, .link { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; border-radius: var(--radius-sm); transition: color var(--motion-fast) var(--ease-standard); }
+    .topbar nav a:hover, .topbar .who a:hover, .link:hover { color: var(--fg); }
+    .topbar nav a:active, .topbar .who a:active, .link:active { color: var(--muted); }
+    .topbar nav a:focus-visible, .topbar .who a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-1); }
+    .btn-xs { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .btn-sm { height: 28px; padding: 0 var(--space-3); }
+    .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    .section { margin-bottom: var(--section-y-desktop); }
+    .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); line-height: var(--leading-tight); }
+    .muted { color: var(--muted); }
+    .small { font-size: var(--text-xs); }
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .field { margin-bottom: var(--space-4); }
+    .field > label, .field > .label { display: block; font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-1); }
+    .req::after { content: " *"; color: var(--danger); }
+    textarea.input { width: 100%; height: auto; min-height: 88px; padding: var(--space-2) var(--space-3); font-family: inherit; line-height: var(--leading-body); resize: vertical; box-sizing: border-box; }
+    .modal-backdrop { z-index: 20; }
+    .modal-backdrop[hidden] { display: none; }
+    .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+    .modal-wide { width: 640px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+    .notice { border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+    .notice.bad { border-left-color: var(--danger); }
+    .notice.warn { border-left-color: var(--warn); }
+    .notice.good { border-left-color: var(--success); }
+    .table td.wrap { white-space: normal; min-width: 220px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table td.w-n { white-space: normal; min-width: 96px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table tr.is-bad td { background: color-mix(in oklab, var(--danger), white 94%); }
+    .table tr.is-bad:hover td { background: color-mix(in oklab, var(--danger), white 90%); }
+    .chain { display: flex; gap: 0; list-style: none; padding: 0; margin: 0; }
+    .chain li { flex: 1; position: relative; padding: 0 var(--space-3) 0 var(--space-6); font-size: var(--text-sm); }
+    .chain li::before { content: ""; position: absolute; left: var(--space-1); top: 5px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--border); }
+    .chain li.done::before { background: var(--success); }
+    .chain li.now::before { background: var(--warn); }
+    .chain li.back::before { background: var(--danger); }
+    .chain .who { color: var(--fg); font-weight: 600; }
+    .chain .when { color: var(--muted); font-size: var(--text-xs); }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; color: var(--fg); }
+    .skel-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    [hidden] { display: none !important; }
+    .cmp-kpi .kpi-value { font-size: var(--text-xl); }
+    .cmp-kpi .line { display: flex; justify-content: space-between; font-size: var(--text-sm); color: var(--fg-2); font-variant-numeric: tabular-nums; margin-top: var(--space-1); }
+    .table td.dim { white-space: normal; line-height: var(--leading-tight); padding-top: var(--space-1); padding-bottom: var(--space-1); }
+    .table th.grp { text-align: center; border-left: 1px solid var(--border-soft); }
+    .table td.bl, .table th.bl { border-left: 1px solid var(--border-soft); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">预算管理平台</div>
+      <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+      <div class="nav-group">预算编制</div>
+      <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+      <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+      <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+      <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+      <div class="nav-group">预算版本</div>
+      <a class="nav-item" href="PAGE-F08-01.html" aria-current="page">版本管理</a>
+      <div class="nav-group">实际数</div>
+      <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+      <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+      <div class="nav-group">报表</div>
+      <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+      <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+      <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+      <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+      <div class="nav-group">预警与规则</div>
+      <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+      <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+      <div class="nav-group">基础数据</div>
+      <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+      <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+      <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+      <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+      <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+      <div class="nav-group">系统设置</div>
+      <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+    </aside>
+    <div>
+      <header class="topbar">
+        <nav aria-label="面包屑"><a href="PAGE-F00-01.html">工作台</a> / <a href="PAGE-F08-01.html">版本管理</a> / 版本对比</nav>
+        <div class="who">当前用户：<span id="who-name">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+      </header>
+      <main class="main">
+        <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+          <strong>原型说明，非产品功能</strong>
+          <span>页面状态：</span>
+          <span id="proto-states" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-set-state="normal" aria-pressed="true">正常</button>
+            <button class="btn btn-xs" type="button" data-set-state="empty" aria-pressed="false">空</button>
+            <button class="btn btn-xs" type="button" data-set-state="loading" aria-pressed="false">加载</button>
+            <button class="btn btn-xs" type="button" data-set-state="error" aria-pressed="false">错误</button>
+            <button class="btn btn-xs" type="button" data-set-state="noperm" aria-pressed="false">无权限</button>
+          </span>
+
+        </div>
+        <h1 class="page-title">版本对比</h1>
+        <div data-state="normal">
+          <div class="row section">
+            <label class="small muted" for="va">版本 A</label>
+            <select class="select" id="va"></select>
+            <label class="small muted" for="vb">版本 B</label>
+            <select class="select" id="vb"></select>
+            <label class="small muted" for="dim">维度</label>
+            <select class="select" id="dim">
+              <option value="store">渠道 × 店铺 × 站点</option>
+              <option value="cat">品类 × 新品/老品</option>
+              <option value="b2b">B端客户</option>
+            </select>
+            <span class="small muted">期间：全年（1–12 月）</span>
+            <span class="spacer"></span>
+            <button class="btn" type="button" onclick="toast('已生成 Excel：版本对比_' + document.getElementById('va').value + '_' + document.getElementById('vb').value + '.xlsx')">导出 Excel</button>
+          </div>
+          <div class="notice bad section" id="same-err" hidden role="alert">请选择两个不同的版本。</div>
+          <div id="cmp-body">
+            <p class="small muted" style="margin-top: 0">按你的数据范围显示：全公司。差额 = 版本 B − 版本 A。</p>
+            <div class="grid-3 section cmp-kpi" id="kpis"></div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th rowspan="2" id="dim-h">渠道 / 店铺 / 站点</th><th class="grp" colspan="3">收入</th><th class="grp" colspan="3">毛利</th><th class="grp" colspan="3">净利润（仅公司合计行）</th></tr>
+                  <tr><th class="num bl" id="ha1">A</th><th class="num" id="hb1">B</th><th class="num">差额</th><th class="num bl" id="ha2">A</th><th class="num" id="hb2">B</th><th class="num">差额</th><th class="num bl" id="ha3">A</th><th class="num" id="hb3">B</th><th class="num">差额</th></tr>
+                </thead>
+                <tbody id="rows"></tbody>
+              </table>
+            </div>
+            <p class="small muted">净利润 = 平台渠道毛利 + B端毛利 − 部门费用 + 公司层其他损益。公共费用与公司层其他损益不分摊到渠道、品类或客户，因此净利润只在公司合计行（及上方卡片）显示，维度行与维度合计行显示「—」。</p>
+          </div>
+        </div>
+        <div data-state="empty" hidden>
+          <div class="card state">
+            <div class="state-title">至少需要两个预算版本才能对比</div>
+            <p>当前年度只有「年初原始目标」一个版本。季度目标调整生效或发布滚动预测快照后即可对比。</p>
+            <a class="btn" href="PAGE-F08-01.html">返回版本管理</a>
+          </div>
+        </div>
+        <div data-state="loading" hidden aria-busy="true">
+          <p class="muted small">正在加载…</p>
+          <div class="table-wrap">
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+        <div data-state="error" hidden>
+          <div class="card state" role="alert">
+            <div class="state-title">数据加载失败</div>
+            <p>服务器暂时无法返回数据，已录入的内容不受影响。请稍后重试；多次失败请联系信息数字化部。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click()">重试</button>
+          </div>
+        </div>
+        <div data-state="noperm" hidden>
+          <div class="card state">
+            <div class="state-title">你没有访问该页面的权限</div>
+            <p>你的角色没有预算版本查看权限。运营、B端业务和部门角色只能对比其数据范围内的维度。</p>
+            <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var bar = document.getElementById('proto-states');
+    if (bar) bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-set-state]');
+      if (!b) return;
+      bar.querySelectorAll('[data-set-state]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-state]').forEach(function (s) { s.hidden = s.getAttribute('data-state') !== b.getAttribute('data-set-state'); });
+    });
+  })();
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3000);
+  }
+  function openModal(id) { var m = document.getElementById(id); m.hidden = false; var f = m.querySelector('textarea, input, select, button'); if (f) f.focus(); }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(function (m) { m.hidden = true; });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-close]');
+    if (c) closeModal(c.getAttribute('data-close'));
+  });
+  function fmt(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n < 0 ? '−' : '') + '¥ ' + s; }
+  function fmtSigned(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n > 0 ? '+' : n < 0 ? '−' : '') + '¥ ' + s; }
+  var VERS = { 'V1': 'V1 年初原始目标', 'V2': 'V2 调整后目标（2027 Q1）', 'Q1 快照': '2027 Q1 滚动预测快照' };
+  // 全年人民币：店铺 [渠道, 店铺, 站点, 收入V1, 毛利V1, 收入V2, 毛利V2]；Q1 快照 = 以年初原始目标发布
+  var STORE = [
+    ['Amazon', 'Amazon-US-01', '美国', 132000000, 28380000, 134400000, 28896000],
+    ['Amazon', 'Amazon-CA-01', '加拿大', 18600000, 3720000, 18600000, 3720000],
+    ['Amazon', 'Amazon-UK-01', '英国', 15200000, 3192000, 15200000, 3192000],
+    ['Amazon', 'Amazon-DE-01', '德国', 16800000, 3360000, 16800000, 3360000],
+    ['Wayfair', 'Wayfair-US-01', '美国', 42000000, 8820000, 37800000, 7938000],
+    ['Home Depot', 'HomeDepot-US-01', '美国', 30000000, 6000000, 31200000, 6240000],
+    ["Lowe's", 'Lowes-US-01', '美国', 21600000, 4104000, 21600000, 4104000],
+    ['独立站', 'Shopify-US-01', '美国', 14400000, 3456000, 14400000, 3456000],
+    ['TikTok Shop', 'TikTok-US-01', '美国', 6000000, 1080000, 6000000, 1080000]
+  ];
+  var B2B = [['Ferguson（美国业务部 · USD）', 18000000, 3600000, 18000000, 3600000], ['Menards（美国业务部 · USD）', 9600000, 1824000, 9600000, 1824000], ['Bauhaus（外贸部 · EUR）', 10800000, 2160000, 10800000, 2160000]];
+  var FEE = 47000000, OTHER = -5300000;
+  var CAT = [['框镜', 0.34, 1.05], ['灯镜', 0.30, 0.98], ['镜柜', 0.24, 0.955], ['浴室门', 0.12, 1.0]];
+  function col(v) { return v === 'V2' ? 1 : 0; }
+  function rows(dim, a, b) {
+    var ia = col(a), ib = col(b), out = [];
+    if (dim === 'store') STORE.forEach(function (s) { out.push([s[1] + ' · ' + s[2] + '<div class="small muted">' + s[0] + '</div>', s[3 + ia * 2], s[4 + ia * 2], s[3 + ib * 2], s[4 + ib * 2]]); });
+    if (dim === 'b2b') B2B.forEach(function (s) { out.push([s[0], s[1 + ia * 2], s[2 + ia * 2], s[1 + ib * 2], s[2 + ib * 2]]); });
+    if (dim === 'cat') {
+      var t = [0, 0, 0, 0]; STORE.forEach(function (s) { t[0] += s[3 + ia * 2]; t[1] += s[4 + ia * 2]; t[2] += s[3 + ib * 2]; t[3] += s[4 + ib * 2]; });
+      var norm = CAT.reduce(function (acc, c) { return acc + c[1] * c[2]; }, 0);
+      CAT.forEach(function (c) {
+        [['老品', 0.7], ['新品', 0.3]].forEach(function (n) {
+          var w = c[1] * n[1];
+          out.push([c[0] + ' · ' + n[0], round(t[0] * w), round(t[1] * w * c[2] / norm), round(t[2] * w), round(t[3] * w * c[2] / norm)]);
+        });
+      });
+    }
+    return out;
+  }
+  function round(v) { return Math.round(v * 100) / 100; }
+  function diffCell(v) { return '<td class="num' + (v < 0 ? ' neg' : '') + '">' + (v === 0 ? '—' : fmtSigned(v)) + '</td>'; }
+  var NONET = '<td class="num bl muted">—</td><td class="num muted">—</td><td class="num muted">—</td>';
+  function totals(v) { var i = col(v), r = 0, g = 0; STORE.forEach(function (s) { r += s[3 + i * 2]; g += s[4 + i * 2]; }); B2B.forEach(function (s) { r += s[1 + i * 2]; g += s[2 + i * 2]; }); return { rev: r, gp: g, net: g - FEE + OTHER }; }
+  function render() {
+    var a = document.getElementById('va').value, b = document.getElementById('vb').value, dim = document.getElementById('dim').value;
+    var same = a === b;
+    document.getElementById('same-err').hidden = !same;
+    document.getElementById('cmp-body').hidden = same;
+    if (same) return;
+    location.hash = encodeURIComponent(a + '|' + b);
+    ['ha1', 'ha2', 'ha3'].forEach(function (id) { document.getElementById(id).textContent = 'A · ' + a; });
+    ['hb1', 'hb2', 'hb3'].forEach(function (id) { document.getElementById(id).textContent = 'B · ' + b; });
+    document.getElementById('dim-h').textContent = { store: '渠道 · 店铺 · 站点', cat: '品类 · 新品/老品（平台渠道）', b2b: 'B端客户' }[dim];
+    var ta = totals(a), tb = totals(b);
+    document.getElementById('kpis').innerHTML = [['公司收入', 'rev'], ['公司毛利', 'gp'], ['公司净利润', 'net']].map(function (k) {
+      var d = tb[k[1]] - ta[k[1]];
+      return '<div class="card fade-in"><div class="kpi-label">' + k[0] + '差额（B − A）</div><div class="kpi-value' + (d < 0 ? ' neg' : '') + '">' + (d === 0 ? '¥ 0.00' : fmtSigned(d)) + '</div><div class="line"><span>A · ' + a + '</span><span>' + fmt(ta[k[1]]) + '</span></div><div class="line"><span>B · ' + b + '</span><span>' + fmt(tb[k[1]]) + '</span></div></div>';
+    }).join('');
+    var rs = rows(dim, a, b), s = [0, 0, 0, 0];
+    var html = rs.map(function (r) {
+      s[0] += r[1]; s[1] += r[2]; s[2] += r[3]; s[3] += r[4];
+      return '<tr><td class="dim">' + r[0] + '</td><td class="num bl">' + fmt(r[1]) + '</td><td class="num">' + fmt(r[3]) + '</td>' + diffCell(round(r[3] - r[1])) + '<td class="num bl">' + fmt(r[2]) + '</td><td class="num">' + fmt(r[4]) + '</td>' + diffCell(round(r[4] - r[2])) + NONET + '</tr>';
+    }).join('');
+    html += '<tr class="total"><td class="dim">合计</td><td class="num bl">' + fmt(s[0]) + '</td><td class="num">' + fmt(s[2]) + '</td>' + diffCell(round(s[2] - s[0])) + '<td class="num bl">' + fmt(s[1]) + '</td><td class="num">' + fmt(s[3]) + '</td>' + diffCell(round(s[3] - s[1])) + NONET + '</tr>';
+    html += '<tr class="total"><td class="dim">公司合计（含 B端、部门费用与公司层其他损益）</td><td class="num bl">' + fmt(ta.rev) + '</td><td class="num">' + fmt(tb.rev) + '</td>' + diffCell(round(tb.rev - ta.rev)) + '<td class="num bl">' + fmt(ta.gp) + '</td><td class="num">' + fmt(tb.gp) + '</td>' + diffCell(round(tb.gp - ta.gp)) + '<td class="num bl">' + fmt(ta.net) + '</td><td class="num">' + fmt(tb.net) + '</td>' + diffCell(round(tb.net - ta.net)) + '</tr>';
+    document.getElementById('rows').innerHTML = html;
+  }
+  ['va', 'vb'].forEach(function (id, i) {
+    document.getElementById(id).innerHTML = Object.keys(VERS).map(function (k) { return '<option value="' + k + '">' + VERS[k] + '</option>'; }).join('');
+  });
+  var h = decodeURIComponent(location.hash.slice(1)).split('|');
+  document.getElementById('va').value = VERS[h[0]] ? h[0] : 'V1';
+  document.getElementById('vb').value = VERS[h[1]] ? h[1] : 'V2';
+  ['va', 'vb', 'dim'].forEach(function (id) { document.getElementById(id).addEventListener('change', render); });
+  render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F12-01">
+  <title>规则库</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    .app > div { min-width: 0; }
+    .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .brand { font-weight: 600; padding: var(--space-2) var(--space-3) var(--space-3); }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar nav a, .topbar .who a, .link { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; border-radius: var(--radius-sm); transition: color var(--motion-fast) var(--ease-standard); }
+    .topbar nav a:hover, .topbar .who a:hover, .link:hover { color: var(--fg); }
+    .topbar nav a:active, .topbar .who a:active, .link:active { color: var(--muted); }
+    .topbar nav a:focus-visible, .topbar .who a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-1); }
+    .btn-xs { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .btn-sm { height: 28px; padding: 0 var(--space-3); }
+    .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    .section { margin-bottom: var(--section-y-desktop); }
+    .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); line-height: var(--leading-tight); }
+    .muted { color: var(--muted); }
+    .small { font-size: var(--text-xs); }
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .field { margin-bottom: var(--space-4); }
+    .field > label, .field > .label { display: block; font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-1); }
+    .req::after { content: " *"; color: var(--danger); }
+    textarea.input { width: 100%; height: auto; min-height: 88px; padding: var(--space-2) var(--space-3); font-family: inherit; line-height: var(--leading-body); resize: vertical; box-sizing: border-box; }
+    .modal-backdrop { z-index: 20; }
+    .modal-backdrop[hidden] { display: none; }
+    .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+    .modal-wide { width: 640px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+    .notice { border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+    .notice.bad { border-left-color: var(--danger); }
+    .notice.warn { border-left-color: var(--warn); }
+    .notice.good { border-left-color: var(--success); }
+    .table td.wrap { white-space: normal; min-width: 220px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table td.w-n { white-space: normal; min-width: 96px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table tr.is-bad td { background: color-mix(in oklab, var(--danger), white 94%); }
+    .table tr.is-bad:hover td { background: color-mix(in oklab, var(--danger), white 90%); }
+    .chain { display: flex; gap: 0; list-style: none; padding: 0; margin: 0; }
+    .chain li { flex: 1; position: relative; padding: 0 var(--space-3) 0 var(--space-6); font-size: var(--text-sm); }
+    .chain li::before { content: ""; position: absolute; left: var(--space-1); top: 5px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--border); }
+    .chain li.done::before { background: var(--success); }
+    .chain li.now::before { background: var(--warn); }
+    .chain li.back::before { background: var(--danger); }
+    .chain .who { color: var(--fg); font-weight: 600; }
+    .chain .when { color: var(--muted); font-size: var(--text-xs); }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; color: var(--fg); }
+    .skel-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    [hidden] { display: none !important; }
+
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">预算管理平台</div>
+      <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+      <div class="nav-group">预算编制</div>
+      <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+      <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+      <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+      <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+      <div class="nav-group">预算版本</div>
+      <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+      <div class="nav-group">实际数</div>
+      <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+      <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+      <div class="nav-group">报表</div>
+      <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+      <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+      <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+      <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+      <div class="nav-group">预警与规则</div>
+      <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+      <a class="nav-item" href="PAGE-F12-01.html" aria-current="page">规则库</a>
+      <div class="nav-group">基础数据</div>
+      <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+      <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+      <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+      <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+      <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+      <div class="nav-group">系统设置</div>
+      <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+    </aside>
+    <div>
+      <header class="topbar">
+        <nav aria-label="面包屑"><a href="PAGE-F00-01.html">工作台</a> / 预警与规则 / 规则库</nav>
+        <div class="who">当前用户：<span id="who-name">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+      </header>
+      <main class="main">
+        <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+          <strong>原型说明，非产品功能</strong>
+          <span>页面状态：</span>
+          <span id="proto-states" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-set-state="normal" aria-pressed="true">正常</button>
+            <button class="btn btn-xs" type="button" data-set-state="empty" aria-pressed="false">空</button>
+            <button class="btn btn-xs" type="button" data-set-state="loading" aria-pressed="false">加载</button>
+            <button class="btn btn-xs" type="button" data-set-state="error" aria-pressed="false">错误</button>
+            <button class="btn btn-xs" type="button" data-set-state="noperm" aria-pressed="false">无权限</button>
+          </span>
+          <span class="sep" aria-hidden="true"></span>
+          <span>示例时点：</span>
+          <span id="proto-time" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-t="now" aria-pressed="true">2027-05-12</button>
+            <button class="btn btn-xs" type="button" data-t="init" aria-pressed="false">系统首次部署后</button>
+          </span>
+        </div>
+        <h1 class="page-title">规则库</h1>
+        <div data-state="normal">
+          <div class="row" style="margin-bottom: var(--space-3)">
+            <div class="tabs" role="tablist" style="margin-bottom: 0" id="type-tabs">
+              <a class="tab" href="#" role="tab" data-type="" aria-selected="true">全部</a>
+              <a class="tab" href="#" role="tab" data-type="驱动假设" aria-selected="false">驱动假设</a>
+              <a class="tab" href="#" role="tab" data-type="预警规则" aria-selected="false">预警规则</a>
+              <a class="tab" href="#" role="tab" data-type="额度标准" aria-selected="false">额度标准</a>
+            </div>
+            <span class="spacer"></span>
+            <label class="small muted" for="f-cred">可信度</label>
+            <select class="select" id="f-cred"><option value="">全部</option><option>未验证经验</option><option>历史观察</option><option>已验证</option></select>
+            <label class="small muted" for="f-st">状态</label>
+            <select class="select" id="f-st"><option value="">全部</option><option value="on">有生效版本</option><option value="wait">有待审批版本</option></select>
+            <a class="btn btn-primary" href="PAGE-F12-02.html#new">新建规则</a>
+          </div>
+          <p class="small muted" style="margin: 0 0 var(--space-3)">可信度：<span class="badge badge-warn">未验证经验</span> 凭经验提出、尚无数据支撑 · <span class="badge">历史观察</span> 有历史数据观察支撑 · <span class="badge badge-good">已验证</span> 经实际结果检验。驱动假设和预警规则由财务负责人审批；额度标准还需 CEO 审批。</p>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th>规则名称</th><th>类型</th><th>可信度</th><th>生效版本</th><th>待审批版本</th><th>生效时间</th><th>最近提交人</th><th>操作</th></tr></thead>
+              <tbody id="rows"></tbody>
+            </table>
+            <div class="state" id="filter-empty" hidden><div class="state-title">没有符合筛选条件的规则</div><p>换一个类型、可信度或状态。</p></div>
+          </div>
+          <div class="pager"><span id="pager-text"></span><span>每页 50 条</span></div>
+        </div>
+        <div data-state="empty" hidden>
+          <div class="card state">
+            <div class="state-title">规则库还没有规则</div>
+            <p>把驱动假设、预警规则和额度标准放进规则库，审批通过后生效并保留版本历史。</p>
+            <a class="btn" href="PAGE-F12-02.html#new">新建规则</a>
+          </div>
+        </div>
+        <div data-state="loading" hidden aria-busy="true">
+          <p class="muted small">正在加载…</p>
+          <div class="table-wrap">
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+        <div data-state="error" hidden>
+          <div class="card state" role="alert">
+            <div class="state-title">数据加载失败</div>
+            <p>服务器暂时无法返回数据，已录入的内容不受影响。请稍后重试；多次失败请联系信息数字化部。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click()">重试</button>
+          </div>
+        </div>
+        <div data-state="noperm" hidden>
+          <div class="card state">
+            <div class="state-title">你没有访问该页面的权限</div>
+            <p>规则库对财务BP、财务负责人和 CEO 开放。新建规则仅限财务BP和财务负责人。</p>
+            <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var bar = document.getElementById('proto-states');
+    if (bar) bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-set-state]');
+      if (!b) return;
+      bar.querySelectorAll('[data-set-state]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-state]').forEach(function (s) { s.hidden = s.getAttribute('data-state') !== b.getAttribute('data-set-state'); });
+    });
+  })();
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3000);
+  }
+  function openModal(id) { var m = document.getElementById(id); m.hidden = false; var f = m.querySelector('textarea, input, select, button'); if (f) f.focus(); }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(function (m) { m.hidden = true; });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-close]');
+    if (c) closeModal(c.getAttribute('data-close'));
+  });
+  function fmt(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n < 0 ? '−' : '') + '¥ ' + s; }
+  function fmtSigned(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n > 0 ? '+' : n < 0 ? '−' : '') + '¥ ' + s; }
+  var NOW = [
+    ['新渠道连续 2 个月收入达成率低于 70%', '预警规则', '未验证经验', 'v1', '', '2026-11-28 10:00', '系统预置', 'PAGE-F12-02.html'],
+    ['部门费用额度使用率超出时间进度 10 个百分点以上', '预警规则', '未验证经验', 'v1', 'v2（历史观察，待财务负责人审批）', '2026-11-28 10:00', '陈思雨', 'PAGE-F12-02.html#r2'],
+    ['品类毛利率比预算低 3 个百分点以上', '预警规则', '未验证经验', 'v1', '', '2026-11-28 10:00', '系统预置', 'PAGE-F12-02.html'],
+    ['新渠道首年月销量按同品类成熟渠道的 30% 起步', '驱动假设', '未验证经验', 'v1', '', '2026-12-02 16:30', '陈思雨', 'PAGE-F12-02.html'],
+    ['Amazon 美国站 11 月销量为 10 月的 1.6 倍', '驱动假设', '历史观察', 'v2', '', '2027-02-14 11:20', '陈思雨', 'PAGE-F12-02.html#r5'],
+    ['新渠道月收入放量上限（起始后第 1–12 个月逐月上限，人民币/店铺/月）', '额度标准', '未验证经验', 'v1', '', '2026-11-30 15:00', '林晓', 'PAGE-F12-02.html'],
+    ['市场部单场展会费上限 300,000.00 元', '额度标准', '', '', 'v1（历史观察，待 CEO 审批）', '', '陈思雨', 'PAGE-F12-02.html'],
+    ['部门差旅费人均月度额度 2,500 元', '额度标准', '', '', 'v1（历史观察，待财务负责人审批）', '', '陈思雨', 'PAGE-F12-02.html']
+  ];
+  var INIT = [
+    ['新渠道连续 2 个月收入达成率低于 70%', '预警规则', '', '', 'v1（未验证经验，待财务负责人审批）', '', '系统预置', 'PAGE-F12-02.html'],
+    ['部门费用额度使用率超出时间进度 10 个百分点以上', '预警规则', '', '', 'v1（未验证经验，待财务负责人审批）', '', '系统预置', 'PAGE-F12-02.html'],
+    ['品类毛利率比预算低 3 个百分点以上', '预警规则', '', '', 'v1（未验证经验，待财务负责人审批）', '', '系统预置', 'PAGE-F12-02.html']
+  ];
+  var data = NOW, type = '';
+  function cred(c) { return !c ? '<span class="muted">—</span>' : '<span class="badge' + (c === '未验证经验' ? ' badge-warn' : c === '已验证' ? ' badge-good' : '') + '">' + c + '</span>'; }
+  function pendCred(p) { var m = p.match(/（(未验证经验|历史观察|已验证)/); return m ? m[1] : ''; }
+  function render() {
+    var c = document.getElementById('f-cred').value, st = document.getElementById('f-st').value;
+    var list = data.filter(function (r) {
+      return (!type || r[1] === type) && (!c || r[2] === c || (!r[2] && pendCred(r[4]) === c)) && (!st || (st === 'on' ? !!r[3] : !!r[4]));
+    });
+    document.getElementById('rows').innerHTML = list.map(function (r) {
+      return '<tr><td class="wrap"><a class="link" href="' + r[7] + '">' + r[0] + '</a></td><td><span class="badge">' + r[1] + '</span></td><td>' + cred(r[2]) + '</td><td>' + (r[3] ? '<span class="badge badge-good">生效 ' + r[3] + '</span>' : '<span class="muted">无</span>') + '</td><td class="wrap" style="min-width: 160px">' + (r[4] ? '<span class="badge badge-warn">待审批</span> <span class="small muted">' + r[4] + '</span>' : '<span class="muted">—</span>') + '</td><td class="num">' + (r[5] || '—') + '</td><td>' + r[6] + '</td><td><a class="btn btn-sm" href="' + r[7] + '">查看</a></td></tr>';
+    }).join('');
+    document.getElementById('filter-empty').hidden = list.length > 0;
+    document.getElementById('pager-text').textContent = '共 ' + list.length + ' 条规则';
+  }
+  document.getElementById('type-tabs').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-type]'); if (!t) return; e.preventDefault();
+    this.querySelectorAll('[data-type]').forEach(function (x) { x.setAttribute('aria-selected', x === t ? 'true' : 'false'); });
+    type = t.getAttribute('data-type'); render();
+  });
+  ['f-cred', 'f-st'].forEach(function (id) { document.getElementById(id).addEventListener('change', render); });
+  document.getElementById('proto-time').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-t]'); if (!b) return;
+    this.querySelectorAll('[data-t]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    data = b.getAttribute('data-t') === 'init' ? INIT : NOW; render();
+  });
+  render();
+  </script>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F12-02">
+  <title>规则详情</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    .app > div { min-width: 0; }
+    .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .brand { font-weight: 600; padding: var(--space-2) var(--space-3) var(--space-3); }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar nav a, .topbar .who a, .link { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; border-radius: var(--radius-sm); transition: color var(--motion-fast) var(--ease-standard); }
+    .topbar nav a:hover, .topbar .who a:hover, .link:hover { color: var(--fg); }
+    .topbar nav a:active, .topbar .who a:active, .link:active { color: var(--muted); }
+    .topbar nav a:focus-visible, .topbar .who a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-1); }
+    .btn-xs { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .btn-sm { height: 28px; padding: 0 var(--space-3); }
+    .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    .section { margin-bottom: var(--section-y-desktop); }
+    .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); line-height: var(--leading-tight); }
+    .muted { color: var(--muted); }
+    .small { font-size: var(--text-xs); }
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .field { margin-bottom: var(--space-4); }
+    .field > label, .field > .label { display: block; font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-1); }
+    .req::after { content: " *"; color: var(--danger); }
+    textarea.input { width: 100%; height: auto; min-height: 88px; padding: var(--space-2) var(--space-3); font-family: inherit; line-height: var(--leading-body); resize: vertical; box-sizing: border-box; }
+    .modal-backdrop { z-index: 20; }
+    .modal-backdrop[hidden] { display: none; }
+    .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+    .modal-wide { width: 640px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+    .notice { border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+    .notice.bad { border-left-color: var(--danger); }
+    .notice.warn { border-left-color: var(--warn); }
+    .notice.good { border-left-color: var(--success); }
+    .table td.wrap { white-space: normal; min-width: 220px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table td.w-n { white-space: normal; min-width: 96px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table tr.is-bad td { background: color-mix(in oklab, var(--danger), white 94%); }
+    .table tr.is-bad:hover td { background: color-mix(in oklab, var(--danger), white 90%); }
+    .chain { display: flex; gap: 0; list-style: none; padding: 0; margin: 0; }
+    .chain li { flex: 1; position: relative; padding: 0 var(--space-3) 0 var(--space-6); font-size: var(--text-sm); }
+    .chain li::before { content: ""; position: absolute; left: var(--space-1); top: 5px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--border); }
+    .chain li.done::before { background: var(--success); }
+    .chain li.now::before { background: var(--warn); }
+    .chain li.back::before { background: var(--danger); }
+    .chain .who { color: var(--fg); font-weight: 600; }
+    .chain .when { color: var(--muted); font-size: var(--text-xs); }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; color: var(--fg); }
+    .skel-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    [hidden] { display: none !important; }
+    .radio-row { display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: var(--text-sm); }
+    .radio-row label { display: inline-flex; align-items: center; gap: var(--space-1); cursor: pointer; }
+    .form-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 var(--space-4); }
+    .form-grid .input, .form-grid .select { width: 100%; box-sizing: border-box; }
+    .unit-wrap { display: flex; align-items: center; gap: var(--space-2); }
+    .unit-wrap .input { width: 120px; }
+    fieldset.field { border: 0; padding: 0; margin: 0 0 var(--space-4); min-width: 0; }
+    fieldset.field legend { font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-1); padding: 0; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">预算管理平台</div>
+      <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+      <div class="nav-group">预算编制</div>
+      <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+      <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+      <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+      <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+      <div class="nav-group">预算版本</div>
+      <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+      <div class="nav-group">实际数</div>
+      <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+      <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+      <div class="nav-group">报表</div>
+      <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+      <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+      <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+      <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+      <div class="nav-group">预警与规则</div>
+      <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+      <a class="nav-item" href="PAGE-F12-01.html" aria-current="page">规则库</a>
+      <div class="nav-group">基础数据</div>
+      <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+      <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+      <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+      <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+      <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+      <div class="nav-group">系统设置</div>
+      <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+    </aside>
+    <div>
+      <header class="topbar">
+        <nav aria-label="面包屑"><a href="PAGE-F00-01.html">工作台</a> / <a href="PAGE-F12-01.html">规则库</a> / 规则详情</nav>
+        <div class="who">当前用户：<span id="who-name">陈思雨（财务BP）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+      </header>
+      <main class="main">
+        <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+          <strong>原型说明，非产品功能</strong>
+          <span>页面状态：</span>
+          <span id="proto-states" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-set-state="normal" aria-pressed="true">正常</button>
+            <button class="btn btn-xs" type="button" data-set-state="empty" aria-pressed="false">空</button>
+            <button class="btn btn-xs" type="button" data-set-state="loading" aria-pressed="false">加载</button>
+            <button class="btn btn-xs" type="button" data-set-state="error" aria-pressed="false">错误</button>
+            <button class="btn btn-xs" type="button" data-set-state="noperm" aria-pressed="false">无权限</button>
+          </span>
+          <span class="sep" aria-hidden="true"></span>
+          <span>示例：</span>
+          <span id="proto-mode" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-m="r2" aria-pressed="true">预警规则（有待审批版本）</button>
+            <button class="btn btn-xs" type="button" data-m="r5" aria-pressed="false">驱动假设（有历史版本）</button>
+            <button class="btn btn-xs" type="button" data-m="new" aria-pressed="false">新建规则</button>
+          </span>
+        </div>
+        <h1 class="page-title">规则详情</h1>
+        <div data-state="normal">
+          <!-- 查看 -->
+          <div id="m-view">
+            <div class="card section">
+              <div class="row" style="margin-bottom: var(--space-2)">
+                <span class="badge" id="v-type">预警规则</span>
+                <span id="v-badges"></span>
+                <span class="spacer"></span>
+                <span class="small muted" id="v-edit-note"></span>
+                <button class="btn" type="button" id="btn-edit">编辑并提交新版本</button>
+              </div>
+              <h2 style="font-size: var(--text-xl); margin: 0 0 var(--space-2)" id="v-name"></h2>
+              <p class="small muted" style="margin: 0" id="v-eval"></p>
+            </div>
+            <div class="grid-2 section" id="v-cards"></div>
+            <section aria-labelledby="h-his">
+              <h3 class="section-title" id="h-his">版本历史</h3>
+              <div class="table-wrap">
+                <table class="table">
+                  <thead><tr><th>版本</th><th>状态</th><th>内容</th><th>可信度</th><th>依据</th><th>提交人</th><th>审批人</th><th>生效时间</th></tr></thead>
+                  <tbody id="v-his"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <!-- 新建 / 编辑 -->
+          <form id="m-form" hidden novalidate>
+            <div class="card section">
+              <h2 class="section-title" id="f-title">新建规则</h2>
+              <fieldset class="field">
+                <legend class="req">类型</legend>
+                <div class="radio-row" id="f-type">
+                  <label><input type="radio" name="type" value="驱动假设"> 驱动假设</label>
+                  <label><input type="radio" name="type" value="预警规则" checked> 预警规则</label>
+                  <label><input type="radio" name="type" value="额度标准"> 额度标准</label>
+                </div>
+              </fieldset>
+              <div class="field">
+                <label class="req" for="f-name">规则名称</label>
+                <input class="input" id="f-name" style="width: 100%; box-sizing: border-box" placeholder="例如：品类毛利率比预算低 3 个百分点以上">
+                <div class="field-error" hidden>请填写规则名称</div>
+              </div>
+
+              <div id="alert-fields">
+                <div class="form-grid">
+                  <div class="field">
+                    <label class="req" for="f-metric">指标</label>
+                    <select class="select" id="f-metric">
+                      <option value="">请选择</option>
+                      <option data-u="%">收入达成率</option>
+                      <option data-u="个百分点">毛利率差</option>
+                      <option data-u="个百分点">额度使用率减时间进度</option>
+                      <option data-u="%">额度使用率</option>
+                      <option data-u="个百分点">预测偏差百分点</option>
+                    </select>
+                    <div class="field-error" hidden>请选择指标</div>
+                  </div>
+                  <div class="field">
+                    <label class="req" for="f-cmp">比较方式</label>
+                    <select class="select" id="f-cmp"><option value="">请选择</option><option>低于</option><option>高于</option><option>低于等于</option><option>高于等于</option></select>
+                    <div class="field-error" hidden>请选择比较方式</div>
+                  </div>
+                  <div class="field">
+                    <label class="req" for="f-th">阈值</label>
+                    <div class="unit-wrap"><input class="input num" id="f-th" inputmode="decimal" placeholder="例如 3"><span class="small muted" id="f-unit">—</span></div>
+                    <div class="field-error" hidden>请填写阈值（数字）</div>
+                  </div>
+                  <div class="field">
+                    <label class="req" for="f-months">连续月数</label>
+                    <div class="unit-wrap"><input class="input num" id="f-months" inputmode="numeric" value="1"><span class="small muted">个月</span></div>
+                    <div class="field-error" hidden>请填写不小于 1 的整数</div>
+                  </div>
+                  <div class="field">
+                    <label class="req" for="f-obj">适用对象</label>
+                    <select class="select" id="f-obj"><option value="">请选择</option><option value="all">全部</option><option value="ch">指定渠道</option><option value="dept">指定部门</option><option value="cat">指定品类</option></select>
+                    <div class="radio-row" id="f-obj-list" hidden style="margin-top: var(--space-2)"></div>
+                    <div class="field-error" hidden>请选择适用对象</div>
+                  </div>
+                </div>
+                <fieldset class="field">
+                  <legend class="req">接收角色</legend>
+                  <div class="radio-row" id="f-to">
+                    <label><input type="checkbox" value="对象所属部门负责人" checked> 对象所属部门负责人</label>
+                    <label><input type="checkbox" value="负责该渠道的运营" checked> 负责该渠道的运营</label>
+                    <label><input type="checkbox" value="财务负责人" checked> 财务负责人</label>
+                    <label><input type="checkbox" value="CEO"> CEO（部门费用超额度时）</label>
+                  </div>
+                  <div class="field-error" hidden>请至少选择一个接收角色</div>
+                </fieldset>
+              </div>
+
+              <div class="field" id="content-field" hidden>
+                <label class="req" for="f-content">规则内容</label>
+                <textarea class="input" id="f-content" placeholder="例如：Amazon 美国站 11 月单 SPU 平均销量按 10 月的 1.6 倍填报"></textarea>
+                <div class="field-error" hidden>请填写规则内容</div>
+              </div>
+
+              <fieldset class="field">
+                <legend class="req">可信度状态</legend>
+                <div class="radio-row" id="f-cred">
+                  <label><input type="radio" name="cred" value="未验证经验"> 未验证经验</label>
+                  <label><input type="radio" name="cred" value="历史观察"> 历史观察</label>
+                  <label><input type="radio" name="cred" value="已验证"> 已验证</label>
+                </div>
+                <div class="field-error" hidden>请选择可信度状态</div>
+              </fieldset>
+              <div class="field">
+                <label class="req" for="f-basis">依据</label>
+                <textarea class="input" id="f-basis" placeholder="写明数据来源与观察结论，例如：2026 年 15 个部门中，额度使用率超出时间进度 8 个百分点以上的 11 个部门-月份，有 9 个全年超支"></textarea>
+                <div class="field-error" hidden>请填写依据</div>
+              </div>
+              <div class="notice" id="f-flow">保存后状态为「待审批」，由财务负责人审批；通过后生成新版本并生效，原生效版本转为历史版本。</div>
+            </div>
+            <div class="row">
+              <span class="spacer"></span>
+              <a class="btn" href="PAGE-F12-01.html">取消</a>
+              <button class="btn btn-primary" type="submit">提交审批</button>
+            </div>
+          </form>
+        </div>
+        <div data-state="empty" hidden>
+          <div class="card state">
+            <div class="state-title">该规则不存在</div>
+            <p>链接可能有误。规则只会生成新版本，不会被删除。</p>
+            <a class="btn" href="PAGE-F12-01.html">返回规则库</a>
+          </div>
+        </div>
+        <div data-state="loading" hidden aria-busy="true">
+          <p class="muted small">正在加载…</p>
+          <div class="table-wrap">
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+        <div data-state="error" hidden>
+          <div class="card state" role="alert">
+            <div class="state-title">数据加载失败</div>
+            <p>服务器暂时无法返回数据，已录入的内容不受影响。请稍后重试；多次失败请联系信息数字化部。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click()">重试</button>
+          </div>
+        </div>
+        <div data-state="noperm" hidden>
+          <div class="card state">
+            <div class="state-title">你没有访问该页面的权限</div>
+            <p>规则详情对财务BP、财务负责人和 CEO 开放；编辑和新建仅限财务BP和财务负责人。</p>
+            <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var bar = document.getElementById('proto-states');
+    if (bar) bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-set-state]');
+      if (!b) return;
+      bar.querySelectorAll('[data-set-state]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-state]').forEach(function (s) { s.hidden = s.getAttribute('data-state') !== b.getAttribute('data-set-state'); });
+    });
+  })();
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3000);
+  }
+  function openModal(id) { var m = document.getElementById(id); m.hidden = false; var f = m.querySelector('textarea, input, select, button'); if (f) f.focus(); }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(function (m) { m.hidden = true; });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-close]');
+    if (c) closeModal(c.getAttribute('data-close'));
+  });
+  function fmt(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n < 0 ? '−' : '') + '¥ ' + s; }
+  function fmtSigned(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n > 0 ? '+' : n < 0 ? '−' : '') + '¥ ' + s; }
+  var R = {
+    r2: {
+      name: '部门费用额度使用率超出时间进度 10 个百分点以上', type: '预警规则',
+      badges: '<span class="badge badge-good">生效 v1</span> <span class="badge badge-warn">待审批 v2</span>',
+      editNote: '已有待审批版本 v2，审批完成前不能再提交新版本', canEdit: false,
+      evalNote: '预警评估只使用生效版本 v1；待审批的 v2 在审批通过前不参与评估。',
+      cards: [
+        ['生效版本 v1', '<dt>指标</dt><dd>额度使用率减时间进度</dd><dt>比较方式</dt><dd>高于</dd><dt>阈值</dt><dd class="num">10 个百分点</dd><dt>连续月数</dt><dd class="num">1 个月</dd><dt>适用对象</dt><dd>全部部门</dd><dt>接收角色</dt><dd>对象所属部门负责人、财务负责人；超额度时另加 CEO</dd><dt>可信度</dt><dd><span class="badge badge-warn">未验证经验</span></dd><dt>依据</dt><dd>系统预置：财务负责人经验，费用跑在时间进度前 10 个百分点以上需要追问原因</dd>'],
+        ['待审批版本 v2', '<dt>指标</dt><dd>额度使用率减时间进度</dd><dt>比较方式</dt><dd>高于</dd><dt>阈值</dt><dd class="num"><strong>8 个百分点</strong>（v1 为 10）</dd><dt>连续月数</dt><dd class="num">1 个月</dd><dt>适用对象</dt><dd>全部部门</dd><dt>接收角色</dt><dd>对象所属部门负责人、财务负责人；超额度时另加 CEO</dd><dt>可信度</dt><dd><span class="badge">历史观察</span></dd><dt>依据</dt><dd>2026 年金蝶实际回测：15 个部门中额度使用率超出时间进度 8 个百分点以上的 11 个部门-月份，有 9 个最终全年超支</dd><dt>提交</dt><dd>陈思雨 · 2027-05-10 11:05 · 待财务负责人审批（<a class="link" href="PAGE-F07-01.html">待我审批</a>）</dd>']
+      ],
+      his: [
+        ['v2', '<span class="badge badge-warn">待审批</span>', '额度使用率减时间进度 高于 8 个百分点，连续 1 个月，全部部门', '历史观察', '2026 年金蝶实际回测，11 个超线部门-月份中 9 个全年超支', '陈思雨', '—', '—'],
+        ['v1', '<span class="badge badge-good">生效</span>', '额度使用率减时间进度 高于 10 个百分点，连续 1 个月，全部部门', '未验证经验', '系统预置：财务负责人经验', '系统预置', '林晓', '2026-11-28 10:00']
+      ]
+    },
+    r5: {
+      name: 'Amazon 美国站 11 月销量为 10 月的 1.6 倍', type: '驱动假设',
+      badges: '<span class="badge badge-good">生效 v2</span> <span class="badge badge-bad">已退回 v3</span>',
+      editNote: 'v3 已被退回，可修改后重新提交', canEdit: true, editLabel: '修改后重新提交',
+      evalNote: '驱动假设供填报参考，不参与预警评估。',
+      cards: [
+        ['已退回版本 v3', '<dt>规则内容</dt><dd>Amazon-US-01 11 月单 SPU 平均销量按 10 月的 1.8 倍填报</dd><dt>可信度</dt><dd><span class="badge badge-warn">未验证经验</span></dd><dt>依据</dt><dd>运营王浩：2027 年黑五提前预热，预计增长更多</dd><dt>退回</dt><dd>林晓 · 2027-04-18 10:05：只有经验判断，没有历史数据支撑 1.8 倍，请补充依据或维持 1.6 倍后重新提交</dd><dt>状态</dt><dd>已退回，不生效；v2 继续生效</dd>'],
+        ['生效版本 v2', '<dt>规则内容</dt><dd>Amazon-US-01 11 月单 SPU 平均销量按 10 月的 1.6 倍填报（v1 为 1.4 倍）</dd><dt>可信度</dt><dd><span class="badge">历史观察</span></dd><dt>依据</dt><dd>2025、2026 年 11 月销量分别为当年 10 月的 1.58 倍和 1.63 倍（BI 历史数据）</dd><dt>审批</dt><dd>林晓 · 2027-02-14 11:20 生效</dd>'],
+      ],
+      his: [
+        ['v3', '<span class="badge badge-bad">已退回</span>', '11 月单 SPU 平均销量 = 10 月 × 1.8', '未验证经验', '运营王浩：黑五提前预热（退回原因：缺历史数据支撑）', '陈思雨', '林晓', '2027-04-18 10:05'],
+        ['v2', '<span class="badge badge-good">生效</span>', '11 月单 SPU 平均销量 = 10 月 × 1.6', '历史观察', '2025、2026 年 11 月销量为 10 月的 1.58、1.63 倍（BI）', '陈思雨', '林晓', '2027-02-14 11:20'],
+        ['v1', '<span class="badge">历史</span>', '11 月单 SPU 平均销量 = 10 月 × 1.4', '未验证经验', '运营王浩经验：黑五带动 11 月销量约增长 40%', '陈思雨', '林晓', '2026-12-02 16:30']
+      ]
+    }
+  };
+  function cb(c) { return '<span class="badge' + (c === '未验证经验' ? ' badge-warn' : c === '已验证' ? ' badge-good' : '') + '">' + c + '</span>'; }
+  function showView(k) {
+    var d = R[k];
+    document.getElementById('m-view').hidden = false; document.getElementById('m-form').hidden = true;
+    document.getElementById('v-type').textContent = d.type;
+    document.getElementById('v-badges').innerHTML = d.badges;
+    document.getElementById('v-name').textContent = d.name;
+    document.getElementById('v-eval').textContent = d.evalNote;
+    document.getElementById('v-edit-note').textContent = d.editNote;
+    document.getElementById('btn-edit').disabled = !d.canEdit;
+    document.getElementById('btn-edit').textContent = d.editLabel || '编辑并提交新版本';
+    document.getElementById('v-cards').innerHTML = d.cards.map(function (c) { return '<div class="card"><h3 class="section-title">' + c[0] + '</h3><dl class="kv">' + c[1] + '</dl></div>'; }).join('');
+    document.getElementById('v-his').innerHTML = d.his.map(function (h) { return '<tr><td><strong>' + h[0] + '</strong></td><td>' + h[1] + '</td><td class="wrap">' + h[2] + '</td><td>' + cb(h[3]) + '</td><td class="wrap">' + h[4] + '</td><td>' + h[5] + '</td><td>' + h[6] + '</td><td class="num">' + h[7] + '</td></tr>'; }).join('');
+  }
+  function showForm(edit) {
+    document.getElementById('m-view').hidden = true; document.getElementById('m-form').hidden = false;
+    document.getElementById('f-title').textContent = edit ? '修改已退回的 v3 后重新提交（提交后生成 v4）' : '新建规则';
+    if (edit) {
+      document.querySelector('[name=type][value="驱动假设"]').checked = true;
+      document.getElementById('f-name').value = 'Amazon 美国站 11 月销量为 10 月的 1.6 倍';
+      document.getElementById('f-content').value = 'Amazon-US-01 11 月单 SPU 平均销量按 10 月的 1.8 倍填报';
+    }
+    syncType();
+  }
+  function syncType() {
+    var t = document.querySelector('[name=type]:checked').value;
+    document.getElementById('alert-fields').hidden = t !== '预警规则';
+    document.getElementById('content-field').hidden = t === '预警规则';
+    document.getElementById('f-flow').textContent = t === '额度标准'
+      ? '保存后状态为「待审批」。额度标准需财务负责人审批通过后再经 CEO 审批；CEO 通过后生成新版本并生效，原生效版本转为历史版本。'
+      : '保存后状态为「待审批」，由财务负责人审批；通过后生成新版本并生效，原生效版本转为历史版本。';
+  }
+  document.getElementById('f-type').addEventListener('change', syncType);
+  // 适用对象：全部，或指定渠道 / 部门 / 品类（DEC-F12-01）
+  var OBJ = { ch: ['Amazon', 'Wayfair', 'Home Depot', "Lowe's", '独立站', 'TikTok Shop'], dept: ['产品作战部', '开发部', '研发部', '供应中心', '运营部', '市场部', '美国业务部', '视觉部', '外贸部', '物流物控部', '项目管理部', '信息数字化部', '人力资源部', '财务部', '总经办'], cat: ['框镜', '灯镜', '镜柜', '浴室门'] };
+  document.getElementById('f-obj').addEventListener('change', function () {
+    var list = OBJ[this.value], box = document.getElementById('f-obj-list');
+    box.hidden = !list;
+    box.innerHTML = list ? list.map(function (x) { return '<label><input type="checkbox" value="' + x + '"> ' + x + '</label>'; }).join('') : '';
+  });
+  document.getElementById('f-metric').addEventListener('change', function () { var o = this.selectedOptions[0]; document.getElementById('f-unit').textContent = o.getAttribute('data-u') || '—'; });
+  document.getElementById('btn-edit').addEventListener('click', function () { showForm(true); });
+  function err(el, bad) { var box = el.closest('.field'); var e = box.querySelector('.field-error'); e.hidden = !bad; if (el.matches('input, select, textarea')) { if (bad) el.setAttribute('aria-invalid', 'true'); else el.removeAttribute('aria-invalid'); } return bad; }
+  document.getElementById('m-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = document.querySelector('[name=type]:checked').value, bad = false;
+    bad = err(document.getElementById('f-name'), !document.getElementById('f-name').value.trim()) || bad;
+    if (t === '预警规则') {
+      bad = err(document.getElementById('f-metric'), !document.getElementById('f-metric').value) || bad;
+      bad = err(document.getElementById('f-cmp'), !document.getElementById('f-cmp').value) || bad;
+      bad = err(document.getElementById('f-th'), !/^-?\d+(\.\d+)?$/.test(document.getElementById('f-th').value.trim())) || bad;
+      bad = err(document.getElementById('f-months'), !/^[1-9]\d*$/.test(document.getElementById('f-months').value.trim())) || bad;
+      var ov = document.getElementById('f-obj').value;
+      bad = err(document.getElementById('f-obj'), !ov || (ov !== 'all' && !document.querySelector('#f-obj-list input:checked'))) || bad;
+      bad = err(document.getElementById('f-to'), !document.querySelector('#f-to input:checked')) || bad;
+    } else {
+      bad = err(document.getElementById('f-content'), !document.getElementById('f-content').value.trim()) || bad;
+    }
+    bad = err(document.getElementById('f-cred'), !document.querySelector('[name=cred]:checked')) || bad;
+    bad = err(document.getElementById('f-basis'), !document.getElementById('f-basis').value.trim()) || bad;
+    if (bad) { var f = this.querySelector('.field-error:not([hidden])'); if (f) f.closest('.field').scrollIntoView({ block: 'center' }); return; }
+    toast(t === '额度标准' ? '已提交，状态为待审批（财务负责人 → CEO）' : '已提交，状态为待审批（财务负责人）');
+    setTimeout(function () { location.href = 'PAGE-F12-01.html'; }, 1200);
+  });
+  function route() {
+    var k = location.hash.slice(1) || 'r2';
+    document.querySelectorAll('#proto-mode [data-m]').forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-m') === k ? 'true' : 'false'); });
+    if (k === 'new') showForm(false); else showView(R[k] ? k : 'r2');
+  }
+  document.getElementById('proto-mode').addEventListener('click', function (e) { var b = e.target.closest('[data-m]'); if (b) location.hash = b.getAttribute('data-m'); });
+  window.addEventListener('hashchange', route);
+  route();
+  </script>
+</body>
+</html>

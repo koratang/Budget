@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F02-05">
+  <title>汇率 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); color: var(--fg); background: var(--bg); }
+    .drawer-mask, .drawer { z-index: 10; }
+    .modal-backdrop { z-index: 20; }
+    .toast { z-index: 30; }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-4); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .topbar nav { color: var(--muted); font-size: var(--text-sm); }
+    .topbar a { color: var(--fg-2); }
+    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+    .page-head .page-title { margin: 0; }
+    .tabs button.tab { background: none; border-width: 0 0 2px; font: inherit; cursor: pointer; }
+    .bar { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); }
+    .meta { color: var(--muted); font-size: var(--text-sm); }
+    .cur { letter-spacing: 0.06em; font-weight: 600; }
+    .notice { padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); font-size: var(--text-sm); margin-bottom: var(--space-3); border: 1px solid var(--border-soft); background: var(--surface-warm); color: var(--fg-2); }
+    .notice.warn { border-color: color-mix(in oklab, var(--warn), white 60%); background: color-mix(in oklab, var(--warn), white 92%); color: var(--warn); }
+    .notice a { color: var(--fg-2); }
+    .table td.rate { width: 160px; font-family: var(--font-mono); }
+    .table td.cell-edit:empty::before { content: "未录入"; color: var(--muted); font-family: var(--font-body); }
+    .table td.cell-locked { font-family: var(--font-mono); }
+    .table td.dim { font-variant-numeric: tabular-nums; }
+    .example { font-size: var(--text-xs); color: var(--muted); }
+    .modal h3 { margin: 0 0 var(--space-3); font-size: var(--text-lg); }
+    .modal p { margin: 0 0 var(--space-4); color: var(--fg-2); }
+    .modal .acts { display: flex; justify-content: flex-end; gap: var(--space-2); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html" aria-current="page">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">基础数据 / 汇率</nav>
+      <div>当前用户：<span id="cur-user">陈思雨（财务BP）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型状态切换">
+        <strong>原型说明，非产品功能：</strong>
+        <span>视角</span>
+        <button class="btn" data-role="bp" aria-pressed="true">财务BP</button>
+        <button class="btn" data-role="ro" aria-pressed="false">CEO / 财务负责人（只读）</button>
+        <span>2027 年初原始目标</span>
+        <button class="btn" data-lock="1" aria-pressed="true">已锁定</button>
+        <button class="btn" data-lock="0" aria-pressed="false">未锁定（编制期）</button>
+        <span>状态</span>
+        <button class="btn" data-proto-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-proto-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-proto-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-proto-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-proto-state="noperm" aria-pressed="false">无权限</button>
+      </div>
+
+      <div class="page-head"><h1 class="page-title">汇率</h1></div>
+
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="t-b" aria-selected="true" aria-controls="p-b">年度预算汇率</button>
+        <button class="tab" role="tab" id="t-a" aria-selected="false" aria-controls="p-a">月度实际汇率</button>
+      </div>
+
+      <div data-view="normal">
+        <!-- 年度预算汇率 -->
+        <section id="p-b" role="tabpanel" aria-labelledby="t-b">
+          <div class="bar">
+            <label for="year" class="meta">预算年度</label>
+            <select class="select" id="year"><option>2027</option><option>2026</option></select>
+            <span class="meta">口径：2026-09-30 中国银行人民币外币汇率中间价 · 1 单位外币折合人民币 · <span class="example">示例值，以财务BP录入为准</span></span>
+          </div>
+          <div class="notice" id="b-lock" role="status"></div>
+          <div class="notice" id="b-notice"></div>
+          <div class="table-wrap">
+            <table class="table" aria-label="年度预算汇率">
+              <thead><tr><th>币种</th><th>名称</th><th class="num">预算汇率（CNY）</th><th>使用该币种的店铺 / 客户</th><th>状态</th><th>最近修改</th></tr></thead>
+              <tbody id="b-rows"></tbody>
+            </table>
+          </div>
+          <p class="meta" id="b-hint">点击汇率单元格直接修改，离开单元格即保存。保存后该年度所有该币种的预算金额按新汇率重新折算。</p>
+        </section>
+
+        <!-- 月度实际汇率 -->
+        <section id="p-a" role="tabpanel" aria-labelledby="t-a" hidden>
+          <div class="bar">
+            <span class="meta">2027 年 · 当月平均汇率 · 1 单位外币折合人民币 · 用于把该月 BI 本币实际收入折算为人民币、计算汇率差，以及 BI 与金蝶核对</span>
+          </div>
+          <div class="notice warn" id="a-notice"></div>
+          <div class="table-wrap">
+            <table class="table" aria-label="月度实际汇率">
+              <thead><tr><th>月份</th><th class="num">USD 当月平均汇率</th><th class="num">CAD 当月平均汇率</th><th class="num">EUR 当月平均汇率</th><th class="num">GBP 当月平均汇率</th><th>BI 数据</th></tr></thead>
+              <tbody id="a-rows"></tbody>
+            </table>
+          </div>
+          <p class="meta" id="a-hint">点击单元格录入，离开单元格即保存；保留 4 位小数。</p>
+        </section>
+      </div>
+
+      <div data-view="empty" hidden>
+        <div class="table-wrap"><div class="state">
+          <div class="state-title">2028 年度还没有预算汇率</div>
+          <p>为该年度涉及的每个币种录入预算汇率后，填报才能提交；缺少汇率的币种会阻止提交。</p>
+          <button class="btn" data-goto="normal">录入预算汇率</button>
+        </div></div>
+      </div>
+
+      <div data-view="loading" hidden aria-busy="true">
+        <div class="table-wrap" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:30%"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px;width:70%"></div>
+        </div>
+      </div>
+
+      <div data-view="error" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">汇率加载失败</div>
+          <p>网络异常或服务暂时不可用，请重试。</p>
+          <button class="btn" data-goto="normal">重试</button>
+        </div></div>
+      </div>
+
+      <div data-view="noperm" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">无权限</div>
+          <p>汇率由财务BP 维护。</p>
+          <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+        </div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="cf" hidden>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="cf-title">
+    <h3 id="cf-title">修改预算汇率？</h3>
+    <p id="cf-body"></p>
+    <div class="acts"><button class="btn" id="cf-cancel">取消</button><button class="btn btn-primary" id="cf-ok">确认修改</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+  var budget = {
+    '2027': [
+      { c: 'USD', n: '美元', r: '7.1200', use: '6 个店铺、2 个 B端客户', by: '2026-10-08 陈思雨' },
+      { c: 'CAD', n: '加拿大元', r: '5.2400', use: '1 个店铺', by: '2026-10-08 陈思雨' },
+      { c: 'EUR', n: '欧元', r: '7.7900', use: '1 个店铺、1 个 B端客户', by: '2026-10-08 陈思雨' },
+      { c: 'GBP', n: '英镑', r: '9.3100', use: '1 个店铺', by: '2026-10-08 陈思雨' }
+    ],
+    '2026': [
+      { c: 'USD', n: '美元', r: '7.1100', use: '6 个店铺、2 个 B端客户', by: '2025-10-10 陈思雨' },
+      { c: 'CAD', n: '加拿大元', r: '5.1900', use: '1 个店铺', by: '2025-10-10 陈思雨' },
+      { c: 'EUR', n: '欧元', r: '8.2600', use: '1 个店铺、1 个 B端客户', by: '2025-10-10 陈思雨' },
+      { c: 'GBP', n: '英镑', r: '9.5300', use: '1 个店铺', by: '2025-10-10 陈思雨' }
+    ]
+  };
+  var actual = [
+    ['2027-01', '7.1840', '5.2180', '7.7650', '9.2830', '已导入'],
+    ['2027-02', '7.2060', '5.2050', '7.8120', '9.3050', '已导入'],
+    ['2027-03', '7.2310', '5.2360', '7.8560', '9.3360', '已导入'],
+    ['2027-04', '7.1980', '5.2410', '7.8810', '', '已导入'],
+    ['2027-05', '', '', '', '', '—'], ['2027-06', '', '', '', '', '—'], ['2027-07', '', '', '', '', '—'], ['2027-08', '', '', '', '', '—'],
+    ['2027-09', '', '', '', '', '—'], ['2027-10', '', '', '', '', '—'], ['2027-11', '', '', '', '', '—'], ['2027-12', '', '', '', '', '—']
+  ];
+  var CURS = ['USD', 'CAD', 'EUR', 'GBP'];
+
+  function valid(v) { return /^\d+(\.\d{1,4})?$/.test(v) && +v > 0; }
+  function fmt(v) { return (+v).toFixed(4); }
+
+  var role = 'bp';
+  var LOCKED = { '2027': '2026-12-28', '2026': '2025-12-26' };
+  var lock2027 = true;
+  function lockedAt(y) { return y === '2027' && !lock2027 ? null : LOCKED[y]; }
+  function renderB() {
+    var y = document.getElementById('year').value, list = budget[y], la = lockedAt(y), ro = role !== 'bp' || !!la;
+    var lk = document.getElementById('b-lock');
+    lk.hidden = !la;
+    lk.textContent = la ? '已随年初原始目标锁定：' + y + ' 年度年初原始目标已于 ' + la + ' 经 CEO 审批锁定，该年度各币种预算汇率不可修改。' : '';
+    document.getElementById('b-hint').hidden = ro;
+    document.getElementById('b-rows').innerHTML = list.map(function (x, i) {
+      var st = x.r ? '<span class="badge badge-good">已录入</span>' : '<span class="badge badge-bad">缺少汇率</span>';
+      if (la) st += ' <span class="badge">已随年初原始目标锁定</span>';
+      var cell = ro ? '<td class="num rate cell-locked" aria-label="' + x.c + ' 预算汇率（不可修改）">' + x.r + '</td>' : '<td class="num rate cell-edit" contenteditable="true" role="textbox" aria-label="' + x.c + ' 预算汇率" data-b="' + i + '">' + x.r + '</td>';
+      return '<tr><td class="cur">' + x.c + '</td><td>' + x.n + '</td>' + cell + '<td>' + x.use + '</td><td>' + st + '</td><td class="meta">' + x.by + '</td></tr>';
+    }).join('');
+    var miss = list.filter(function (x) { return !x.r; }).map(function (x) { return x.c; });
+    var n = document.getElementById('b-notice');
+    n.className = 'notice' + (miss.length ? ' warn' : '');
+    n.innerHTML = miss.length ? '缺少预算汇率：' + miss.join('、') + '。涉及这些币种的填报将无法提交，提交时会提示缺少汇率的币种代码。' : y + ' 年度店铺与 B端客户使用的 ' + list.length + ' 个币种均已录入预算汇率。';
+    bindB();
+  }
+
+  var pending = null;
+  function bindB() {
+    document.querySelectorAll('[data-b]').forEach(function (td) {
+      td.addEventListener('focus', function () { td.dataset.old = td.textContent.trim(); td.removeAttribute('aria-invalid'); td.title = ''; });
+      td.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); td.blur(); } });
+      td.addEventListener('blur', function () {
+        var v = td.textContent.trim(), old = td.dataset.old, x = budget[document.getElementById('year').value][+td.dataset.b];
+        if (v === old) return;
+        if (!valid(v)) { td.setAttribute('aria-invalid', 'true'); td.title = '请输入大于 0 的数字，最多 4 位小数'; toast(x.c + '：请输入大于 0 的数字，最多 4 位小数'); return; }
+        if (old) {
+          pending = { td: td, x: x, v: fmt(v), old: old };
+          document.getElementById('cf-body').textContent = x.c + ' 预算汇率由 ' + old + ' 改为 ' + fmt(v) + '。确认后，' + document.getElementById('year').value + ' 年度所有 ' + x.c + ' 预算金额将按新汇率重新折算为人民币。';
+          document.getElementById('cf').hidden = false; document.getElementById('cf-cancel').focus();
+          return;
+        }
+        x.r = fmt(v); x.by = '2027-05-12 陈思雨'; renderB(); toast('已保存 ' + x.c + ' 预算汇率 ' + x.r);
+      });
+    });
+  }
+  document.getElementById('cf-cancel').addEventListener('click', function () { document.getElementById('cf').hidden = true; pending.td.textContent = pending.old; pending = null; });
+  document.getElementById('cf-ok').addEventListener('click', function () {
+    document.getElementById('cf').hidden = true; pending.x.r = pending.v; pending.x.by = '2027-05-12 陈思雨';
+    renderB(); toast('已保存 ' + pending.x.c + ' 预算汇率 ' + pending.v + '，预算金额已重新折算'); pending = null;
+  });
+  document.getElementById('year').addEventListener('change', renderB);
+
+  function renderA() {
+    document.getElementById('a-rows').innerHTML = actual.map(function (r, i) {
+      return '<tr><td class="dim">' + r[0] + '</td>' + CURS.map(function (c, k) {
+        return role !== 'bp' ? '<td class="num rate">' + (r[k + 1] || '<span class="meta">—</span>') + '</td>' : '<td class="num rate cell-edit" contenteditable="true" role="textbox" aria-label="' + r[0] + ' ' + c + ' 当月平均汇率" data-a="' + i + '" data-k="' + (k + 1) + '">' + r[k + 1] + '</td>';
+      }).join('') + '<td>' + (r[5] === '已导入' ? '<span class="badge">已导入</span>' : '<span class="meta">—</span>') + '</td></tr>';
+    }).join('');
+    var miss = [];
+    actual.forEach(function (r) { if (r[5] === '已导入') CURS.forEach(function (c, k) { if (!r[k + 1]) miss.push(r[0] + ' ' + c); }); });
+    var n = document.getElementById('a-notice');
+    n.hidden = !miss.length;
+    n.textContent = '已导入 BI 数据但缺少当月平均汇率：' + miss.join('、') + '。补录前该月 BI 本币收入无法折算为人民币，偏差报告该月汇率差显示「缺少 ' + (miss[0] || '').slice(0, 7) + ' 汇率」。';
+    document.getElementById('a-hint').hidden = role !== 'bp';
+    document.querySelectorAll('[data-a]').forEach(function (td) {
+      td.addEventListener('focus', function () { td.dataset.old = td.textContent.trim(); td.removeAttribute('aria-invalid'); });
+      td.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); td.blur(); } });
+      td.addEventListener('blur', function () {
+        var v = td.textContent.trim(), r = actual[+td.dataset.a], k = +td.dataset.k;
+        if (v === td.dataset.old) return;
+        if (!v) { td.textContent = td.dataset.old; return; }
+        if (!valid(v)) { td.setAttribute('aria-invalid', 'true'); td.title = '请输入大于 0 的数字，最多 4 位小数'; toast(r[0] + ' ' + CURS[k - 1] + '：请输入大于 0 的数字，最多 4 位小数'); return; }
+        r[k] = fmt(v); renderA(); toast('已保存 ' + r[0] + ' ' + CURS[k - 1] + ' 当月平均汇率 ' + r[k]);
+      });
+    });
+  }
+
+  function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function () { t.hidden = true; }, 3000); }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !document.getElementById('cf').hidden) document.getElementById('cf-cancel').click(); });
+
+  var tb = document.getElementById('t-b'), ta = document.getElementById('t-a');
+  function setTab(b) { tb.setAttribute('aria-selected', b); ta.setAttribute('aria-selected', !b); document.getElementById('p-b').hidden = !b; document.getElementById('p-a').hidden = b; }
+  tb.addEventListener('click', function () { setTab(true); });
+  ta.addEventListener('click', function () { setTab(false); });
+
+  function show(state) {
+    document.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.dataset.view !== state; });
+    document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.protoState === state); });
+  }
+  document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.protoState); }); });
+  document.querySelectorAll('[data-role]').forEach(function (b) { b.addEventListener('click', function () {
+    role = b.dataset.role;
+    document.getElementById('cur-user').textContent = role === 'bp' ? '陈思雨（财务BP）' : '林晓（财务负责人）';
+    document.querySelectorAll('[data-role]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+    renderB(); renderA();
+  }); });
+  document.querySelectorAll('[data-lock]').forEach(function (b) { b.addEventListener('click', function () {
+    lock2027 = b.dataset.lock === '1';
+    document.querySelectorAll('[data-lock]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+    renderB();
+  }); });
+  document.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.goto); }); });
+  renderB(); renderA();
+</script>
+</body>
+</html>

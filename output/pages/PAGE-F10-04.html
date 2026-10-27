@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F10-04">
+  <title>部门费用报告</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    body { margin: 0; }
+    .app > div { min-width: 0; }
+    .modal-backdrop { z-index: 50; }
+    .toast { z-index: 60; }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar div { font-size: var(--text-sm); color: var(--fg-2); }
+    .topbar div a { color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .page-head .page-title { margin-bottom: var(--space-1); }
+    .meta { font-size: var(--text-sm); color: var(--muted); }
+    .grid-kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
+    .grid-kpi .kpi-value { font-size: var(--text-2xl); margin-top: var(--space-1); }
+    .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-bottom: var(--space-3); }
+    .filters label { display: grid; gap: var(--space-1); font-size: var(--text-xs); color: var(--muted); }
+    .legend { display: flex; flex-wrap: wrap; gap: var(--space-4); font-size: var(--text-xs); color: var(--muted); padding-bottom: 8px; align-items: center; }
+    .legend .attain { width: 48px; display: inline-block; vertical-align: middle; margin-right: var(--space-1); }
+    .table tr.sub td { font-weight: 600; background: var(--surface-warm); }
+    .table td.sep, .table th.sep { border-left: 1px solid var(--border-soft); }
+    .muted { color: var(--muted); }
+    .warn { color: var(--warn); }
+    .xbtn { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: var(--space-1); border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--fg-2); cursor: pointer; vertical-align: middle; transition: background var(--motion-fast) var(--ease-standard); }
+    .xbtn:hover { background: var(--surface-raised); border-color: var(--border); }
+    .xbtn:active { background: var(--border-soft); }
+    .xbtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .xbtn svg { transition: transform var(--motion-fast) var(--ease-standard); }
+    .xbtn[aria-expanded="true"] svg { transform: rotate(90deg); }
+    .note-cell { min-width: 220px; max-width: 300px; white-space: normal; line-height: var(--leading-tight); padding-top: 6px !important; padding-bottom: 6px !important; }
+    .note-text { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; color: var(--fg-2); font-weight: 400; }
+    .note-by { font-size: var(--text-xs); color: var(--muted); font-weight: 400; }
+    .link-btn { padding: 0; border: 0; background: none; color: var(--fg-2); text-decoration: underline; font-size: var(--text-xs); font-weight: 400; cursor: pointer; border-radius: var(--radius-sm); }
+    .link-btn:hover { color: var(--fg); }
+    .link-btn:active { color: var(--muted); }
+    .link-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .modal textarea { width: 100%; min-height: 120px; box-sizing: border-box; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); font: inherit; color: var(--fg); background: var(--surface); resize: vertical; }
+    .modal textarea:hover { border-color: var(--muted); }
+    .modal textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+    .modal h3 { margin: 0 0 var(--space-1); font-size: var(--text-lg); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+    .skeleton-row { display: grid; gap: var(--space-3); padding: var(--space-4); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="主导航">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html" aria-current="page">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">报表 / 部门费用报告</nav>
+      <div>当前用户：<span id="who">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+        <strong>原型说明，非产品功能</strong>
+        <span>页面状态：</span>
+        <button class="btn" data-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-state="denied" aria-pressed="false">无权限</button>
+        <span style="margin-left:12px">视角：</span>
+        <button class="btn" data-view="lead" aria-pressed="true">财务负责人</button>
+        <button class="btn" data-view="bp" aria-pressed="false">财务BP</button>
+        <button class="btn" data-view="hr" aria-pressed="false">部门负责人（人力资源部）</button>
+      </div>
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">部门费用报告</h1>
+          <div class="meta">截至 2027-04（最近金蝶导入期间）· 预算年度 2027 · 全年预算固定取最新调整后目标（无调整时为年初原始目标）· 金额单位：人民币元</div>
+        </div>
+        <button class="btn btn-primary" id="btn-export" type="button">
+          <svg width="16" height="16" viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/></svg>
+          <span>导出 Excel</span>
+        </button>
+      </div>
+
+      <div id="st-normal">
+        <section class="grid-kpi" aria-label="合计">
+          <div class="card fade-in"><div class="kpi-label">全年预算</div><div class="kpi-value" id="k-b"></div></div>
+          <div class="card fade-in"><div class="kpi-label">累计实际（2027-01 至 2027-04）</div><div class="kpi-value" id="k-a"></div></div>
+          <div class="card fade-in"><div class="kpi-label">额度使用率</div><div class="kpi-value" id="k-u"></div></div>
+          <div class="card fade-in"><div class="kpi-label">时间进度（4 ÷ 12）</div><div class="kpi-value" id="k-t"></div></div>
+        </section>
+
+        <div class="filters">
+          <label>部门
+            <select class="select" id="f-dept"></select>
+          </label>
+          <div class="legend">
+            <span><span class="attain"><span class="fill" style="width:28%"></span><span class="tick" style="left:calc(27.8% - 1px)"></span></span>在时间进度 10 个百分点以内</span>
+            <span><span class="attain is-warn"><span class="fill" style="width:44%"></span><span class="tick" style="left:calc(27.8% - 1px)"></span></span>超出时间进度 10 个百分点以上</span>
+            <span><span class="attain is-bad"><span class="fill" style="width:86%"></span><span class="tick" style="left:calc(27.8% - 1px)"></span></span>超出全年预算</span>
+            <span>竖刻度线 = 时间进度</span>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table" id="tbl">
+            <thead>
+              <tr>
+                <th style="position:sticky;left:0;z-index:3">部门</th>
+                <th>预算科目</th>
+                <th class="num sep">全年预算</th>
+                <th class="num">累计实际</th>
+                <th class="num">额度使用率</th>
+                <th class="num">时间进度</th>
+                <th>达成条</th>
+                <th class="sep">偏差说明</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="meta" style="font-size:var(--text-xs)">额度使用率 = 累计实际 ÷ 全年预算；时间进度 = 最近导入月份数 ÷ 12。累计实际来自金蝶，按科目映射归集到预算科目。专项预留额度已计入所属科目的全年预算，不另列行。偏差说明按「部门 × 预算科目」填写。</p>
+      </div>
+
+      <div class="card state" id="st-empty" hidden>
+        <div class="state-title">2027 年还没有导入金蝶实际</div>
+        <div>导入金蝶实际后，这里按部门和预算科目显示额度使用率与时间进度。</div>
+        <div style="margin-top:16px" id="empty-act" hidden><a class="btn btn-primary" href="PAGE-F09-01.html">去导入实际数</a></div>
+      </div>
+      <div id="st-loading" hidden aria-busy="true">
+        <div class="grid-kpi"><div class="card skeleton-row"><div class="skeleton"></div></div><div class="card skeleton-row"><div class="skeleton"></div></div><div class="card skeleton-row"><div class="skeleton"></div></div><div class="card skeleton-row"><div class="skeleton"></div></div></div>
+        <div class="table-wrap skeleton-row"><div class="skeleton" style="width:30%"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+      </div>
+      <div class="card state" id="st-error" hidden role="alert">
+        <div class="state-title">部门费用报告加载失败</div>
+        <div>服务器未返回数据，可能是网络中断。请重试。</div>
+        <div style="margin-top:16px"><button class="btn" type="button" id="btn-retry">重试</button></div>
+      </div>
+      <div class="card state" id="st-denied" hidden>
+        <div class="state-title">无权限</div>
+        <div>你没有被分配任何部门，无法查看部门费用报告。如需查看请联系财务负责人分配数据范围。</div>
+        <div style="margin-top:16px"><a class="btn" href="PAGE-F00-01.html">返回工作台</a></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="note-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="note-title">
+    <h3 id="note-title">偏差说明</h3>
+    <div class="meta" id="note-sub" style="margin-bottom:12px"></div>
+    <div id="note-view"></div>
+    <div id="note-edit" hidden>
+      <textarea id="note-input" aria-label="偏差说明" placeholder="写明偏差原因，例如：4 月一次性支付展会费"></textarea>
+      <div class="field-error" id="note-err" hidden>请填写说明内容</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" type="button" id="note-cancel">关闭</button>
+      <button class="btn btn-primary" type="button" id="note-save" hidden>保存说明</button>
+    </div>
+  </div>
+</div>
+<div id="toast-host" aria-live="polite"></div>
+
+<script>
+  var MONTH = '2027-04', TIME = 4 / 12 * 100;
+  // [预算科目, 全年预算, 1–4 月累计实际]
+  var DEPTS = {
+    '产品作战部': [['工资薪酬', 3360000, 1128450], ['社保公积金', 672000, 225690], ['差旅费', 180000, 71326.40], ['样品费', 240000, 58912.30]],
+    '开发部': [['工资薪酬', 2880000, 951200], ['社保公积金', 576000, 190240], ['样品费', 600000, 263480.75], ['差旅费', 120000, 36218.60]],
+    '研发部': [['工资薪酬', 3120000, 1018640], ['社保公积金', 624000, 203728], ['研发材料费', 480000, 131905.20], ['检测认证费', 360000, 189600]],
+    '供应中心': [['工资薪酬', 2160000, 712300], ['社保公积金', 432000, 142460], ['差旅费', 240000, 88740.30], ['验厂费', 96000, 18200]],
+    '运营部': [['工资薪酬', 5400000, 1806900], ['社保公积金', 1080000, 361380], ['软件服务费', 360000, 142880], ['培训费', 120000, 12450]],
+    '市场部': [['工资薪酬', 1920000, 641200], ['社保公积金', 384000, 128240], ['品牌推广费', 1800000, 702315.88], ['展会费', 600000, 618420]],
+    '美国业务部': [['工资薪酬', 2400000, 802560], ['社保公积金', 480000, 160512], ['差旅费', 360000, 141286.45], ['业务招待费', 180000, 52310]],
+    '视觉部': [['工资薪酬', 1680000, 556800], ['社保公积金', 336000, 111360], ['摄影外包费', 360000, 98450], ['软件服务费', 72000, 70560]],
+    '外贸部': [['工资薪酬', 1440000, 478800], ['社保公积金', 288000, 95760], ['差旅费', 240000, 61820.40], ['展会费', 360000, 0]],
+    '物流物控部': [['工资薪酬', 1320000, 436200], ['社保公积金', 264000, 87240], ['办公费', 48000, 14620.35]],
+    '项目管理部': [['工资薪酬', 960000, 318400], ['社保公积金', 192000, 63680], ['培训费', 60000, 8600]],
+    '信息数字化部': [['工资薪酬', 1560000, 516300], ['社保公积金', 312000, 103260], ['软件服务费', 720000, 268940], ['硬件采购费', 240000, 132880]],
+    '人力资源部': [['工资薪酬', 900000, 298200], ['社保公积金', 180000, 59640], ['招聘费', 360000, 154300], ['培训费', 240000, 36500], ['福利费', 480000, 172860]],
+    '财务部': [['工资薪酬', 1080000, 356400], ['社保公积金', 216000, 71280], ['审计咨询费', 300000, 150000]],
+    '总经办': [['工资薪酬', 1440000, 480000], ['社保公积金', 288000, 96000], ['业务招待费', 360000, 98640.20], ['房租物业费', 2160000, 720000]]
+  };
+  var NOTES = {
+    '2027-04|市场部|展会费': { text: '4 月美国 KBIS 厨卫展一次性支付展位与搭建费 61.84 万元，超出全年展会费预算 1.84 万元。下半年不再参展，超支部分在 Q3 目标调整中处理。', by: '陈思雨', at: '2027-05-11 14:30' },
+    '2027-04|研发部|检测认证费': { text: '浴室门新品 UL 与 CE 认证集中在一季度送检，检测认证费已用 52.7%，预计全年不超预算。', by: '陈思雨', at: '2027-05-11 14:42' },
+    '2027-04|视觉部|软件服务费': { text: '设计软件年费 4 月一次性付清 7.06 万元，全年不再发生。', by: '陈思雨', at: '2027-05-11 14:50' }
+  };
+  var VIEWS = { lead: { who: '林晓（财务负责人）' }, bp: { who: '陈思雨（财务BP）', edit: true }, hr: { who: '吴静（人力资源部负责人）', depts: ['人力资源部'] } };
+  var view = 'lead', collapsed = {};
+
+  function fmt(n) { return (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function pct(n) { return n.toFixed(1) + '%'; }
+  // 费用类达成条：超过时间进度 10 个百分点琥珀，超过 100% 红；0–120% 映射到条宽
+  function level(u) { return u > 100 ? 'bad' : u > TIME + 10 ? 'warn' : ''; }
+  function bar(u) {
+    var l = level(u);
+    return '<div class="attain' + (l ? ' is-' + l : '') + '" role="img" aria-label="额度使用率 ' + pct(u) + '，时间进度 ' + pct(TIME) + '"><span class="fill" style="width:' + (Math.min(u, 120) / 120 * 100) + '%"></span><span class="tick" style="left:calc(' + (TIME / 120 * 100) + '% - 1px)"></span></div>';
+  }
+  function scope() { var v = VIEWS[view]; return Object.keys(DEPTS).filter(function (d) { return !v.depts || v.depts.indexOf(d) > -1; }); }
+
+  function noteCell(dept) {
+    var n = NOTES[MONTH + '|' + dept], edit = VIEWS[view].edit;
+    if (n) return '<td class="note-cell sep"><div class="note-text" title="' + n.text + '">' + n.text + '</div><div class="note-by">' + n.by + ' · ' + n.at + ' · <button class="link-btn" data-note="' + dept + '">' + (edit ? '查看/编辑' : '查看全文') + '</button></div></td>';
+    return '<td class="note-cell sep">' + (edit ? '<button class="link-btn" data-note="' + dept + '">填写说明</button>' : '<span class="muted">—</span>') + '</td>';
+  }
+  function cells(b, a) {
+    var u = a / b * 100, l = level(u);
+    return '<td class="num sep">' + fmt(b) + '</td><td class="num">' + fmt(a) + '</td><td class="num' + (l ? ' ' + l : '') + '">' + pct(u) + '</td><td class="num muted">' + pct(TIME) + '</td><td>' + bar(u) + '</td>';
+  }
+
+  function render() {
+    var sel = document.getElementById('f-dept').value, body = '', tb = 0, ta = 0;
+    scope().filter(function (d) { return sel === '全部' || d === sel; }).forEach(function (d) {
+      var b = 0, a = 0; DEPTS[d].forEach(function (r) { b += r[1]; a += r[2]; });
+      tb += b; ta += a;
+      var exp = !collapsed[d];
+      body += '<tr class="sub"><td class="dim"><button class="xbtn" data-x="' + d + '" aria-expanded="' + exp + '" aria-label="展开或收起 ' + d + '"><svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg></button>' + d + '</td><td>部门合计</td>' + cells(b, a) + '<td class="sep"></td></tr>';
+      if (exp) DEPTS[d].forEach(function (r) { body += '<tr><td class="dim"></td><td>' + r[0] + '</td>' + cells(r[1], r[2]) + noteCell(d + '|' + r[0]) + '</tr>'; });
+    });
+    var label = VIEWS[view].depts ? '合计（我的部门）' : sel === '全部' ? '全公司合计' : '合计';
+    body += '<tr class="total"><td class="dim">' + label + '</td><td></td>' + cells(tb, ta) + '<td class="sep"></td></tr>';
+    document.querySelector('#tbl tbody').innerHTML = body;
+    var u = ta / tb * 100;
+    document.getElementById('k-b').textContent = '¥ ' + fmt(tb);
+    document.getElementById('k-a').textContent = '¥ ' + fmt(ta);
+    document.getElementById('k-u').textContent = pct(u);
+    document.getElementById('k-u').className = 'kpi-value' + (level(u) ? ' ' + level(u) : '');
+    document.getElementById('k-t').textContent = pct(TIME);
+  }
+  function fillDepts() {
+    var list = scope(), sel = document.getElementById('f-dept');
+    sel.innerHTML = (list.length > 1 ? '<option>全部</option>' : '') + list.map(function (d) { return '<option>' + d + '</option>'; }).join('');
+  }
+
+  document.getElementById('f-dept').addEventListener('change', render);
+  document.getElementById('tbl').addEventListener('click', function (e) {
+    var x = e.target.closest('[data-x]'); if (x) { collapsed[x.dataset.x] = !collapsed[x.dataset.x]; render(); return; }
+    var n = e.target.closest('[data-note]'); if (n) openNote(n.dataset.note);
+  });
+
+  var noteKey = null;
+  function openNote(key) {
+    var n = NOTES[MONTH + '|' + key], edit = VIEWS[view].edit;
+    noteKey = key;
+    document.getElementById('note-sub').textContent = MONTH + ' · ' + key.replace('|', ' · ') + (n ? ' · ' + n.by + ' 于 ' + n.at + ' 填写' : '');
+    document.getElementById('note-view').innerHTML = n ? '<p style="margin:0;white-space:pre-wrap">' + n.text + '</p>' : '';
+    document.getElementById('note-view').hidden = edit;
+    document.getElementById('note-edit').hidden = !edit;
+    document.getElementById('note-save').hidden = !edit;
+    document.getElementById('note-input').value = n ? n.text : '';
+    document.getElementById('note-err').hidden = true;
+    document.getElementById('note-input').removeAttribute('aria-invalid');
+    document.getElementById('note-modal').hidden = false;
+    (edit ? document.getElementById('note-input') : document.getElementById('note-cancel')).focus();
+  }
+  document.getElementById('note-cancel').addEventListener('click', function () { document.getElementById('note-modal').hidden = true; });
+  document.getElementById('note-save').addEventListener('click', function () {
+    var v = document.getElementById('note-input').value.trim();
+    if (!v) { document.getElementById('note-err').hidden = false; document.getElementById('note-input').setAttribute('aria-invalid', 'true'); return; }
+    var now = new Date();
+    NOTES[MONTH + '|' + noteKey] = { text: v, by: '陈思雨', at: '2027-05-12 ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') };
+    document.getElementById('note-modal').hidden = true; render(); toast('偏差说明已保存');
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.getElementById('note-modal').hidden = true; });
+
+  var states = ['normal', 'empty', 'loading', 'error', 'denied'];
+  function setState(st) {
+    states.forEach(function (k) { document.getElementById('st-' + k).hidden = k !== st; });
+    document.querySelectorAll('[data-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.state === st); });
+    document.getElementById('btn-export').disabled = st !== 'normal';
+  }
+  document.querySelectorAll('[data-state]').forEach(function (b) { b.addEventListener('click', function () { setState(b.dataset.state); }); });
+  document.getElementById('btn-retry').addEventListener('click', function () { setState('loading'); setTimeout(function () { setState('normal'); }, 800); });
+  document.querySelectorAll('[data-view]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      view = b.dataset.view;
+      document.querySelectorAll('[data-view]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      document.getElementById('who').textContent = VIEWS[view].who;
+      document.getElementById('empty-act').hidden = view !== 'bp';
+      fillDepts(); render();
+    });
+  });
+
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.getElementById('toast-host').appendChild(t); setTimeout(function () { t.remove(); }, 3000);
+  }
+  document.getElementById('btn-export').addEventListener('click', function () {
+    var btn = this, label = btn.querySelector('span'), sel = document.getElementById('f-dept').value;
+    var depts = scope().filter(function (d) { return sel === '全部' || d === sel; }), n = 0;
+    depts.forEach(function (d) { n += DEPTS[d].length; });
+    btn.disabled = true; label.textContent = '正在导出…';
+    setTimeout(function () { btn.disabled = false; label.textContent = '导出 Excel'; toast('已导出 部门费用报告_截至' + MONTH + '.xlsx · ' + depts.length + ' 个部门 ' + n + ' 个科目（仅含你的数据范围）'); }, 900);
+  });
+
+  fillDepts(); render();
+</script>
+</body>
+</html>

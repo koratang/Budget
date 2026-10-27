@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F10-02">
+  <title>渠道×站点偏差</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    body { margin: 0; }
+    .app > div { min-width: 0; }
+    .modal-backdrop { z-index: 50; }
+    .toast { z-index: 60; }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar div { font-size: var(--text-sm); color: var(--fg-2); }
+    .topbar div a { color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .page-head .page-title { margin-bottom: var(--space-1); }
+    .meta { font-size: var(--text-sm); color: var(--muted); }
+    .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-bottom: var(--space-3); }
+    .filters label { display: grid; gap: var(--space-1); font-size: var(--text-xs); color: var(--muted); }
+    .info-strip { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-3); font-variant-numeric: tabular-nums; }
+    .info-strip b { color: var(--fg-2); font-weight: 600; }
+    .bi-banner { display: flex; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-3); border-radius: var(--radius-md); background: color-mix(in oklab, var(--warn), white 90%); color: var(--warn); font-size: var(--text-sm); }
+    .table th.grp { text-align: center; border-left: 1px solid var(--border-soft); }
+    .table thead tr:nth-child(2) th { top: 34px; }
+    .table td.sep, .table th.sep { border-left: 1px solid var(--border-soft); }
+    .table td.dim { min-width: 150px; }
+    .xbtn { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: var(--space-1); border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--fg-2); cursor: pointer; vertical-align: middle; transition: background var(--motion-fast) var(--ease-standard); }
+    .xbtn:hover { background: var(--surface-raised); border-color: var(--border); }
+    .xbtn:active { background: var(--border-soft); }
+    .xbtn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .xbtn svg { transition: transform var(--motion-fast) var(--ease-standard); }
+    .xbtn[aria-expanded="true"] svg { transform: rotate(90deg); }
+    .muted { color: var(--muted); }
+    .cur { font-size: var(--text-xs); letter-spacing: 0.06em; color: var(--muted); }
+    tr.unassigned td { background: var(--surface-warm); }
+    tr.group-row td { background: var(--surface-warm); font-weight: 600; color: var(--fg-2); }
+    #tbl.no-bi .sp { display: none; }
+    tr.detail > td { padding: var(--space-3) var(--space-4) var(--space-4); background: var(--bg); white-space: normal; }
+    tr.detail:hover > td { background: var(--bg); }
+    .detail-grid { position: sticky; left: 16px; max-width: min(1120px, calc(100vw - 304px)); display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-4); align-items: start; }
+    .detail-grid .table-wrap { max-width: 100%; }
+    .split-card h4 { margin: 0 0 var(--space-2); font-size: var(--text-sm); }
+    .split-list { display: grid; grid-template-columns: 1fr auto; gap: var(--space-1) var(--space-3); font-size: var(--text-sm); font-variant-numeric: tabular-nums; }
+    .split-list dt { color: var(--fg-2); }
+    .split-list dd { margin: 0; text-align: right; }
+    .split-list .sum { border-top: 1px solid var(--border-soft); padding-top: var(--space-1); font-weight: 600; }
+    .formula { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); line-height: 1.6; }
+    .note-cell { min-width: 220px; max-width: 260px; white-space: normal; line-height: var(--leading-tight); padding-top: 6px !important; padding-bottom: 6px !important; }
+    .note-text { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; color: var(--fg-2); }
+    .note-by { font-size: var(--text-xs); color: var(--muted); }
+    .link-btn { padding: 0; border: 0; background: none; color: var(--fg-2); text-decoration: underline; font-size: var(--text-xs); cursor: pointer; border-radius: var(--radius-sm); }
+    .link-btn:hover { color: var(--fg); }
+    .link-btn:active { color: var(--muted); }
+    .link-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .modal textarea { width: 100%; min-height: 120px; box-sizing: border-box; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); font: inherit; color: var(--fg); background: var(--surface); resize: vertical; }
+    .modal textarea:hover { border-color: var(--muted); }
+    .modal textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+    .modal h3 { margin: 0 0 var(--space-1); font-size: var(--text-lg); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+    .skeleton-row { display: grid; gap: var(--space-3); padding: var(--space-4); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="主导航">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html" aria-current="page">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">报表 / 渠道×站点偏差</nav>
+      <div>当前用户：<span id="who">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+        <strong>原型说明，非产品功能</strong>
+        <span>页面状态：</span>
+        <button class="btn" data-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-state="denied" aria-pressed="false">无权限</button>
+        <span style="margin-left:12px">视角：</span>
+        <button class="btn" data-view="lead" aria-pressed="true">财务负责人</button>
+        <button class="btn" data-view="bp" aria-pressed="false">财务BP</button>
+        <button class="btn" data-view="ops" aria-pressed="false">运营（Amazon）</button>
+        <span style="margin-left:12px">模拟：</span>
+        <button class="btn" id="toggle-bi" aria-pressed="false">该月 BI 未导入</button>
+        <button class="btn" id="toggle-fx" aria-pressed="false">缺少当月 GBP 平均汇率</button>
+      </div>
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">渠道×站点偏差</h1>
+          <div class="meta">按店铺站点逐行对比预算与金蝶实际 · 金额单位：人民币元</div>
+        </div>
+        <button class="btn btn-primary" id="btn-export" type="button">
+          <svg width="16" height="16" viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/></svg>
+          <span>导出 Excel</span>
+        </button>
+      </div>
+
+      <div class="filters">
+        <label>月份
+          <select class="select" id="f-month">
+            <option value="2027-04" selected>2027-04</option>
+            <option value="2027-03">2027-03</option>
+            <option value="2027-02">2027-02</option>
+            <option value="2027-01">2027-01</option>
+          </select>
+        </label>
+        <label>对比基准
+          <select class="select" id="f-base">
+            <option value="orig">年初原始目标</option>
+            <option value="adj" selected>最新调整后目标</option>
+            <option value="roll">最新滚动预测</option>
+          </select>
+        </label>
+        <label>渠道
+          <select class="select" id="f-ch"></select>
+        </label>
+      </div>
+
+      <div id="st-normal">
+        <div class="info-strip" id="info"></div>
+        <div class="bi-banner" id="bi-banner" role="status" hidden>
+          <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"/></svg>
+          <span id="bi-banner-text"></span>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="tbl">
+            <thead>
+              <tr>
+                <th rowspan="2" style="position:sticky;left:0;z-index:3">店铺</th>
+                <th rowspan="2">渠道</th>
+                <th rowspan="2">站点</th>
+                <th class="grp" colspan="6">收入</th>
+                <th class="grp sp" colspan="4">收入差额拆分</th>
+                <th class="grp" colspan="4">毛利</th>
+                <th class="grp" colspan="3">毛利率</th>
+                <th class="grp" rowspan="2">偏差说明</th>
+              </tr>
+              <tr>
+                <th class="num sep">预算</th><th class="num">实际</th><th class="num">实际（本币）</th><th class="num">差额</th><th class="num">达成率</th><th>达成条</th>
+                <th class="num sep sp">量差</th><th class="num sp">价差</th><th class="num sp">汇率差</th><th class="num sp">口径差</th>
+                <th class="num sep">预算</th><th class="num">实际</th><th class="num">差额</th><th class="num">达成率</th>
+                <th class="num sep">预算</th><th class="num">实际</th><th class="num">差（百分点）</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="meta" style="font-size:var(--text-xs)">点击店铺或客户左侧箭头展开退款与各项费用明细、费率差和收入拆分计算。收入差额 = 量差 + 价差 + 汇率差 + 口径差；口径差 = 金蝶实际收入 − BI 本币收入 × 当月平均汇率。B 端客户无 BI 销量数据，不做量价拆分。达成条刻度线 = 100%（当月对当月）。收入、毛利、库存索赔高于预算为有利；退款与费用高于预算为不利。</p>
+      </div>
+
+      <div class="card state" id="st-empty" hidden>
+        <div class="state-title" id="empty-title">2027-04 还没有金蝶实际</div>
+        <div>该月金蝶实际导入后生成偏差报告。</div>
+        <div style="margin-top:16px" id="empty-act" hidden><a class="btn btn-primary" href="PAGE-F09-01.html">去导入实际数</a></div>
+      </div>
+      <div id="st-loading" hidden aria-busy="true">
+        <div class="table-wrap skeleton-row">
+          <div class="skeleton" style="width:30%"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
+        </div>
+      </div>
+      <div class="card state" id="st-error" hidden role="alert">
+        <div class="state-title">偏差报告加载失败</div>
+        <div>服务器未返回数据，可能是网络中断。请重试。</div>
+        <div style="margin-top:16px"><button class="btn" type="button" id="btn-retry">重试</button></div>
+      </div>
+      <div class="card state" id="st-denied" hidden>
+        <div class="state-title">无权限</div>
+        <div>你没有被分配任何渠道或店铺，无法查看渠道×站点偏差。如需查看请联系财务负责人分配数据范围。</div>
+        <div style="margin-top:16px"><a class="btn" href="PAGE-F00-01.html">返回工作台</a></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="note-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="note-title">
+    <h3 id="note-title">偏差说明</h3>
+    <div class="meta" id="note-sub" style="margin-bottom:12px"></div>
+    <div id="note-view"></div>
+    <div id="note-edit" hidden>
+      <textarea id="note-input" aria-label="偏差说明" placeholder="写明偏差原因，例如：4 月 Prime 会员日前备货不足，3 款框镜断货 9 天"></textarea>
+      <div class="field-error" id="note-err" hidden>请填写说明内容</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" type="button" id="note-cancel">关闭</button>
+      <button class="btn btn-primary" type="button" id="note-save" hidden>保存说明</button>
+    </div>
+  </div>
+</div>
+<div id="toast-host" aria-live="polite"></div>
+
+<script>
+  // ───── 样例数据 ─────
+  // 预算汇率（2026-09-30 中行中间价口径，示例值，以财务BP录入为准）与各月当月平均汇率（与 PAGE-F02-05 一致，2027-04 GBP 为补录后的值）
+  var BFX = { USD: 7.12, CAD: 5.24, EUR: 7.79, GBP: 9.31 };
+  var AFX = {
+    '2027-01': { USD: 7.1840, CAD: 5.2180, EUR: 7.7650, GBP: 9.2830 },
+    '2027-02': { USD: 7.2060, CAD: 5.2050, EUR: 7.8120, GBP: 9.3050 },
+    '2027-03': { USD: 7.2310, CAD: 5.2360, EUR: 7.8560, GBP: 9.3360 },
+    '2027-04': { USD: 7.1980, CAD: 5.2410, EUR: 7.8810, GBP: 9.3420 }
+  };
+  function fx4(v) { return v == null ? '未录入' : v.toFixed(4); }
+  var SYM = { USD: '$', CAD: 'C$', EUR: '€', GBP: '£' };
+  // 月度系数：样例中 1–3 月由 4 月数据按季节系数推得
+  var BF = { '2027-01': 0.96, '2027-02': 0.84, '2027-03': 1.03, '2027-04': 1 };
+  var AF = { '2027-01': 0.99, '2027-02': 0.80, '2027-03': 1.06, '2027-04': 1 };
+  var FEES = [['refund', '退款'], ['cost', '采购成本'], ['comm', '佣金'], ['ads', '推广费用'], ['first', '头程费'], ['last', '尾程费'], ['duty', '关税'], ['store', '仓储费'], ['claim', '库存索赔'], ['other', '其他运营费用']];
+  function R(a) { var o = {}; FEES.forEach(function (f, i) { o[f[0]] = a[i]; }); return o; }
+  // 驱动：[销量, 平均单价(本币), 折扣率]；orig 年初原始目标，adj 最新调整后目标（4 月起与原始不同），roll 最新滚动预测
+  var SHOPS = [
+    { shop: 'Amazon-US-01', ch: 'Amazon', site: '美国', cur: 'USD', orig: [27000, 69.90, .08], adj: [26400, 69.90, .08], roll: [25200, 68.90, .09], rate: R([.06, .32, .15, .09, .06, .06, .04, .025, .005, .015]), act: { u: 23480, local: 1523860.40, kd: 0, rate: R([.068, .318, .151, .104, .061, .059, .041, .031, .004, .016]) } },
+    { shop: 'Amazon-CA-01', ch: 'Amazon', site: '加拿大', cur: 'CAD', orig: [2200, 92.00, .10], adj: [2150, 92.00, .10], roll: [2100, 91.00, .10], rate: R([.07, .32, .15, .08, .07, .07, .03, .025, .005, .015]), act: { u: 2236, local: 186540.80, kd: 0, rate: R([.066, .322, .15, .076, .071, .068, .03, .024, .006, .015]) } },
+    { shop: 'Amazon-UK-01', ch: 'Amazon', site: '英国', cur: 'GBP', orig: [1700, 52.00, .09], adj: [1680, 52.00, .09], roll: [1650, 51.50, .09], rate: R([.065, .33, .15, .09, .07, .065, .045, .03, .005, .015]), act: { u: 1592, local: 74011.20, kd: 0, rate: R([.07, .335, .15, .098, .072, .066, .046, .033, .005, .016]) } },
+    { shop: 'Amazon-DE-01', ch: 'Amazon', site: '德国', cur: 'EUR', orig: [2100, 58.00, .10], adj: [2050, 58.00, .10], roll: [2000, 57.00, .10], rate: R([.07, .33, .15, .09, .07, .065, .045, .03, .005, .015]), act: { u: 2181, local: 112540.60, kd: 0, rate: R([.073, .329, .15, .087, .069, .066, .044, .029, .005, .015]) } },
+    { shop: 'Wayfair-US-01', ch: 'Wayfair', site: '美国', cur: 'USD', orig: [4400, 118.00, .05], adj: [4300, 118.00, .05], roll: [4200, 116.00, .05], rate: R([.05, .34, .15, .03, .06, .07, .04, .02, .005, .015]), act: { u: 4385, local: 489250.75, kd: 0.012, rate: R([.052, .338, .15, .031, .06, .071, .04, .02, .005, .015]) } },
+    { shop: 'HomeDepot-US-01', ch: 'Home Depot', site: '美国', cur: 'USD', orig: [3200, 104.00, .04], adj: [3100, 104.00, .04], roll: [3000, 103.00, .04], rate: R([.04, .36, .12, .02, .06, .07, .04, .02, .005, .015]), act: { u: 2618, local: 258320.90, kd: 0, rate: R([.043, .362, .12, .02, .062, .072, .041, .022, .005, .015]) } },
+    { shop: 'Lowes-US-01', ch: "Lowe's", site: '美国', cur: 'USD', orig: [2000, 99.00, .04], adj: [2000, 99.00, .04], roll: [1950, 99.00, .04], rate: R([.04, .36, .12, .02, .06, .07, .04, .02, .005, .015]), act: { u: 2064, local: 197820.45, kd: 0, rate: R([.039, .358, .12, .019, .06, .069, .04, .02, .005, .015]) } },
+    { shop: 'Shopify-US-01', ch: '独立站', site: '美国', cur: 'USD', orig: [3500, 75.00, .15], adj: [3500, 75.00, .15], roll: [3400, 75.00, .15], rate: R([.05, .32, .03, .14, .06, .07, .04, .02, .005, .02]), act: { u: 3720, local: 231880.60, kd: 0, rate: R([.048, .321, .03, .152, .06, .07, .04, .02, .005, .021]) } },
+    { shop: 'TikTok-US-01', ch: 'TikTok Shop', site: '美国', cur: 'USD', start: '2027-03', isNew: true, orig: [2600, 45.00, .20], adj: [2400, 45.00, .20], roll: [1800, 45.00, .20], rate: R([.08, .30, .08, .18, .06, .07, .04, .02, .005, .02]), act: { u: 1310, local: 44012.30, kd: 0, rate: R([.095, .301, .08, .236, .062, .074, .04, .027, .005, .021]) } }
+  ];
+  // B 端客户（AC-F10-12）：预算本币销售额 × 预算汇率；实际取金蝶人民币收入；无 BI 销量，不做量价拆分
+  var B2B = [
+    { cust: 'Ferguson', dept: '美国业务部', cur: 'USD', bLocal: 186000.00, aRev: 1251806.40, rate: R([.03, .40, 0, .02, .05, .03, .04, .01, 0, .01]), aRate: R([.032, .405, 0, .022, .051, .03, .04, .011, 0, .01]) },
+    { cust: 'Menards', dept: '美国业务部', cur: 'USD', bLocal: 96000.00, aRev: 702141.12, rate: R([.03, .41, 0, .03, .05, .03, .04, .01, 0, .01]), aRate: R([.028, .408, 0, .03, .05, .03, .04, .01, 0, .01]) },
+    { cust: 'Bauhaus', dept: '外贸部', cur: 'EUR', bLocal: 82000.00, aRev: 581290.50, rate: R([.025, .39, 0, .02, .07, .02, .045, .015, 0, .01]), aRate: R([.03, .392, 0, .021, .072, .02, .045, .016, 0, .011]) }
+  ];
+  // 未归属渠道：金蝶中没有店铺核算的成本费用行（2027-04 实际）
+  var UNASSIGNED = { first: 186420.55, store: 95310.20, duty: 42880.00, other: 28640.75 };
+  var BASE_LABEL = {
+    orig: function () { return 'V1 年初原始目标（CEO 2026-12-28 锁定）'; },
+    adj: function (m) { return m >= '2027-04' ? 'V2 2027Q2 目标调整（2027-04-08 生效）' : '本月未调整，取年初原始目标'; },
+    roll: function (m) { return m >= '2027-04' ? 'Q2 滚动预测快照（2027-04-10 发布）' : 'Q2 滚动预测快照（该月已取实际值，差额为 0；看预测准确度请到公司汇总）'; }
+  };
+  var NOTES = {
+    '2027-04|Amazon-US-01': { text: '4 月 Prime 会员日前备货不足，3 款框镜断货 9 天，销量比预算少 2,920 件；断货期间加投广告保排名，推广费率比预算高 1.4 个百分点。5 月 6 日已补货到仓。', by: '陈思雨', at: '2027-05-10 16:42' },
+    '2027-04|HomeDepot-US-01': { text: 'Home Depot 4 月调整线上陈列，2 款灯镜下架 2 周，销量比预算少 482 件。已与采购确认 5 月恢复。', by: '陈思雨', at: '2027-05-10 17:05' },
+    '2027-04|TikTok-US-01': { text: '新渠道第 2 个月，达人合作延期，销量只有预算的 55%；推广费率 23.6%，高于预算 5.6 个百分点。已连续 2 个月达成率低于 70%，见预警中心。', by: '陈思雨', at: '2027-05-11 09:20' },
+    '2027-04|未归属渠道': { text: '4 月德国海外仓调拨的头程与仓储费用金蝶未按店铺核算，共 28.17 万元，计入未归属渠道。', by: '陈思雨', at: '2027-05-11 10:02' }
+  };
+
+  var r2 = function (x) { return Math.round(x * 100) / 100; };
+  function fmt(n) { return (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmtS(n) { return (n > 0 ? '+' : '') + fmt(n); }
+  function pct(n) { return n.toFixed(1) + '%'; }
+  function pp(n) { return (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(1); }
+  function cls(diff, incomeType) { if (Math.abs(diff) < 0.005) return ''; return (diff > 0) === incomeType ? 'good' : 'bad'; }
+  // 达成条：0–120% 映射到条宽，刻度 = 时间进度（月报 = 100%）
+  function bar(ratio, incomeType) {
+    if (ratio == null) return '<span class="muted">—</span>';
+    var tick = 100, c = '';
+    if (incomeType) c = ratio < 70 ? 'is-bad' : ratio < tick - 10 ? 'is-warn' : '';
+    else c = ratio > 100 ? 'is-bad' : ratio > tick + 10 ? 'is-warn' : '';
+    return '<div class="attain ' + c + '" role="img" aria-label="达成 ' + pct(ratio) + '"><span class="fill" style="width:' + (Math.min(ratio, 120) / 120 * 100) + '%"></span><span class="tick" style="left:calc(' + (tick / 120 * 100) + '% - 1px)"></span></div>';
+  }
+
+  var view = 'lead', biMissing = false, fxMissing = false, open = {};
+  var VIEWS = { lead: { who: '林晓（财务负责人）', all: true }, bp: { who: '陈思雨（财务BP）', all: true, edit: true }, ops: { who: '王浩（运营 · Amazon 负责人）', channels: ['Amazon'] } };
+
+  function calc(m, base) {
+    var rows = [];
+    SHOPS.forEach(function (s) {
+      if (s.start && m < s.start) return;
+      // 1–3 月：调整只改 4 月起；最新滚动预测（Q2 快照）中已导入实际的月份取实际值（AC-F08-06），差额为 0
+      var rollActual = (base === 'roll' && m < '2027-04');
+      var d = (m >= '2027-04') ? s[base] : s.orig;
+      var au = Math.round(s.act.u * AF[m]), aLocal = r2(s.act.local * AF[m]), afx = (fxMissing && s.cur === 'GBP') ? null : AFX[m][s.cur];
+      // aRev = 金蝶实际人民币收入（样例按 BI 折人民币加口径差推得，与是否录入当月平均汇率无关）
+      var biRev = afx == null ? null : r2(aLocal * afx), aRev = r2(aLocal * AFX[m][s.cur] * (1 + s.act.kd));
+      var aNet = aLocal / au;
+      var bu = rollActual ? au : Math.round(d[0] * BF[m]), bNet = rollActual ? aNet : d[1] * (1 - d[2]);
+      var bLocal = rollActual ? aLocal : r2(bu * bNet), bRev = rollActual ? aRev : r2(bLocal * BFX[s.cur]);
+      var vol = r2((au - bu) * bNet * BFX[s.cur]);
+      var price = r2((aNet - bNet) * au * BFX[s.cur]);
+      var fxd = afx == null ? null : r2(aLocal * (afx - BFX[s.cur]));
+      var gap = afx == null ? null : r2(aRev - biRev); // 口径差 = 金蝶收入 − BI 本币收入 × 当月平均汇率
+      var fees = {}, bG = bRev, aG = aRev;
+      FEES.forEach(function (f) {
+        var k = f[0], bRate = rollActual ? s.act.rate[k] : s.rate[k], b = r2(bRev * bRate), a = r2(aRev * s.act.rate[k]);
+        var aRate = a / aRev, rateDiff = r2((aRate - bRate) * aRev);
+        fees[k] = { b: b, a: a, bRate: bRate, aRate: aRate, rateDiff: rateDiff };
+        if (k === 'claim') { bG += b; aG += a; } else { bG -= b; aG -= a; }
+      });
+      rows.push({ s: s, key: s.shop, bu: bu, bNet: bNet, bLocal: bLocal, bRev: bRev, au: au, aNet: aNet, aLocal: aLocal, afx: afx, biRev: biRev, aRev: aRev, vol: vol, price: price, fxd: fxd, gap: gap, fees: fees, bG: r2(bG), aG: r2(aG) });
+    });
+    return rows;
+  }
+  function calcB2B(m) {
+    return B2B.map(function (c) {
+      var bLocal = r2(c.bLocal * BF[m]), bRev = r2(bLocal * BFX[c.cur]), aRev = r2(c.aRev * AF[m]);
+      var fees = {}, bG = bRev, aG = aRev;
+      FEES.forEach(function (f) {
+        var k = f[0], b = r2(bRev * c.rate[k]), a = r2(aRev * c.aRate[k]);
+        fees[k] = { b: b, a: a, bRate: c.rate[k], aRate: aRev ? a / aRev : 0, rateDiff: r2((a / aRev - c.rate[k]) * aRev) };
+        if (k === 'claim') { bG += b; aG += a; } else { bG -= b; aG -= a; }
+      });
+      return { b2b: true, c: c, key: 'B 端 · ' + c.cust, bLocal: bLocal, bRev: bRev, aRev: aRev, fees: fees, bG: r2(bG), aG: r2(aG) };
+    });
+  }
+  function unassigned(m) {
+    var fees = {}, aG = 0;
+    FEES.forEach(function (f) { var a = UNASSIGNED[f[0]] ? r2(UNASSIGNED[f[0]] * AF[m]) : 0; fees[f[0]] = { b: 0, a: a }; aG -= a; });
+    return { key: '未归属渠道', unassigned: true, fees: fees, bRev: 0, aRev: 0, bG: 0, aG: r2(aG) };
+  }
+
+  function noteCell(m, key) {
+    var n = NOTES[m + '|' + key], edit = VIEWS[view].edit;
+    if (n) return '<td class="note-cell sep"><div class="note-text" title="' + n.text + '">' + n.text + '</div><div class="note-by">' + n.by + ' · ' + n.at + ' · <button class="link-btn" data-note="' + key + '">' + (edit ? '查看/编辑' : '查看全文') + '</button></div></td>';
+    return '<td class="note-cell sep">' + (edit ? '<button class="link-btn" data-note="' + key + '">填写说明</button>' : '<span class="muted">—</span>') + '</td>';
+  }
+
+  function detailHtml(r, m) {
+    // BI 未到（AC-F10-05）：拆分区域整体隐藏，含费率三列
+    var showRate = !biMissing && !r.unassigned;
+    var rateTh = showRate ? '<th class="num">预算费率</th><th class="num">实际费率</th><th class="num">费率差</th>' : '';
+    var dash3 = showRate ? '<td class="num muted">—</td><td class="num muted">—</td><td class="num muted">—</td>' : '';
+    var h = '<div class="detail-grid"><div class="table-wrap"><table class="table"><thead><tr><th>项目</th><th class="num">预算</th><th class="num">实际</th><th class="num">差额</th><th class="num">达成率</th><th>达成条</th>' + rateTh + '</tr></thead><tbody>';
+    if (!r.unassigned) {
+      var rr = r.aRev / r.bRev * 100, cur = r.b2b ? r.c.cur : r.s.cur;
+      var aSub = r.b2b ? '金蝶人民币收入' : (biMissing ? '本币待 BI' : SYM[cur] + ' ' + fmt(r.aLocal) + ' ' + cur);
+      h += '<tr><td>收入 <span class="cur">' + cur + '</span></td><td class="num">' + fmt(r.bRev) + '<div class="cur">' + SYM[cur] + ' ' + fmt(r.bLocal) + ' ' + cur + '</div></td><td class="num">' + fmt(r.aRev) + '<div class="cur">' + aSub + '</div></td><td class="num ' + cls(r.aRev - r.bRev, true) + '">' + fmtS(r.aRev - r.bRev) + '</td><td class="num">' + pct(rr) + '</td><td>' + bar(rr, true) + '</td>' + dash3 + '</tr>';
+    }
+    FEES.forEach(function (f) {
+      var k = f[0], x = r.fees[k], inc = k === 'claim';
+      if (r.unassigned) {
+        if (!x.a) return;
+        h += '<tr><td>' + f[1] + '</td><td class="num muted">—</td><td class="num">' + fmt(x.a) + '</td><td class="num muted">—</td><td class="num muted">—</td><td><span class="muted">—</span></td></tr>';
+        return;
+      }
+      if (!x.b && !x.a) return;
+      var ra = x.b ? x.a / x.b * 100 : null;
+      h += '<tr><td>' + f[1] + '</td><td class="num">' + fmt(x.b) + '</td><td class="num">' + fmt(x.a) + '</td><td class="num ' + cls(x.a - x.b, inc) + '">' + fmtS(x.a - x.b) + '</td><td class="num">' + (ra == null ? '—' : pct(ra)) + '</td><td>' + bar(ra, inc) + '</td>' +
+        (showRate ? '<td class="num">' + (x.bRate * 100).toFixed(1) + '%</td><td class="num">' + (x.aRate * 100).toFixed(1) + '%</td><td class="num ' + cls(x.rateDiff, inc) + '">' + fmtS(x.rateDiff) + '</td>' : '') + '</tr>';
+    });
+    if (!r.unassigned) {
+      var gr = r.aG / r.bG * 100;
+      h += '<tr class="total"><td>毛利</td><td class="num">' + fmt(r.bG) + '</td><td class="num">' + fmt(r.aG) + '</td><td class="num ' + cls(r.aG - r.bG, true) + '">' + fmtS(r.aG - r.bG) + '</td><td class="num">' + pct(gr) + '</td><td>' + bar(gr, true) + '</td>' + dash3 + '</tr>';
+    } else {
+      h += '<tr class="total"><td>毛利影响</td><td class="num muted">—</td><td class="num">' + fmt(r.aG) + '</td><td class="num muted">—</td><td class="num muted">—</td><td></td></tr>';
+    }
+    h += '</tbody></table></div><div class="card split-card">';
+    if (r.unassigned) {
+      h += '<h4>未归属渠道</h4><div class="formula">金蝶中没有店铺核算的成本费用行，单列在此，不分摊到任何店铺。只有实际，没有预算。</div>';
+    } else if (biMissing) {
+      h += '<h4>收入差额拆分</h4><div class="bi-banner" style="margin:0">量价拆分待 BI 数据（最近 BI 数据截至 2027-02）</div><div class="formula">本月只显示金额差异。</div>';
+    } else if (r.b2b) {
+      h += '<h4>' + r.c.cust + ' · ' + r.c.dept + '</h4><div class="formula">B 端客户没有 BI 销量数据，不做量价拆分，只看金额差异与费率差。实际收入与费用取自金蝶。</div>';
+    } else {
+      var miss = r.afx == null, total = r2(r.aRev - r.bRev);
+      var fxTxt = miss ? '<span class="bad">缺少 ' + document.getElementById('f-month').value + ' 汇率</span>' : fmtS(r.fxd);
+      h += '<h4>收入差额拆分</h4><dl class="split-list">' +
+        '<dt>预算销量 × 预算净单价</dt><dd>' + r.bu.toLocaleString('zh-CN') + ' × ' + r.bNet.toFixed(4) + '</dd>' +
+        '<dt>实际销量 × 实际净单价</dt><dd>' + r.au.toLocaleString('zh-CN') + ' × ' + r.aNet.toFixed(4) + '</dd>' +
+        '<dt>预算汇率 / 当月平均汇率</dt><dd>' + BFX[r.s.cur].toFixed(4) + ' / ' + fx4(r.afx) + '</dd>' +
+        '<dt>量差</dt><dd class="' + cls(r.vol, true) + '">' + fmtS(r.vol) + '</dd>' +
+        '<dt>价差</dt><dd class="' + cls(r.price, true) + '">' + fmtS(r.price) + '</dd>' +
+        '<dt>汇率差</dt><dd class="' + (miss ? '' : cls(r.fxd, true)) + '">' + fxTxt + '</dd>' +
+        '<dt>口径差（金蝶 − BI 折人民币）</dt><dd class="' + (miss ? 'muted' : cls(r.gap, true)) + '">' + (miss ? '—' : fmtS(r.gap)) + '</dd>' +
+        '<dt class="sum">收入差额</dt><dd class="sum ' + cls(total, true) + '">' + fmtS(total) + '</dd></dl>' +
+        '<div class="formula">量差 = (实际销量 − 预算销量) × 预算净单价 × 预算汇率<br>价差 = (实际净单价 − 预算净单价) × 实际销量 × 预算汇率<br>汇率差 = 实际本币收入 × (当月平均汇率 − 预算汇率)<br>口径差 = 金蝶实际收入 − BI 本币收入 × 当月平均汇率<br>量差 + 价差 + 汇率差 + 口径差 = 收入差额<br>净单价 = 平均单价 × (1 − 折扣率)；费率差 = (实际费率 − 预算费率) × 实际人民币收入</div>';
+      if (miss) h += '<div class="formula" style="color:var(--warn)">该月 ' + r.s.cur + ' 当月平均汇率未录入，汇率差与口径差暂不计算，见 <a href="PAGE-F02-05.html" style="color:inherit">汇率</a>。</div>';
+      else if (Math.abs(r.gap) >= 0.01) h += '<div class="formula" style="color:var(--warn)">口径差来自金蝶收入与 BI 收入不一致，见 <a href="PAGE-F09-02.html" style="color:inherit">BI 与金蝶核对</a>。</div>';
+    }
+    h += '</div></div>';
+    return h;
+  }
+
+  function mainRow(r, m) {
+    var xb = '<button class="xbtn" aria-expanded="' + (!!open[r.key]) + '" aria-label="展开 ' + r.key + ' 明细" data-x="' + r.key + '"><svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></svg></button>';
+    var h;
+    if (r.unassigned) {
+      h = '<tr class="unassigned"><td class="dim">' + xb + '未归属渠道</td><td class="muted">—</td><td class="muted">—</td>' +
+        '<td class="num sep muted">—</td><td class="num muted">—</td><td class="num muted">—</td><td class="num muted">—</td><td class="num muted">—</td><td></td>' +
+        '<td class="num sep sp muted">—</td><td class="num sp muted">—</td><td class="num sp muted">—</td><td class="num sp muted">—</td>' +
+        '<td class="num sep muted">—</td><td class="num">' + fmt(r.aG) + '</td><td class="num muted">—</td><td class="num muted">—</td>' +
+        '<td class="num sep muted">—</td><td class="num muted">—</td><td class="num muted">—</td>' + noteCell(m, r.key) + '</tr>';
+    } else if (r.b2b) {
+      var rr = r.aRev / r.bRev * 100, gr = r.aG / r.bG * 100, bm = r.bG / r.bRev * 100, am = r.aG / r.aRev * 100;
+      h = '<tr><td class="dim">' + xb + r.c.cust + '</td><td>B 端 · ' + r.c.dept + '</td><td class="muted">—</td>' +
+        '<td class="num sep">' + fmt(r.bRev) + '</td><td class="num">' + fmt(r.aRev) + '</td><td class="num muted">—</td>' +
+        '<td class="num ' + cls(r.aRev - r.bRev, true) + '">' + fmtS(r.aRev - r.bRev) + '</td><td class="num">' + pct(rr) + '</td><td>' + bar(rr, true) + '</td>' +
+        '<td class="num sep sp muted" colspan="4">B 端不做量价拆分</td>' +
+        '<td class="num sep">' + fmt(r.bG) + '</td><td class="num">' + fmt(r.aG) + '</td><td class="num ' + cls(r.aG - r.bG, true) + '">' + fmtS(r.aG - r.bG) + '</td><td class="num">' + pct(gr) + '</td>' +
+        '<td class="num sep">' + pct(bm) + '</td><td class="num">' + pct(am) + '</td><td class="num ' + cls(am - bm, true) + '">' + pp(am - bm) + '</td>' + noteCell(m, r.key) + '</tr>';
+    } else {
+      var rr = r.aRev / r.bRev * 100, gr = r.aG / r.bG * 100, bm = r.bG / r.bRev * 100, am = r.aG / r.aRev * 100;
+      var missTxt = '<span class="bad">缺少 ' + m + ' 汇率</span>';
+      var sp = '<td class="num sep sp ' + cls(r.vol, true) + '">' + fmtS(r.vol) + '</td><td class="num sp ' + cls(r.price, true) + '">' + fmtS(r.price) + '</td>' +
+        (r.afx == null ? '<td class="num sp">' + missTxt + '</td><td class="num sp muted">—</td>' : '<td class="num sp ' + cls(r.fxd, true) + '">' + fmtS(r.fxd) + '</td><td class="num sp ' + cls(r.gap, true) + '">' + fmtS(r.gap) + '</td>');
+      h = '<tr><td class="dim">' + xb + r.key + (r.s.isNew ? ' <span class="badge">新渠道</span>' : '') + '</td><td>' + r.s.ch + '</td><td>' + r.s.site + '</td>' +
+        '<td class="num sep">' + fmt(r.bRev) + '</td><td class="num">' + fmt(r.aRev) + '</td><td class="num">' + (biMissing ? '<span class="muted">待 BI</span>' : SYM[r.s.cur] + ' ' + fmt(r.aLocal) + ' <span class="cur">' + r.s.cur + '</span>') + '</td>' +
+        '<td class="num ' + cls(r.aRev - r.bRev, true) + '">' + fmtS(r.aRev - r.bRev) + '</td><td class="num">' + pct(rr) + '</td><td>' + bar(rr, true) + '</td>' + sp +
+        '<td class="num sep">' + fmt(r.bG) + '</td><td class="num">' + fmt(r.aG) + '</td><td class="num ' + cls(r.aG - r.bG, true) + '">' + fmtS(r.aG - r.bG) + '</td><td class="num">' + pct(gr) + '</td>' +
+        '<td class="num sep">' + pct(bm) + '</td><td class="num">' + pct(am) + '</td><td class="num ' + cls(am - bm, true) + '">' + pp(am - bm) + '</td>' + noteCell(m, r.key) + '</tr>';
+    }
+    if (open[r.key]) h += '<tr class="detail"><td colspan="21">' + detailHtml(r, m) + '</td></tr>';
+    return h;
+  }
+
+  function currentRows() {
+    var m = document.getElementById('f-month').value, base = document.getElementById('f-base').value, ch = document.getElementById('f-ch').value, v = VIEWS[view];
+    var rows = calc(m, base).filter(function (r) { return (v.all || v.channels.indexOf(r.s.ch) > -1) && (ch === '全部' || r.s.ch === ch); });
+    // B 端分组（AC-F10-12）：数据范围内有 B 端客户时按客户逐行
+    var b2b = (v.all && (ch === '全部' || ch === 'B 端')) ? calcB2B(m) : [];
+    if (ch === 'B 端') rows = [];
+    if (v.all && ch === '全部') rows.push(unassigned(m));
+    return { m: m, base: base, rows: rows, b2b: b2b };
+  }
+
+  function render() {
+    var c = currentRows(), m = c.m, rows = c.rows;
+    var t = { bRev: 0, aRev: 0, bG: 0, aG: 0, vol: 0, price: 0, fxd: 0, gap: 0, miss: false };
+    var body = '';
+    var shopRows = rows.filter(function (r) { return !r.unassigned; }), un = rows.filter(function (r) { return r.unassigned; });
+    shopRows.forEach(function (r) {
+      body += mainRow(r, m);
+      t.bRev += r.bRev; t.aRev += r.aRev; t.bG += r.bG; t.aG += r.aG;
+      t.vol += r.vol; t.price += r.price;
+      if (r.afx == null) t.miss = true; else { t.fxd += r.fxd; t.gap += r.gap; }
+    });
+    if (c.b2b.length) {
+      body += '<tr class="group-row"><td class="dim" colspan="3">B 端（按客户）</td><td colspan="18"></td></tr>';
+      c.b2b.forEach(function (r) { body += mainRow(r, m); t.bRev += r.bRev; t.aRev += r.aRev; t.bG += r.bG; t.aG += r.aG; });
+    }
+    un.forEach(function (r) { body += mainRow(r, m); t.bG += r.bG; t.aG += r.aG; });
+    var rr = t.aRev / t.bRev * 100, gr = t.aG / t.bG * 100, bm = t.bG / t.bRev * 100, am = t.aG / t.aRev * 100;
+    var label = VIEWS[view].all && document.getElementById('f-ch').value === '全部' ? '合计（含 B 端与未归属渠道）' : '合计（当前范围）';
+    var missTot = '<span class="bad">缺少 ' + m + ' 汇率</span>';
+    body += '<tr class="total"><td class="dim">' + label + '</td><td></td><td></td><td class="num sep">' + fmt(t.bRev) + '</td><td class="num">' + fmt(t.aRev) + '</td><td class="num muted">—</td><td class="num ' + cls(t.aRev - t.bRev, true) + '">' + fmtS(t.aRev - t.bRev) + '</td><td class="num">' + pct(rr) + '</td><td>' + bar(rr, true) + '</td>' +
+      '<td class="num sep sp ' + cls(t.vol, true) + '">' + fmtS(r2(t.vol)) + '</td><td class="num sp ' + cls(t.price, true) + '">' + fmtS(r2(t.price)) + '</td>' +
+      (t.miss ? '<td class="num sp">' + missTot + '</td><td class="num sp muted">—</td>' : '<td class="num sp ' + cls(t.fxd, true) + '">' + fmtS(r2(t.fxd)) + '</td><td class="num sp ' + cls(t.gap, true) + '">' + fmtS(r2(t.gap)) + '</td>') +
+      '<td class="num sep">' + fmt(t.bG) + '</td><td class="num">' + fmt(t.aG) + '</td><td class="num ' + cls(t.aG - t.bG, true) + '">' + fmtS(t.aG - t.bG) + '</td><td class="num">' + pct(gr) + '</td>' +
+      '<td class="num sep">' + pct(bm) + '</td><td class="num">' + pct(am) + '</td><td class="num ' + cls(am - bm, true) + '">' + pp(am - bm) + '</td><td class="sep"></td></tr>';
+    document.querySelector('#tbl tbody').innerHTML = body;
+    document.getElementById('tbl').classList.toggle('no-bi', biMissing);
+
+    var fx = AFX[m];
+    document.getElementById('info').innerHTML = '<span>对比基准：<b>' + BASE_LABEL[c.base](m) + '</b></span><span>金蝶实际：<b>' + m + '</b></span><span>BI 数据截至：<b>' + (biMissing ? '2027-02' : '2027-04') + '</b></span>' +
+      '<span>预算汇率：USD 7.1200 · CAD 5.2400 · EUR 7.7900 · GBP 9.3100（示例值，以财务BP录入为准）</span><span>' + m + ' 当月平均汇率：USD ' + fx4(fx.USD) + ' · CAD ' + fx4(fx.CAD) + ' · EUR ' + fx4(fx.EUR) + ' · GBP ' + fx4(fxMissing ? null : fx.GBP) + '（示例值）</span>';
+    document.getElementById('bi-banner').hidden = !biMissing;
+    document.getElementById('bi-banner-text').textContent = '量价拆分待 BI 数据（最近 BI 数据截至 2027-02）。本月只显示金额差异，拆分区域（含费率差）隐藏。';
+  }
+
+  function fillChannels() {
+    var v = VIEWS[view], sel = document.getElementById('f-ch'), list = ['全部'];
+    SHOPS.forEach(function (s) { if ((v.all || v.channels.indexOf(s.ch) > -1) && list.indexOf(s.ch) < 0) list.push(s.ch); });
+    if (v.all) list.push('B 端');
+    sel.innerHTML = list.map(function (x) { return '<option>' + x + '</option>'; }).join('');
+  }
+
+  // ───── 交互 ─────
+  document.getElementById('tbl').addEventListener('click', function (e) {
+    var x = e.target.closest('[data-x]'); if (x) { open[x.dataset.x] = !open[x.dataset.x]; render(); return; }
+    var n = e.target.closest('[data-note]'); if (n) openNote(n.dataset.note);
+  });
+  ['f-month', 'f-base', 'f-ch'].forEach(function (id) { document.getElementById(id).addEventListener('change', render); });
+
+  var noteKey = null;
+  function openNote(key) {
+    var m = document.getElementById('f-month').value, n = NOTES[m + '|' + key], edit = VIEWS[view].edit;
+    noteKey = key;
+    document.getElementById('note-sub').textContent = m + ' · ' + key + (n ? ' · ' + n.by + ' 于 ' + n.at + ' 填写' : '');
+    document.getElementById('note-view').innerHTML = n ? '<p style="margin:0;white-space:pre-wrap">' + n.text + '</p>' : '';
+    document.getElementById('note-view').hidden = edit;
+    document.getElementById('note-edit').hidden = !edit;
+    document.getElementById('note-save').hidden = !edit;
+    document.getElementById('note-input').value = n ? n.text : '';
+    document.getElementById('note-err').hidden = true;
+    document.getElementById('note-input').removeAttribute('aria-invalid');
+    document.getElementById('note-modal').hidden = false;
+    (edit ? document.getElementById('note-input') : document.getElementById('note-cancel')).focus();
+  }
+  document.getElementById('note-cancel').addEventListener('click', function () { document.getElementById('note-modal').hidden = true; });
+  document.getElementById('note-save').addEventListener('click', function () {
+    var v = document.getElementById('note-input').value.trim();
+    if (!v) { document.getElementById('note-err').hidden = false; document.getElementById('note-input').setAttribute('aria-invalid', 'true'); return; }
+    var m = document.getElementById('f-month').value, now = new Date();
+    var hm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+    NOTES[m + '|' + noteKey] = { text: v, by: '陈思雨', at: '2027-05-12 ' + hm };
+    document.getElementById('note-modal').hidden = true; render(); toast('偏差说明已保存');
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.getElementById('note-modal').hidden = true; });
+
+  var states = ['normal', 'empty', 'loading', 'error', 'denied'];
+  function setState(st) {
+    states.forEach(function (k) { document.getElementById('st-' + k).hidden = k !== st; });
+    document.querySelectorAll('[data-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.state === st); });
+    document.getElementById('btn-export').disabled = st !== 'normal';
+    document.getElementById('empty-title').textContent = document.getElementById('f-month').value + ' 还没有金蝶实际';
+  }
+  document.querySelectorAll('[data-state]').forEach(function (b) { b.addEventListener('click', function () { setState(b.dataset.state); }); });
+  document.getElementById('btn-retry').addEventListener('click', function () { setState('loading'); setTimeout(function () { setState('normal'); }, 800); });
+  document.querySelectorAll('[data-view]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      view = b.dataset.view;
+      document.querySelectorAll('[data-view]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      document.getElementById('who').textContent = VIEWS[view].who;
+      document.getElementById('empty-act').hidden = view !== 'bp';
+      fillChannels(); render();
+    });
+  });
+  document.getElementById('toggle-fx').addEventListener('click', function () {
+    fxMissing = !fxMissing; this.setAttribute('aria-pressed', fxMissing); render();
+  });
+  document.getElementById('toggle-bi').addEventListener('click', function () {
+    biMissing = !biMissing; this.setAttribute('aria-pressed', biMissing); render();
+  });
+
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.getElementById('toast-host').appendChild(t); setTimeout(function () { t.remove(); }, 3000);
+  }
+  document.getElementById('btn-export').addEventListener('click', function () {
+    var btn = this, label = btn.querySelector('span'), c = currentRows();
+    var baseName = { orig: '年初原始目标', adj: '最新调整后目标', roll: '最新滚动预测' }[c.base];
+    btn.disabled = true; label.textContent = '正在导出…';
+    setTimeout(function () {
+      btn.disabled = false; label.textContent = '导出 Excel';
+      toast('已导出 渠道站点偏差_' + c.m + '_' + baseName + '.xlsx · 主表 ' + (c.rows.length + c.b2b.length) + ' 行 + 合计，含每行展开的明细行（仅含你的数据范围）');
+    }, 900);
+  });
+
+  fillChannels(); render();
+</script>
+</body>
+</html>

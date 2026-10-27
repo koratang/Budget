@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F01-01">
+  <title>登录 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    [hidden] { display: none !important; }
+    body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .proto-wrap { max-width: 920px; margin: 0 auto; padding: var(--space-4) var(--space-6) 0; }
+    .login { min-height: calc(100vh - 80px); display: grid; place-items: center; padding: var(--space-8) var(--space-6); }
+    .login-inner { width: 760px; }
+    .brand { margin-bottom: var(--space-6); }
+    .brand h1 { font-family: var(--font-display); font-size: var(--text-3xl); letter-spacing: var(--tracking-display); line-height: var(--leading-tight); margin: 0 0 var(--space-1); }
+    .brand p { margin: 0; color: var(--muted); }
+    .login-card { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); }
+    .login-card > section { padding: var(--space-8) var(--space-6); }
+    .login-card > section + section { border-left: 1px solid var(--border-soft); }
+    .sec-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-4); }
+    .qr { display: grid; grid-template-columns: repeat(25, 6px); gap: 0; width: 150px; padding: var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); margin-bottom: var(--space-4); }
+    .qr i { width: 6px; height: 6px; display: block; }
+    .qr i.on { background: var(--fg); }
+    .hint { color: var(--fg-2); margin: 0 0 var(--space-1); }
+    .sub { color: var(--muted); font-size: var(--text-sm); margin: 0; }
+    .steps { margin: 0; padding-left: 20px; color: var(--fg-2); }
+    .steps li + li { margin-top: var(--space-2); }
+    .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); background: var(--surface-warm); border: 1px solid var(--border-soft); font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-4); }
+    .result-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-2); }
+    .result-title.bad { color: var(--danger); }
+    .result p { margin: 0 0 var(--space-4); color: var(--fg-2); }
+    .dev { margin-top: var(--space-6); border: 1px dashed var(--muted); border-radius: var(--radius-lg); padding: var(--space-4) var(--space-6); background: var(--surface-warm); position: relative; }
+    .dev-tag { position: absolute; top: -10px; left: var(--space-4); padding: 0 var(--space-2); background: var(--bg); font-size: var(--text-xs); color: var(--muted); }
+    .dev-row { display: flex; gap: var(--space-3); align-items: center; }
+    .dev-row .select { width: 340px; }
+    .foot { text-align: center; color: var(--muted); font-size: var(--text-xs); margin-top: var(--space-6); }
+    .icon { width: 16px; height: 16px; flex: none; }
+  </style>
+</head>
+<body>
+  <div class="proto-wrap">
+    <div class="proto-bar" role="group" aria-label="原型状态切换">
+      <strong>原型说明，非产品功能：</strong>
+      <button class="btn" data-proto-state="normal" aria-pressed="true">正常</button>
+      <button class="btn" data-proto-state="loading" aria-pressed="false">验证中</button>
+      <button class="btn" data-proto-state="norole" aria-pressed="false">未开通权限</button>
+      <button class="btn" data-proto-state="disabled" aria-pressed="false">账号停用</button>
+      <button class="btn" data-proto-state="error" aria-pressed="false">钉钉不可用</button>
+      <button class="btn" data-proto-state="expired" aria-pressed="false">会话失效</button>
+      <span style="margin-left:auto">配置：</span>
+      <button class="btn" data-proto-env="dev" aria-pressed="true">开发配置</button>
+      <button class="btn" data-proto-env="prod" aria-pressed="false">生产配置</button>
+    </div>
+  </div>
+
+  <main class="login">
+    <div class="login-inner">
+      <div class="brand">
+        <h1>预算管理平台</h1>
+        <p>年度全面预算 · 公司内部系统</p>
+      </div>
+
+      <div class="login-card">
+        <section aria-labelledby="scan-title">
+          <h2 class="sec-title" id="scan-title">钉钉扫码登录</h2>
+
+          <div data-view="normal expired">
+            <div class="notice" data-view="expired" hidden>登录已失效，请重新登录</div>
+            <div class="qr" id="qr" role="img" aria-label="钉钉登录二维码"></div>
+            <p class="hint">请使用钉钉 App 扫码登录</p>
+            <p class="sub">扫码后在手机上确认登录</p>
+          </div>
+
+          <div data-view="loading" hidden aria-live="polite">
+            <div class="skeleton" style="width:150px;height:150px;margin-bottom:var(--space-4)"></div>
+            <p class="hint">正在验证钉钉身份…</p>
+          </div>
+
+          <div class="result" data-view="norole" hidden role="alert">
+            <p class="result-title bad">未开通预算权限，请联系财务负责人</p>
+            <p>当前钉钉账号：赵一鸣（视觉部）</p>
+            <button class="btn" data-goto="normal">换个账号扫码</button>
+          </div>
+
+          <div class="result" data-view="disabled" hidden role="alert">
+            <p class="result-title bad">无法登录：钉钉账号已停用或不在企业通讯录中</p>
+            <p>如有疑问请联系人力资源部或信息数字化部。</p>
+            <button class="btn" data-goto="normal">换个账号扫码</button>
+          </div>
+
+          <div class="result" data-view="error" hidden role="alert">
+            <p class="result-title">钉钉登录暂不可用，请稍后重试</p>
+            <p>二维码未能加载，系统没有其他登录方式。</p>
+            <button class="btn" data-goto="normal">
+              <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9"/><path d="M13.5 2.5v3h-3"/></svg>
+              重新加载
+            </button>
+          </div>
+        </section>
+
+        <section aria-labelledby="dt-title">
+          <h2 class="sec-title" id="dt-title">在钉钉里使用</h2>
+          <ol class="steps">
+            <li>打开电脑版钉钉</li>
+            <li>进入「工作台」，点击「预算管理平台」</li>
+            <li>系统自动识别你的钉钉身份，无需扫码</li>
+          </ol>
+          <p class="sub" style="margin-top:var(--space-6)">钉钉工作通知里的系统链接，在钉钉内打开同样免登；登录后回到通知原链接。</p>
+          <p class="sub" style="margin-top:var(--space-2)">登录 8 小时无操作将自动退出。</p>
+        </section>
+      </div>
+
+      <div class="dev" id="dev">
+        <span class="dev-tag">仅开发配置可见，生产强制关闭</span>
+        <p class="hint" style="margin-bottom:var(--space-3)"><strong>开发模式身份切换</strong>　用样例员工身份进入，用于钉钉应用就绪前的本机验收</p>
+        <div class="dev-row">
+          <label for="dev-user" class="sub">身份</label>
+          <select class="select" id="dev-user">
+            <option value="ok">林晓 · 财务负责人</option>
+            <option value="ok">周明远 · CEO</option>
+            <option value="ok">陈思雨 · 财务BP</option>
+            <option value="ok">王浩 · 运营（Amazon）</option>
+            <option value="ok">赵磊 · 部门负责人（运营部）</option>
+            <option value="ok">孙婷 · B端业务（美国业务部）</option>
+            <option value="ok">刘洋 · B端业务（外贸部）</option>
+            <option value="ok">何建国 · 部门负责人（物流物控部）</option>
+            <option value="ok">郑可 · 部门预算专员（人力资源部）</option>
+            <option value="ok">吴静 · 部门负责人（人力资源部）</option>
+            <option value="norole">赵一鸣 · 未分配角色（测试拒绝）</option>
+          </select>
+          <button class="btn btn-primary" id="dev-enter">以此身份进入</button>
+        </div>
+      </div>
+
+      <p class="foot">仅限公司内部使用</p>
+    </div>
+  </main>
+
+  <script>
+    // 示意二维码（固定伪随机图案）
+    (function () {
+      var qr = document.getElementById('qr'), n = 25, seed = 7;
+      function finder(r, c) {
+        var spots = [[0, 0], [0, n - 7], [n - 7, 0]];
+        for (var i = 0; i < 3; i++) {
+          var dr = r - spots[i][0], dc = c - spots[i][1];
+          if (dr >= 0 && dr < 7 && dc >= 0 && dc < 7) {
+            return dr === 0 || dr === 6 || dc === 0 || dc === 6 || (dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4) ? 1 : 0;
+          }
+        }
+        return -1;
+      }
+      for (var r = 0; r < n; r++) for (var c = 0; c < n; c++) {
+        var f = finder(r, c), on;
+        if (f >= 0) on = f === 1; else { seed = (seed * 9301 + 49297) % 233280; on = seed / 233280 > 0.52; }
+        var i = document.createElement('i'); if (on) i.className = 'on'; qr.appendChild(i);
+      }
+    })();
+
+    function show(state) {
+      document.querySelectorAll('[data-view]').forEach(function (v) {
+        v.hidden = v.dataset.view.split(' ').indexOf(state) < 0;
+      });
+      document.querySelectorAll('[data-proto-state]').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.dataset.protoState === state);
+      });
+    }
+    document.querySelectorAll('[data-proto-state]').forEach(function (b) {
+      b.addEventListener('click', function () { show(b.dataset.protoState); });
+    });
+    document.querySelectorAll('[data-goto]').forEach(function (b) {
+      b.addEventListener('click', function () { show(b.dataset.goto); });
+    });
+    document.querySelectorAll('[data-proto-env]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        document.getElementById('dev').hidden = b.dataset.protoEnv === 'prod';
+        document.querySelectorAll('[data-proto-env]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      });
+    });
+    document.getElementById('dev-enter').addEventListener('click', function () {
+      var sel = document.getElementById('dev-user');
+      if (sel.value === 'norole') { show('norole'); return; }
+      show('loading');
+      setTimeout(function () { location.href = 'PAGE-F00-01.html'; }, 600);
+    });
+  </script>
+</body>
+</html>

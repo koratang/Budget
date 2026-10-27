@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F01-02">
+  <title>角色与权限 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); color: var(--fg); background: var(--bg); }
+    .drawer-mask, .drawer { z-index: 10; }
+    .modal-backdrop { z-index: 20; }
+    .toast { z-index: 30; }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-4); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .topbar nav { color: var(--muted); font-size: var(--text-sm); }
+    .topbar a { color: var(--fg-2); }
+    .page-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: var(--space-4); }
+    .page-head .page-title { margin: 0; }
+    .meta { color: var(--muted); font-size: var(--text-sm); }
+    .filters { display: flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; }
+    .filters .input { width: 200px; }
+    .filters label { font-size: var(--text-sm); color: var(--fg-2); display: inline-flex; gap: var(--space-1); align-items: center; }
+    .table td .badge + .badge { margin-left: var(--space-1); }
+    .link-btn { background: none; border: 0; padding: 0; color: var(--fg-2); text-decoration: underline; cursor: pointer; font: inherit; border-radius: var(--radius-sm); }
+    .link-btn:hover { color: var(--fg); }
+    .link-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .scope { color: var(--fg-2); max-width: 360px; overflow: hidden; text-overflow: ellipsis; }
+    .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .drawer-mask { position: fixed; inset: 0; background: color-mix(in oklab, var(--fg), transparent 70%); }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 520px; background: var(--surface); box-shadow: var(--elev-float); display: flex; flex-direction: column; animation: toast-in var(--motion-base) var(--ease-standard); }
+    .drawer header { padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-soft); }
+    .drawer header h2 { margin: 0; font-size: var(--text-xl); }
+    .drawer .body { padding: var(--space-4) var(--space-6); overflow: auto; flex: 1; }
+    .drawer footer { padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-soft); display: flex; justify-content: flex-end; gap: var(--space-2); }
+    .fgroup { margin-bottom: var(--space-5); }
+    .flabel { font-weight: 600; font-size: var(--text-sm); margin-bottom: var(--space-2); display: block; }
+    .flabel .req { color: var(--danger); }
+    .checks { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-2) var(--space-4); font-size: var(--text-sm); }
+    .checks label { display: flex; gap: var(--space-2); align-items: center; }
+    .checks.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .scope-box { border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-3); background: var(--surface-warm); }
+    .scope-box[aria-invalid="true"] { border-color: var(--danger); }
+    .tree-ch { font-weight: 600; margin-top: var(--space-2); }
+    .tree-ch:first-child { margin-top: 0; }
+    .tree-shops { padding-left: var(--space-6); }
+    .note { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); }
+    .info-line { font-size: var(--text-sm); color: var(--fg-2); padding: var(--space-2) var(--space-3); background: var(--surface-warm); border-radius: var(--radius-md); }
+    .modal h3 { margin: 0 0 var(--space-3); font-size: var(--text-lg); }
+    .modal p { margin: 0 0 var(--space-4); color: var(--fg-2); }
+    .modal .actions { display: flex; justify-content: flex-end; gap: var(--space-2); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html" aria-current="page">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">系统设置 / 角色与权限</nav>
+      <div>当前用户：林晓（财务负责人） · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型状态切换">
+        <strong>原型说明，非产品功能：</strong>
+        <button class="btn" data-proto-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-proto-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-proto-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-proto-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-proto-state="noperm" aria-pressed="false">无权限</button>
+      </div>
+
+      <div class="page-head">
+        <h1 class="page-title">角色与权限</h1>
+        <span class="meta">员工来自钉钉通讯录 · 保存后对方下一次打开页面即按新范围生效</span>
+      </div>
+
+      <div data-view="normal">
+        <div class="filters" role="search">
+          <input class="input" id="q" type="search" placeholder="搜索姓名" aria-label="搜索姓名">
+          <select class="select" id="f-dept" aria-label="钉钉部门">
+            <option value="">全部部门</option>
+            <option>产品作战部</option><option>开发部</option><option>研发部</option><option>供应中心</option><option>运营部</option><option>市场部</option><option>美国业务部</option><option>视觉部</option><option>外贸部</option><option>物流物控部</option><option>项目管理部</option><option>信息数字化部</option><option>人力资源部</option><option>财务部</option><option>总经办</option>
+          </select>
+          <select class="select" id="f-role" aria-label="角色">
+            <option value="">全部角色</option>
+            <option>CEO</option><option>财务负责人</option><option>财务BP</option><option>运营</option><option>B端业务</option><option>物流物控</option><option>部门负责人</option><option>部门预算专员</option>
+          </select>
+          <label><input type="checkbox" id="f-none"> 只看未分配角色</label>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table" aria-label="员工角色列表">
+            <thead>
+              <tr><th>姓名</th><th>钉钉部门</th><th>角色</th><th>数据范围</th><th>钉钉账号</th><th>操作</th></tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="pager"><span id="count"></span><span>第 1 / 4 页 · 每页 50 条</span></div>
+      </div>
+
+      <div data-view="empty" hidden>
+        <div class="table-wrap">
+          <div class="state">
+            <div class="state-title">还没有读到钉钉通讯录员工</div>
+            <p>钉钉企业内部应用的通讯录权限开通后，这里会列出全部员工，供你分配预算角色。</p>
+            <button class="btn" data-goto="loading">重新同步通讯录</button>
+          </div>
+        </div>
+      </div>
+
+      <div data-view="loading" hidden aria-busy="true">
+        <div class="table-wrap" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:30%"></div>
+          <div class="skeleton" style="margin-top:16px"></div>
+          <div class="skeleton" style="margin-top:16px"></div>
+          <div class="skeleton" style="margin-top:16px"></div>
+          <div class="skeleton" style="margin-top:16px;width:70%"></div>
+        </div>
+      </div>
+
+      <div data-view="error" hidden>
+        <div class="table-wrap">
+          <div class="state" role="alert">
+            <div class="state-title">员工列表加载失败</div>
+            <p>钉钉通讯录暂时无法读取，请稍后重试。</p>
+            <button class="btn" data-goto="normal">重试</button>
+          </div>
+        </div>
+      </div>
+
+      <div data-view="noperm" hidden>
+        <div class="table-wrap">
+          <div class="state" role="alert">
+            <div class="state-title">无权限</div>
+            <p>角色分配仅财务负责人可用。</p>
+            <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 分配抽屉 -->
+<div id="drawer" hidden>
+  <div class="drawer-mask" data-close></div>
+  <section class="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title">
+    <header>
+      <h2 id="d-title">分配角色</h2>
+      <div class="meta" id="d-sub"></div>
+    </header>
+    <div class="body">
+      <div class="fgroup">
+        <span class="flabel">角色（可多选）</span>
+        <div class="checks" id="d-roles"></div>
+        <div class="field-error" id="e-roles" hidden></div>
+      </div>
+
+      <div class="fgroup" id="s-all" hidden>
+        <span class="flabel">数据范围</span>
+        <div class="info-line">CEO、财务负责人、财务BP 查看全公司全部部门、渠道和 B端客户，无需设置范围</div>
+      </div>
+
+      <div class="fgroup" id="s-dept" hidden>
+        <span class="flabel"><span class="req">*</span> 部门范围</span>
+        <div class="scope-box"><div class="checks cols-3" id="d-depts"></div></div>
+        <div class="note">适用于部门负责人、部门预算专员：只见所选部门的费用预算、实际与报表</div>
+        <div class="field-error" id="e-dept" hidden>请选择至少一个部门</div>
+      </div>
+
+      <div class="fgroup" id="s-shop" hidden>
+        <span class="flabel"><span class="req">*</span> 渠道 / 店铺范围</span>
+        <div class="scope-box" id="d-shops"></div>
+        <div class="note">适用于运营：勾选渠道即包含该渠道下全部店铺</div>
+        <div class="field-error" id="e-shop" hidden>请选择至少一个渠道或店铺</div>
+      </div>
+
+      <div class="fgroup" id="s-cust" hidden>
+        <span class="flabel"><span class="req">*</span> B端客户范围</span>
+        <div class="scope-box"><div class="checks" id="d-custs"></div></div>
+        <div class="note">适用于 B端业务：只见所选客户的 B 端预算、实际与报表</div>
+        <div class="field-error" id="e-cust" hidden>请选择至少一个 B端客户</div>
+      </div>
+
+      <div class="fgroup" id="s-logi" hidden>
+        <span class="flabel">物流物控</span>
+        <div class="info-line">只展示并允许编辑头程费率、尾程费率、仓储费率、关税率四项及其渠道 / 站点 / 品类维度，不展示收入金额与利润</div>
+      </div>
+    </div>
+    <footer>
+      <button class="btn btn-danger" id="d-revoke">撤销全部角色</button>
+      <span style="flex:1"></span>
+      <button class="btn" data-close>取消</button>
+      <button class="btn btn-primary" id="d-save">保存</button>
+    </footer>
+  </section>
+</div>
+
+<div class="modal-backdrop" id="confirm" hidden>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="c-title">
+    <h3 id="c-title">撤销全部角色？</h3>
+    <p id="c-body"></p>
+    <div class="actions"><button class="btn" id="c-cancel">取消</button><button class="btn btn-danger" id="c-ok">确认撤销</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+  var ROLES = ['CEO', '财务负责人', '财务BP', '运营', 'B端业务', '物流物控', '部门负责人', '部门预算专员'];
+  var DEPTS = ['产品作战部', '开发部', '研发部', '供应中心', '运营部', '市场部', '美国业务部', '视觉部', '外贸部', '物流物控部', '项目管理部', '信息数字化部', '人力资源部', '财务部', '总经办'];
+  var SHOPS = { 'Amazon': ['Amazon-US-01', 'Amazon-CA-01', 'Amazon-UK-01', 'Amazon-DE-01'], 'Wayfair': ['Wayfair-US-01'], 'Home Depot': ['HomeDepot-US-01'], "Lowe's": ['Lowes-US-01'], '独立站': ['Shopify-US-01'], 'TikTok Shop': ['TikTok-US-01'] };
+  var CUSTS = ['Ferguson（美国业务部 · USD）', 'Menards（美国业务部 · USD）', 'Bauhaus（外贸部 · EUR）'];
+  var people = [
+    { n: '周明远', d: '总经办', r: ['CEO'] },
+    { n: '林晓', d: '财务部', r: ['财务负责人'] },
+    { n: '陈思雨', d: '财务部', r: ['财务BP'] },
+    { n: '王浩', d: '运营部', r: ['运营'], shops: ['Amazon-US-01', 'Amazon-CA-01', 'Amazon-UK-01', 'Amazon-DE-01'] },
+    { n: '李娜', d: '运营部', r: ['运营'], shops: ['Wayfair-US-01', 'HomeDepot-US-01', 'Lowes-US-01'] },
+    { n: '马骏', d: '运营部', r: ['运营'], shops: ['Shopify-US-01', 'TikTok-US-01'] },
+    { n: '赵磊', d: '运营部', r: ['部门负责人'], depts: ['运营部'] },
+    { n: '孙婷', d: '美国业务部', r: ['B端业务'], custs: ['Ferguson（美国业务部 · USD）', 'Menards（美国业务部 · USD）'] },
+    { n: '刘洋', d: '外贸部', r: ['B端业务'], custs: ['Bauhaus（外贸部 · EUR）'] },
+    { n: '何建国', d: '物流物控部', r: ['部门负责人', '物流物控'], depts: ['物流物控部'] },
+    { n: '郑可', d: '人力资源部', r: ['部门预算专员'], depts: ['人力资源部'] },
+    { n: '吴静', d: '人力资源部', r: ['部门负责人'], depts: ['人力资源部'] },
+    { n: '赵一鸣', d: '视觉部', r: [] },
+    { n: '钱文斌', d: '市场部', r: ['部门预算专员'], depts: ['市场部'], off: true }
+  ];
+  var cur = null;
+
+  function scopeText(p) {
+    if (!p.r.length) return '—';
+    var parts = [];
+    if (p.r.some(function (x) { return ['CEO', '财务负责人', '财务BP'].indexOf(x) >= 0; })) parts.push('全公司');
+    if (p.depts && p.depts.length) parts.push('部门：' + p.depts.join('、'));
+    if (p.shops && p.shops.length) {
+      var txt = Object.keys(SHOPS).map(function (ch) {
+        var own = SHOPS[ch].filter(function (s) { return p.shops.indexOf(s) >= 0; });
+        if (!own.length) return null;
+        return own.length === SHOPS[ch].length && own.length > 1 ? ch + '（全部 ' + own.length + ' 个店铺）' : own.join('、');
+      }).filter(Boolean).join('、');
+      parts.push('店铺：' + txt);
+    }
+    if (p.custs && p.custs.length) parts.push('客户：' + p.custs.map(function (c) { return c.split('（')[0]; }).join('、'));
+    if (p.r.indexOf('物流物控') >= 0) parts.push('物流比例四项');
+    return parts.join('；');
+  }
+
+  function render() {
+    var q = document.getElementById('q').value.trim(), fd = document.getElementById('f-dept').value, fr = document.getElementById('f-role').value, fn = document.getElementById('f-none').checked;
+    var list = people.filter(function (p) {
+      return (!q || p.n.indexOf(q) >= 0) && (!fd || p.d === fd) && (!fr || p.r.indexOf(fr) >= 0) && (!fn || !p.r.length);
+    });
+    document.getElementById('rows').innerHTML = list.length ? list.map(function (p) {
+      var i = people.indexOf(p);
+      var roles = p.r.length ? p.r.map(function (r) { return '<span class="badge">' + r + '</span>'; }).join('') : '<span class="badge badge-warn">未分配</span>';
+      var acct = p.off ? '<span class="badge badge-bad">已停用</span>' : '正常';
+      var op = p.off ? '<span class="meta">账号停用，无法登录</span>' : '<button class="link-btn" data-edit="' + i + '">分配</button>';
+      return '<tr><td>' + p.n + '</td><td>' + p.d + '</td><td>' + roles + '</td><td class="scope" title="' + scopeText(p) + '">' + scopeText(p) + '</td><td>' + acct + '</td><td>' + op + '</td></tr>';
+    }).join('') : '<tr><td colspan="6"><div class="state" style="padding:var(--space-8)"><div class="state-title">没有符合条件的员工</div><p>调整筛选条件后再试。</p></div></td></tr>';
+    document.getElementById('count').textContent = '共 152 名员工 · 已分配角色 138 人 · 未分配 14 人';
+    document.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { openDrawer(+b.dataset.edit); }); });
+  }
+
+  function checks(el, items, chosen, name) {
+    el.innerHTML = items.map(function (it) {
+      return '<label><input type="checkbox" name="' + name + '" value="' + it + '"' + (chosen && chosen.indexOf(it) >= 0 ? ' checked' : '') + '> ' + it + '</label>';
+    }).join('');
+  }
+
+  function openDrawer(i) {
+    cur = i; var p = people[i];
+    document.getElementById('d-title').textContent = '分配角色 · ' + p.n;
+    document.getElementById('d-sub').textContent = '钉钉部门：' + p.d;
+    checks(document.getElementById('d-roles'), ROLES, p.r, 'role');
+    checks(document.getElementById('d-depts'), DEPTS, p.depts, 'dept');
+    checks(document.getElementById('d-custs'), CUSTS, p.custs, 'cust');
+    document.getElementById('d-shops').innerHTML = Object.keys(SHOPS).map(function (ch) {
+      var all = SHOPS[ch].every(function (s) { return p.shops && p.shops.indexOf(s) >= 0; });
+      return '<div class="tree-ch"><label><input type="checkbox" data-ch="' + ch + '"' + (all ? ' checked' : '') + '> ' + ch + '</label></div><div class="tree-shops checks">' +
+        SHOPS[ch].map(function (s) { return '<label><input type="checkbox" name="shop" data-parent="' + ch + '" value="' + s + '"' + (p.shops && p.shops.indexOf(s) >= 0 ? ' checked' : '') + '> ' + s + '</label>'; }).join('') + '</div>';
+    }).join('');
+    document.querySelectorAll('[data-ch]').forEach(function (c) {
+      c.addEventListener('change', function () { document.querySelectorAll('[data-parent="' + c.dataset.ch + '"]').forEach(function (s) { s.checked = c.checked; }); });
+    });
+    document.querySelectorAll('input[name="role"]').forEach(function (c) { c.addEventListener('change', syncScope); });
+    document.querySelectorAll('.field-error').forEach(function (e) { e.hidden = true; });
+    document.querySelectorAll('.scope-box').forEach(function (e) { e.removeAttribute('aria-invalid'); });
+    document.getElementById('d-revoke').hidden = !p.r.length;
+    syncScope();
+    document.getElementById('drawer').hidden = false;
+    document.querySelector('input[name="role"]').focus();
+  }
+
+  function picked(name) { return Array.prototype.map.call(document.querySelectorAll('input[name="' + name + '"]:checked'), function (x) { return x.value; }); }
+
+  function syncScope() {
+    var r = picked('role');
+    document.getElementById('s-all').hidden = !r.some(function (x) { return ['CEO', '财务负责人', '财务BP'].indexOf(x) >= 0; });
+    document.getElementById('s-dept').hidden = !(r.indexOf('部门负责人') >= 0 || r.indexOf('部门预算专员') >= 0);
+    document.getElementById('s-shop').hidden = r.indexOf('运营') < 0;
+    document.getElementById('s-cust').hidden = r.indexOf('B端业务') < 0;
+    document.getElementById('s-logi').hidden = r.indexOf('物流物控') < 0;
+  }
+
+  function closeDrawer() { document.getElementById('drawer').hidden = true; }
+  document.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeDrawer); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeDrawer(); document.getElementById('confirm').hidden = true; } });
+
+  function toast(msg) {
+    var t = document.getElementById('toast'); t.textContent = msg; t.hidden = false;
+    clearTimeout(t._h); t._h = setTimeout(function () { t.hidden = true; }, 3000);
+  }
+
+  var LAST_FIN = '系统至少保留一位财务负责人：请先为其他员工分配「财务负责人」，再撤销此人的财务负责人角色';
+  function isLastFin(p) { return p.r.indexOf('财务负责人') >= 0 && people.filter(function (x) { return x.r.indexOf('财务负责人') >= 0; }).length === 1; }
+  function fail(sec, err) { document.getElementById(err).hidden = false; document.querySelector('#' + sec + ' .scope-box').setAttribute('aria-invalid', 'true'); }
+
+  document.getElementById('d-save').addEventListener('click', function () {
+    var p = people[cur], r = picked('role'), ok = true;
+    document.querySelectorAll('.field-error').forEach(function (e) { e.hidden = true; });
+    document.querySelectorAll('.scope-box').forEach(function (e) { e.removeAttribute('aria-invalid'); });
+    if (!r.length) { var er = document.getElementById('e-roles'); er.textContent = '请至少选择一个角色；如需取消此人的全部权限，请点「撤销全部角色」'; er.hidden = false; return; }
+    if (isLastFin(p) && r.indexOf('财务负责人') < 0) { var ef = document.getElementById('e-roles'); ef.textContent = LAST_FIN; ef.hidden = false; return; }
+    var depts = picked('dept'), shops = picked('shop'), custs = picked('cust');
+    if (!document.getElementById('s-dept').hidden && !depts.length) { fail('s-dept', 'e-dept'); ok = false; }
+    if (!document.getElementById('s-shop').hidden && !shops.length) { fail('s-shop', 'e-shop'); ok = false; }
+    if (!document.getElementById('s-cust').hidden && !custs.length) { fail('s-cust', 'e-cust'); ok = false; }
+    if (!ok) return;
+    p.r = r;
+    p.depts = document.getElementById('s-dept').hidden ? [] : depts;
+    p.shops = document.getElementById('s-shop').hidden ? [] : shops;
+    p.custs = document.getElementById('s-cust').hidden ? [] : custs;
+    closeDrawer(); render();
+    toast('已保存。' + p.n + ' 下一次打开页面时按新角色和范围生效');
+  });
+
+  document.getElementById('d-revoke').addEventListener('click', function () {
+    var p = people[cur];
+    if (isLastFin(p)) { var ef = document.getElementById('e-roles'); ef.textContent = LAST_FIN; ef.hidden = false; return; }
+    document.getElementById('c-body').textContent = '撤销后，' + p.n + ' 下一次打开页面或登录时将看到「未开通预算权限，请联系财务负责人」，无法再查看任何预算数据。';
+    document.getElementById('confirm').hidden = false;
+    document.getElementById('c-cancel').focus();
+  });
+  document.getElementById('c-cancel').addEventListener('click', function () { document.getElementById('confirm').hidden = true; });
+  document.getElementById('c-ok').addEventListener('click', function () {
+    var p = people[cur]; p.r = []; p.depts = []; p.shops = []; p.custs = [];
+    document.getElementById('confirm').hidden = true; closeDrawer(); render();
+    toast('已撤销 ' + p.n + ' 的全部角色');
+  });
+
+  ['q', 'f-dept', 'f-role', 'f-none'].forEach(function (id) { document.getElementById(id).addEventListener('input', render); });
+
+  function show(state) {
+    document.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.dataset.view !== state; });
+    document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.protoState === state); });
+  }
+  document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.protoState); }); });
+  document.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.goto); }); });
+  render();
+</script>
+</body>
+</html>

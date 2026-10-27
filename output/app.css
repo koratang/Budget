@@ -1,0 +1,109 @@
+/* 预算管理平台 · 共用组件样式（摘自 DESIGN.md，与其保持一致） */
+/* 应用框架 */
+.app { display: grid; grid-template-columns: 224px 1fr; min-height: 100vh; background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); }
+.sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: var(--space-3) var(--space-2); }
+.nav-group { font-size: var(--text-xs); color: var(--muted); letter-spacing: 0.01em; padding: var(--space-3) var(--space-3) var(--space-1); }
+.nav-item { display: flex; align-items: center; gap: var(--space-2); height: 34px; padding: 0 var(--space-3); border-radius: var(--radius-md); color: var(--fg-2); text-decoration: none; transition: background var(--motion-fast) var(--ease-standard), color var(--motion-fast) var(--ease-standard); }
+.nav-item:hover { background: var(--surface-raised); color: var(--fg); }
+.nav-item:active { background: var(--border-soft); }
+.nav-item:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.nav-item[aria-current="page"] { background: color-mix(in oklab, var(--accent), white 90%); color: var(--accent); font-weight: 600; }
+.topbar { height: 52px; display: flex; align-items: center; justify-content: space-between; padding: 0 var(--container-gutter-desktop); background: var(--surface); border-bottom: 1px solid var(--border); }
+.main { padding: var(--section-y-desktop) var(--container-gutter-desktop); max-width: var(--container-max); }
+.page-title { font-family: var(--font-display); font-size: var(--text-2xl); letter-spacing: var(--tracking-display); line-height: var(--leading-tight); margin: 0 0 var(--space-4); }
+
+/* 按钮 */
+.btn { display: inline-flex; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); color: var(--fg); font-size: var(--text-sm); letter-spacing: 0.02em; cursor: pointer; transition: background var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.btn:hover { background: var(--surface-raised); border-color: var(--muted); }
+.btn:active { background: var(--border-soft); }
+.btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.btn[disabled] { color: var(--muted); background: var(--surface-warm); cursor: not-allowed; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-on); }
+.btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-primary:active { background: var(--accent-active); }
+.btn-primary:focus-visible { box-shadow: var(--focus-ring); }
+.btn-danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger), white 60%); }
+.btn-danger:hover { background: color-mix(in oklab, var(--danger), white 92%); }
+.btn-danger:active { background: color-mix(in oklab, var(--danger), white 86%); }
+.btn-danger:focus-visible { box-shadow: 0 0 0 3px color-mix(in oklab, var(--danger), transparent 70%); }
+
+/* 卡片 / 关键数 */
+.card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: var(--space-4); transition: border-color var(--motion-fast) var(--ease-standard); }
+.card:hover { border-color: var(--border); }
+.card:active { border-color: var(--muted); }
+.card:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.kpi-label { font-size: var(--text-sm); color: var(--muted); }
+.kpi-value { font-size: var(--text-3xl); letter-spacing: var(--tracking-display); font-variant-numeric: tabular-nums; line-height: var(--leading-tight); }
+
+/* 输入 */
+.input, .select { height: 32px; padding: 0 var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--fg); font-size: var(--text-sm); transition: border-color var(--motion-fast) var(--ease-standard); }
+.input:hover, .select:hover { border-color: var(--muted); }
+.input:active, .select:active { border-color: var(--fg-2); }
+.input:focus-visible, .select:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+.input[aria-invalid="true"] { border-color: var(--danger); }
+.field-error { color: var(--danger); font-size: var(--text-xs); margin-top: var(--space-1); }
+
+/* 数据表格（含类 Excel 填报） */
+.table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: auto; }
+.table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: var(--text-sm); }
+.table th { position: sticky; top: 0; z-index: 2; background: var(--surface-warm); color: var(--fg-2); font-weight: 600; text-align: left; height: 34px; padding: 0 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.table td { height: 32px; padding: 0 10px; border-bottom: 1px solid var(--border-soft); white-space: nowrap; }
+.table td.num, .table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.table td.dim { position: sticky; left: 0; z-index: 1; background: var(--surface-warm); }
+.table tbody tr { transition: background var(--motion-fast) var(--ease-standard); }
+.table tbody tr:hover td { background: var(--surface-raised); }
+.table tr.total td { font-weight: 600; background: var(--surface-warm); border-top: 1px solid var(--border); }
+.cell-edit { cursor: cell; }
+.cell-edit:hover { box-shadow: inset 0 0 0 1px var(--border); }
+.cell-edit:active { box-shadow: inset 0 0 0 1px var(--muted); }
+.cell-edit:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent); background: var(--surface); }
+.cell-edit[aria-invalid="true"] { box-shadow: inset 0 0 0 2px var(--danger); background: color-mix(in oklab, var(--danger), white 94%); }
+.cell-locked { color: var(--muted); background: var(--surface-warm); }
+.neg, .bad { color: var(--danger); }
+.good { color: var(--success); }
+
+/* 徽章（状态） */
+.badge { display: inline-flex; align-items: center; height: 22px; padding: 0 var(--space-2); border-radius: var(--radius-sm); font-size: var(--text-xs); letter-spacing: 0.02em; background: var(--surface-raised); color: var(--fg-2); }
+.badge-good { background: color-mix(in oklab, var(--success), white 90%); color: var(--success); }
+.badge-warn { background: color-mix(in oklab, var(--warn), white 88%); color: var(--warn); }
+.badge-bad { background: color-mix(in oklab, var(--danger), white 90%); color: var(--danger); }
+.badge-info { background: color-mix(in oklab, var(--accent), white 90%); color: var(--accent); }
+
+/* 设计签名：达成条 */
+.attain { position: relative; width: 96px; height: 6px; border-radius: var(--radius-pill); background: var(--border-soft); overflow: visible; }
+.attain > .fill { position: absolute; inset: 0 auto 0 0; border-radius: var(--radius-pill); background: var(--fg-2); transition: width var(--motion-base) var(--ease-standard); }
+.attain.is-good > .fill { background: var(--success); }
+.attain.is-warn > .fill { background: var(--warn); }
+.attain.is-bad > .fill { background: var(--danger); }
+.attain > .tick { position: absolute; top: -3px; width: 2px; height: 12px; background: var(--fg); border-radius: 1px; }
+
+/* 标签页 */
+.tabs { display: flex; gap: var(--space-1); border-bottom: 1px solid var(--border); margin-bottom: var(--space-4); }
+.tab { padding: var(--space-2) var(--space-3); color: var(--fg-2); border-bottom: 2px solid transparent; text-decoration: none; transition: color var(--motion-fast) var(--ease-standard), border-color var(--motion-fast) var(--ease-standard); }
+.tab:hover { color: var(--fg); border-bottom-color: var(--border); }
+.tab:active { color: var(--fg); }
+.tab:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--fg); font-weight: 600; }
+
+/* 弹窗与轻提示 */
+.modal-backdrop { position: fixed; inset: 0; background: color-mix(in oklab, var(--fg), transparent 60%); display: grid; place-items: center; }
+.modal { width: 480px; background: var(--surface-overlay); border-radius: var(--radius-lg); box-shadow: var(--elev-float); padding: var(--space-6); animation: modal-in var(--motion-base) var(--ease-standard); }
+.toast { position: fixed; top: 64px; right: 24px; padding: var(--space-3) var(--space-4); background: var(--fg); color: var(--surface); border-radius: var(--radius-md); font-size: var(--text-sm); animation: toast-in var(--motion-base) var(--ease-standard); }
+
+/* 页面状态 */
+.state { padding: var(--space-12) var(--space-6); text-align: center; color: var(--muted); }
+.state-title { color: var(--fg); font-size: var(--text-lg); margin-bottom: var(--space-2); }
+.skeleton { height: 12px; border-radius: var(--radius-sm); background: var(--border-soft); animation: pulse 1.2s var(--ease-standard) infinite; }
+
+@keyframes modal-in { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes toast-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pulse { 50% { opacity: 0.5; } }
+.fade-in { animation: toast-in var(--motion-base) var(--ease-standard) both; }
+.fade-in:nth-child(2) { animation-delay: 40ms; }
+.fade-in:nth-child(3) { animation-delay: 80ms; }
+.fade-in:nth-child(4) { animation-delay: 120ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .modal, .toast, .fade-in, .skeleton { animation: none; }
+  .attain > .fill, .nav-item, .btn, .tab, .table tbody tr { transition: none; }
+}

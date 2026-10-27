@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F02-04">
+  <title>科目映射 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); color: var(--fg); background: var(--bg); }
+    .drawer-mask, .drawer { z-index: 10; }
+    .modal-backdrop { z-index: 20; }
+    .toast { z-index: 30; }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-4); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .topbar nav { color: var(--muted); font-size: var(--text-sm); }
+    .topbar a { color: var(--fg-2); }
+    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+    .page-head .page-title { margin: 0; }
+    .meta { color: var(--muted); font-size: var(--text-sm); }
+    .code { font-family: var(--font-mono); letter-spacing: 0.02em; }
+    .unmapped { border-color: color-mix(in oklab, var(--warn), white 60%); margin-bottom: var(--space-6); padding: 0; }
+    .unmapped:hover { border-color: color-mix(in oklab, var(--warn), white 40%); }
+    .unmapped-head { display: flex; align-items: baseline; gap: var(--space-3); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .unmapped-head strong { color: var(--warn); }
+    .unmapped .table td { border-bottom: 1px solid var(--border-soft); }
+    .unmapped .table tr:last-child td { border-bottom: 0; }
+    .filters { display: flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-3); }
+    .filters .input { width: 240px; }
+    .link-btn { background: none; border: 0; padding: 0; color: var(--fg-2); text-decoration: underline; cursor: pointer; font: inherit; border-radius: var(--radius-sm); }
+    .link-btn:hover { color: var(--fg); }
+    .link-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .table .select { height: 28px; min-width: 200px; }
+    .row-acts { display: inline-flex; gap: var(--space-3); align-items: center; }
+    .pager { display: flex; justify-content: space-between; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .modal h3 { margin: 0 0 var(--space-4); font-size: var(--text-lg); }
+    .modal .acts { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+    .field { margin-bottom: var(--space-4); }
+    .field > label { display: block; font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-1); }
+    .field .input, .field .select { width: 100%; box-sizing: border-box; }
+    .req { color: var(--danger); }
+    .hint { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html" aria-current="page">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">基础数据 / 科目映射</nav>
+      <div>当前用户：<span id="cur-user">陈思雨（财务BP）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型状态切换">
+        <strong>原型说明，非产品功能：</strong>
+        <span>视角</span>
+        <button class="btn" data-role="bp" aria-pressed="true">财务BP</button>
+        <button class="btn" data-role="ro" aria-pressed="false">CEO / 财务负责人（只读）</button>
+        <span>状态</span>
+        <button class="btn" data-proto-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-proto-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-proto-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-proto-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-proto-state="noperm" aria-pressed="false">无权限</button>
+      </div>
+
+      <div class="page-head">
+        <h1 class="page-title">科目映射</h1>
+        <span id="head-acts"><button class="btn btn-primary" id="add" data-add>新增映射</button><button class="btn btn-primary" id="add-sub" hidden>新增预算科目</button></span>
+      </div>
+
+      <div class="tabs" role="tablist" id="tabs">
+        <button class="tab" role="tab" id="t-map" aria-selected="true" aria-controls="p-map">科目映射</button>
+        <button class="tab" role="tab" id="t-sub" aria-selected="false" aria-controls="p-sub">预算科目</button>
+      </div>
+
+      <div data-view="normal">
+       <section id="p-map" role="tabpanel" aria-labelledby="t-map">
+        <section class="card unmapped" id="unmapped" aria-labelledby="um-title">
+          <div class="unmapped-head">
+            <strong id="um-title">未映射科目 <span id="um-n">2</span> 个</strong>
+            <span class="meta">来自最近一次金蝶导入校验：2027-05-10 14:32 · 金蝶利润表_2027-04_更正.xlsx（整份未写入）。映射后请到 <a href="PAGE-F09-01.html" style="color:var(--fg-2)">实际数导入</a> 重新上传。</span>
+          </div>
+          <table class="table" aria-label="未映射科目">
+            <thead><tr><th>金蝶科目编码</th><th>金蝶科目名称</th><th>出现行数</th><th>预算科目</th><th></th></tr></thead>
+            <tbody id="um-rows"></tbody>
+          </table>
+        </section>
+
+        <div class="filters">
+          <input class="input" type="search" id="q" placeholder="搜索金蝶科目编码或名称" aria-label="搜索金蝶科目">
+          <select class="select" id="f-sub" aria-label="预算科目"><option value="">全部预算科目</option></select>
+          <span class="meta" style="margin-left:auto">保存后从下一次金蝶导入起，按新映射归集到预算科目</span>
+        </div>
+        <div class="table-wrap">
+          <table class="table" aria-label="科目映射">
+            <thead><tr><th>金蝶科目编码</th><th>金蝶科目名称</th><th>预算科目</th><th>最近修改</th><th>操作</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="pager"><span id="count"></span><span>第 1 / 1 页</span></div>
+       </section>
+
+       <section id="p-sub" role="tabpanel" aria-labelledby="t-sub" hidden>
+        <div class="filters">
+          <span class="meta" id="sub-count"></span>
+          <span class="meta" style="margin-left:auto">停用的预算科目不再出现在新的部门费用填报和科目映射选项中；已有预算与实际数据保留。预算科目不可删除</span>
+        </div>
+        <div class="table-wrap">
+          <table class="table" aria-label="预算科目清单">
+            <thead><tr><th>预算科目</th><th class="num">已映射的金蝶科目</th><th>状态</th><th>最近修改</th><th>操作</th></tr></thead>
+            <tbody id="sub-rows"></tbody>
+          </table>
+        </div>
+       </section>
+      </div>
+
+      <div data-view="empty" hidden>
+        <div class="table-wrap"><div class="state">
+          <div class="state-title">还没有科目映射</div>
+          <p>为每个金蝶科目编码选择预算科目后，金蝶导入才能把金额归集到预算科目。</p>
+          <button class="btn" data-add>新增映射</button>
+        </div></div>
+      </div>
+
+      <div data-view="loading" hidden aria-busy="true">
+        <div class="table-wrap" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:30%"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px;width:70%"></div>
+        </div>
+      </div>
+
+      <div data-view="error" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">科目映射加载失败</div>
+          <p>网络异常或服务暂时不可用，请重试。</p>
+          <button class="btn" data-goto="normal">重试</button>
+        </div></div>
+      </div>
+
+      <div data-view="noperm" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">无权限</div>
+          <p>科目映射由财务BP 维护。</p>
+          <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+        </div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="m" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
+    <h3 id="m-title">新增映射</h3>
+    <div class="field">
+      <label for="m-code"><span class="req">*</span> 金蝶科目编码</label>
+      <input class="input code" id="m-code" placeholder="如 6602.42">
+      <div class="field-error" id="e-code" hidden></div>
+    </div>
+    <div class="field">
+      <label for="m-name">金蝶科目名称</label>
+      <input class="input" id="m-name" placeholder="如 管理费用-咨询费">
+    </div>
+    <div class="field">
+      <label for="m-sub"><span class="req">*</span> 预算科目</label>
+      <select class="select" id="m-sub"></select>
+      <div class="field-error" id="e-sub" hidden>请选择预算科目</div>
+      <div class="hint">保存后从下一次金蝶导入起，该科目金额归集到所选预算科目</div>
+    </div>
+    <div class="acts"><button class="btn" id="m-cancel">取消</button><button class="btn btn-primary" id="m-ok">保存</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="sm" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="sm-title">
+    <h3 id="sm-title">新增预算科目</h3>
+    <div class="field">
+      <label for="sm-name"><span class="req">*</span> 预算科目名称</label>
+      <input class="input" id="sm-name" placeholder="如 咨询服务费">
+      <div class="field-error" id="e-sm" hidden></div>
+      <div class="hint">保存后，部门费用填报与科目映射的预算科目选项按新清单显示</div>
+    </div>
+    <div class="acts"><button class="btn" id="sm-cancel">取消</button><button class="btn btn-primary" id="sm-ok">保存</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="om" hidden>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="om-title">
+    <h3 id="om-title">停用预算科目？</h3>
+    <p id="om-body"></p>
+    <div class="acts"><button class="btn" id="om-cancel">取消</button><button class="btn btn-danger" id="om-ok">确认停用</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+  var subs = ['收入', '退款', '采购成本', '平台佣金', '推广费用', '头程', '尾程', '仓储', '关税', '库存索赔', '其他运营费用', '工资薪酬', '社保公积金', '办公费', '差旅费', '培训费', '福利费', '招聘费', '软件与信息服务费', '房租物业费'].map(function (n) { return { n: n, on: true, at: '2026-11-20 陈思雨' }; });
+  subs[17].on = false; subs[17].at = '2027-03-02 陈思雨';
+  function SUBS() { return subs.filter(function (x) { return x.on; }).map(function (x) { return x.n; }); }
+  function isOff(n) { return subs.some(function (x) { return x.n === n && !x.on; }); }
+  var role = 'bp';
+  var maps = [
+    ['6001.01', '主营业务收入-平台销售', '收入', '2026-11-20 陈思雨'],
+    ['6001.02', '主营业务收入-B端销售', '收入', '2026-11-20 陈思雨'],
+    ['6001.09', '主营业务收入-销售退回', '退款', '2026-11-20 陈思雨'],
+    ['6401.01', '主营业务成本-产品成本', '采购成本', '2026-11-20 陈思雨'],
+    ['6601.01', '销售费用-平台佣金', '平台佣金', '2026-11-20 陈思雨'],
+    ['6601.02', '销售费用-广告费', '推广费用', '2026-11-20 陈思雨'],
+    ['6601.05', '销售费用-头程运费', '头程', '2026-11-20 陈思雨'],
+    ['6601.06', '销售费用-尾程运费', '尾程', '2026-11-20 陈思雨'],
+    ['6601.07', '销售费用-海外仓储费', '仓储', '2026-11-20 陈思雨'],
+    ['6601.08', '销售费用-进口关税', '关税', '2026-11-20 陈思雨'],
+    ['6602.01', '管理费用-工资', '工资薪酬', '2026-11-21 陈思雨'],
+    ['6602.02', '管理费用-社保公积金', '社保公积金', '2026-11-21 陈思雨'],
+    ['6602.03', '管理费用-办公费', '办公费', '2026-11-21 陈思雨'],
+    ['6602.05', '管理费用-差旅费', '差旅费', '2026-11-21 陈思雨'],
+    ['6602.11', '管理费用-培训费', '培训费', '2027-02-14 陈思雨'],
+    ['6602.12', '管理费用-职工福利费', '福利费', '2026-11-21 陈思雨']
+  ];
+  var unmapped = [
+    ['6601.35', '销售费用-直播服务费', 46],
+    ['6602.41', '管理费用-软件订阅费', 3]
+  ];
+  var editRow = null;
+  function opts(sel, blank) { return (blank ? '<option value="">' + blank + '</option>' : '') + SUBS().map(function (s) { return '<option' + (s === sel ? ' selected' : '') + '>' + s + '</option>'; }).join(''); }
+
+  function renderU() {
+    var box = document.getElementById('unmapped');
+    box.hidden = !unmapped.length;
+    document.getElementById('um-n').textContent = unmapped.length;
+    document.getElementById('um-rows').innerHTML = unmapped.map(function (u, i) {
+      return '<tr><td class="code">' + u[0] + '</td><td>' + u[1] + '</td><td class="num">' + u[2] + '</td>' + (role !== 'bp' ? '<td colspan="2" class="meta">待财务BP 映射</td></tr>' : '<td><select class="select" id="us-' + i + '" aria-label="为 ' + u[0] + ' 选择预算科目">' + opts('', '请选择预算科目') + '</select><div class="field-error" id="ue-' + i + '" hidden>请选择预算科目</div></td><td><button class="btn" data-um="' + i + '">保存映射</button></td></tr>');
+    }).join('');
+    document.querySelectorAll('[data-um]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var i = +b.dataset.um, s = document.getElementById('us-' + i);
+        if (!s.value) { document.getElementById('ue-' + i).hidden = false; s.setAttribute('aria-invalid', 'true'); return; }
+        var u = unmapped.splice(i, 1)[0];
+        maps.push([u[0], u[1], s.value, '2027-05-12 陈思雨']);
+        maps.sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+        renderU(); render(); toast(u[0] + ' 已映射到「' + s.value + '」，下一次金蝶导入起生效');
+      });
+    });
+  }
+
+  function render() {
+    var q = document.getElementById('q').value.trim(), fs = document.getElementById('f-sub').value;
+    var list = maps.filter(function (m) { return (!q || m[0].indexOf(q) >= 0 || m[1].indexOf(q) >= 0) && (!fs || m[2] === fs); });
+    document.getElementById('rows').innerHTML = list.length ? list.map(function (m) {
+      var i = maps.indexOf(m);
+      if (i === editRow) {
+        return '<tr><td class="code">' + m[0] + '</td><td>' + m[1] + '</td><td><select class="select" id="es" aria-label="预算科目">' + opts(m[2]) + '</select></td><td class="meta">' + m[3] + '</td><td><span class="row-acts"><button class="btn" id="es-ok">保存</button><button class="link-btn" id="es-cancel">取消</button></span></td></tr>';
+      }
+      return '<tr><td class="code">' + m[0] + '</td><td>' + m[1] + '</td><td>' + m[2] + (isOff(m[2]) ? ' <span class="badge">已停用</span>' : '') + '</td><td class="meta">' + m[3] + '</td><td>' + (role === 'bp' ? '<button class="link-btn" data-edit="' + i + '">修改</button>' : '<span class="meta">只读</span>') + '</td></tr>';
+    }).join('') : '<tr><td colspan="5"><div class="state" style="padding:var(--space-8)"><div class="state-title">没有符合条件的映射</div><p>调整筛选条件后再试。</p></div></td></tr>';
+    document.getElementById('count').textContent = '共 ' + maps.length + ' 个金蝶科目已映射到 ' + Object.keys(maps.reduce(function (a, m) { a[m[2]] = 1; return a; }, {})).length + ' 个预算科目';
+    document.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { editRow = +b.dataset.edit; render(); document.getElementById('es').focus(); }); });
+    if (editRow != null && document.getElementById('es-ok')) {
+      document.getElementById('es-ok').addEventListener('click', function () {
+        var v = document.getElementById('es').value, m = maps[editRow];
+        if (v !== m[2]) { m[2] = v; m[3] = '2027-05-12 陈思雨'; toast(m[0] + ' 改为映射到「' + v + '」，下一次金蝶导入起生效'); }
+        editRow = null; render();
+      });
+      document.getElementById('es-cancel').addEventListener('click', function () { editRow = null; render(); });
+    }
+  }
+
+  var m = document.getElementById('m');
+  function openM() {
+    ['m-code', 'm-name'].forEach(function (id) { document.getElementById(id).value = ''; });
+    document.getElementById('m-sub').innerHTML = opts('', '请选择');
+    m.querySelectorAll('.field-error').forEach(function (e) { e.hidden = true; });
+    m.querySelectorAll('[aria-invalid]').forEach(function (e) { e.removeAttribute('aria-invalid'); });
+    m.hidden = false; document.getElementById('m-code').focus();
+  }
+  document.querySelectorAll('[data-add]').forEach(function (b) { b.addEventListener('click', function () { show('normal'); openM(); }); });
+  document.getElementById('m-cancel').addEventListener('click', function () { m.hidden = true; });
+  document.getElementById('m-ok').addEventListener('click', function () {
+    var code = document.getElementById('m-code').value.trim(), sub = document.getElementById('m-sub').value, ok = true;
+    m.querySelectorAll('.field-error').forEach(function (e) { e.hidden = true; });
+    var ec = document.getElementById('e-code');
+    if (!code) { ec.textContent = '请填写金蝶科目编码'; ec.hidden = false; ok = false; }
+    else if (maps.some(function (x) { return x[0] === code; })) { ec.textContent = '该金蝶科目编码已有映射，请在列表中修改'; ec.hidden = false; ok = false; }
+    if (!sub) { document.getElementById('e-sub').hidden = false; ok = false; }
+    if (!ok) return;
+    maps.push([code, document.getElementById('m-name').value.trim() || '—', sub, '2027-05-12 陈思雨']);
+    maps.sort(function (a, b) { return a[0] < b[0] ? -1 : 1; });
+    unmapped = unmapped.filter(function (u) { return u[0] !== code; });
+    m.hidden = true; renderU(); render(); toast(code + ' 已映射到「' + sub + '」');
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { m.hidden = true; sm.hidden = true; om.hidden = true; } });
+
+  function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function () { t.hidden = true; }, 3000); }
+  document.getElementById('f-sub').innerHTML = opts('', '全部预算科目');
+  ['q', 'f-sub'].forEach(function (id) { document.getElementById(id).addEventListener('input', render); });
+
+  var tab = 'map';
+  function show(state) {
+    document.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.dataset.view !== state; });
+    document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.protoState === state); });
+    document.getElementById('tabs').hidden = state !== 'normal';
+    document.getElementById('head-acts').style.visibility = state === 'normal' && role === 'bp' ? 'visible' : 'hidden';
+    document.querySelector('[data-view="empty"] [data-add]').hidden = role !== 'bp';
+  }
+  function setTab(t) {
+    tab = t;
+    document.getElementById('t-map').setAttribute('aria-selected', t === 'map');
+    document.getElementById('t-sub').setAttribute('aria-selected', t === 'sub');
+    document.getElementById('p-map').hidden = t !== 'map';
+    document.getElementById('p-sub').hidden = t !== 'sub';
+    document.getElementById('add').hidden = t !== 'map';
+    document.getElementById('add-sub').hidden = t !== 'sub';
+  }
+  document.getElementById('t-map').addEventListener('click', function () { setTab('map'); });
+  document.getElementById('t-sub').addEventListener('click', function () { setTab('sub'); });
+
+  function renderS() {
+    var on = subs.filter(function (x) { return x.on; }).length;
+    document.getElementById('sub-count').textContent = '共 ' + subs.length + ' 个预算科目 · 启用 ' + on + ' · 停用 ' + (subs.length - on);
+    document.getElementById('sub-rows').innerHTML = subs.map(function (x, i) {
+      var cnt = maps.filter(function (m) { return m[2] === x.n; }).length;
+      var acts = role !== 'bp' ? '<span class="meta">只读</span>' : '<span class="row-acts"><button class="link-btn" data-rn="' + i + '">改名</button>' + (x.on ? '<button class="link-btn" data-off="' + i + '">停用</button>' : '') + '</span>';
+      return '<tr><td>' + x.n + '</td><td class="num">' + cnt + '</td><td>' + (x.on ? '<span class="badge badge-good">启用</span>' : '<span class="badge">已停用</span>') + '</td><td class="meta">' + x.at + '</td><td>' + acts + '</td></tr>';
+    }).join('');
+    document.querySelectorAll('[data-rn]').forEach(function (b) { b.addEventListener('click', function () { openS(+b.dataset.rn); }); });
+    document.querySelectorAll('[data-off]').forEach(function (b) { b.addEventListener('click', function () { openOff(+b.dataset.off); }); });
+  }
+  var sm = document.getElementById('sm'), om = document.getElementById('om'), sEdit = null, sOff = null;
+  function openS(i) {
+    sEdit = i;
+    document.getElementById('sm-title').textContent = i == null ? '新增预算科目' : '预算科目改名 · ' + subs[i].n;
+    document.getElementById('sm-name').value = i == null ? '' : subs[i].n;
+    document.getElementById('e-sm').hidden = true; document.getElementById('sm-name').removeAttribute('aria-invalid');
+    sm.hidden = false; document.getElementById('sm-name').focus();
+  }
+  document.getElementById('add-sub').addEventListener('click', function () { openS(null); });
+  document.getElementById('sm-cancel').addEventListener('click', function () { sm.hidden = true; });
+  document.getElementById('sm-ok').addEventListener('click', function () {
+    var n = document.getElementById('sm-name').value.trim(), e = document.getElementById('e-sm');
+    if (!n) { e.textContent = '请填写预算科目名称'; e.hidden = false; document.getElementById('sm-name').setAttribute('aria-invalid', 'true'); return; }
+    if (subs.some(function (x, k) { return k !== sEdit && x.n === n; })) { e.textContent = '预算科目名称已存在'; e.hidden = false; document.getElementById('sm-name').setAttribute('aria-invalid', 'true'); return; }
+    if (sEdit == null) { subs.push({ n: n, on: true, at: '2027-05-12 陈思雨' }); toast('已新增预算科目「' + n + '」，部门费用填报与科目映射中可选用'); }
+    else {
+      var old = subs[sEdit].n;
+      if (old !== n) {
+        maps.forEach(function (m) { if (m[2] === old) m[2] = n; });
+        subs[sEdit].n = n; subs[sEdit].at = '2027-05-12 陈思雨';
+        toast('「' + old + '」已改名为「' + n + '」，已有预算、实际与映射随之显示新名称');
+      }
+    }
+    sm.hidden = true; renderS(); render(); renderU();
+    document.getElementById('f-sub').innerHTML = opts('', '全部预算科目');
+  });
+  function openOff(i) {
+    sOff = i;
+    var cnt = maps.filter(function (m) { return m[2] === subs[i].n; }).length;
+    document.getElementById('om-title').textContent = '停用预算科目「' + subs[i].n + '」？';
+    document.getElementById('om-body').textContent = '停用后，该科目不再出现在新的部门费用填报和科目映射选项中；已有预算与实际数据保留' + (cnt ? '，已映射到该科目的 ' + cnt + ' 个金蝶科目映射保留' : '') + '。';
+    om.hidden = false; document.getElementById('om-cancel').focus();
+  }
+  document.getElementById('om-cancel').addEventListener('click', function () { om.hidden = true; });
+  document.getElementById('om-ok').addEventListener('click', function () {
+    var x = subs[sOff]; x.on = false; x.at = '2027-05-12 陈思雨';
+    om.hidden = true; renderS(); render(); renderU();
+    document.getElementById('f-sub').innerHTML = opts('', '全部预算科目');
+    toast('已停用「' + x.n + '」');
+  });
+  function setRole(r) {
+    role = r;
+    document.getElementById('cur-user').textContent = r === 'bp' ? '陈思雨（财务BP）' : '林晓（财务负责人）';
+    document.querySelectorAll('[data-role]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.role === r); });
+    editRow = null;
+    show('normal'); renderU(); render(); renderS();
+  }
+  document.querySelectorAll('[data-role]').forEach(function (b) { b.addEventListener('click', function () { setRole(b.dataset.role); }); });
+  document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.protoState); }); });
+  document.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.goto); }); });
+  renderU(); render(); renderS();
+</script>
+</body>
+</html>

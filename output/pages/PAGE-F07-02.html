@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F07-02">
+  <title>审批详情</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    .app > div { min-width: 0; }
+    .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .brand { font-weight: 600; padding: var(--space-2) var(--space-3) var(--space-3); }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar nav a, .topbar .who a, .link { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; border-radius: var(--radius-sm); transition: color var(--motion-fast) var(--ease-standard); }
+    .topbar nav a:hover, .topbar .who a:hover, .link:hover { color: var(--fg); }
+    .topbar nav a:active, .topbar .who a:active, .link:active { color: var(--muted); }
+    .topbar nav a:focus-visible, .topbar .who a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-1); }
+    .btn-xs { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .btn-sm { height: 28px; padding: 0 var(--space-3); }
+    .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    .section { margin-bottom: var(--section-y-desktop); }
+    .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); line-height: var(--leading-tight); }
+    .muted { color: var(--muted); }
+    .small { font-size: var(--text-xs); }
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .field { margin-bottom: var(--space-4); }
+    .field > label, .field > .label { display: block; font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-1); }
+    .req::after { content: " *"; color: var(--danger); }
+    textarea.input { width: 100%; height: auto; min-height: 88px; padding: var(--space-2) var(--space-3); font-family: inherit; line-height: var(--leading-body); resize: vertical; box-sizing: border-box; }
+    .modal-backdrop { z-index: 20; }
+    .modal-backdrop[hidden] { display: none; }
+    .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+    .modal-wide { width: 640px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+    .notice { border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+    .notice.bad { border-left-color: var(--danger); }
+    .notice.warn { border-left-color: var(--warn); }
+    .notice.good { border-left-color: var(--success); }
+    .table td.wrap { white-space: normal; min-width: 220px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table td.w-n { white-space: normal; min-width: 96px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table tr.is-bad td { background: color-mix(in oklab, var(--danger), white 94%); }
+    .table tr.is-bad:hover td { background: color-mix(in oklab, var(--danger), white 90%); }
+    .chain { display: flex; gap: 0; list-style: none; padding: 0; margin: 0; }
+    .chain li { flex: 1; position: relative; padding: 0 var(--space-3) 0 var(--space-6); font-size: var(--text-sm); }
+    .chain li::before { content: ""; position: absolute; left: var(--space-1); top: 5px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--border); }
+    .chain li.done::before { background: var(--success); }
+    .chain li.now::before { background: var(--warn); }
+    .chain li.back::before { background: var(--danger); }
+    .chain .who { color: var(--fg); font-weight: 600; }
+    .chain .when { color: var(--muted); font-size: var(--text-xs); }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; color: var(--fg); }
+    .skel-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    [hidden] { display: none !important; }
+    .head-card { margin-bottom: var(--space-4); }
+    .head-card h2 { font-size: var(--text-xl); margin: 0 0 var(--space-2); line-height: var(--leading-tight); }
+    .co-kpi .kpi-value { font-size: var(--text-2xl); white-space: nowrap; }
+    .actionbar { position: sticky; bottom: 0; z-index: 5; display: flex; align-items: center; gap: var(--space-2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-3) var(--space-4); margin-top: var(--space-4); }
+    .kpi-sub { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; margin-top: var(--space-1); }
+    .table td.locked { color: var(--muted); background: var(--surface-warm); }
+    .table tr.sub td { color: var(--muted); }
+    .table tr.diff td { border-bottom: 1px solid var(--border); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">预算管理平台</div>
+      <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+      <div class="nav-group">预算编制</div>
+      <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+      <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+      <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+      <a class="nav-item" href="PAGE-F07-01.html" aria-current="page">待我审批</a>
+      <div class="nav-group">预算版本</div>
+      <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+      <div class="nav-group">实际数</div>
+      <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+      <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+      <div class="nav-group">报表</div>
+      <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+      <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+      <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+      <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+      <div class="nav-group">预警与规则</div>
+      <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+      <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+      <div class="nav-group">基础数据</div>
+      <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+      <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+      <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+      <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+      <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+      <div class="nav-group">系统设置</div>
+      <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+    </aside>
+    <div>
+      <header class="topbar">
+        <nav aria-label="面包屑"><a href="PAGE-F00-01.html">工作台</a> / <a href="PAGE-F07-01.html">待我审批</a> / 审批详情</nav>
+        <div class="who">当前用户：<span id="who-name">赵磊（运营部负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+      </header>
+      <main class="main">
+        <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+          <strong>原型说明，非产品功能</strong>
+          <span>页面状态：</span>
+          <span id="proto-states" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-set-state="normal" aria-pressed="true">正常</button>
+            <button class="btn btn-xs" type="button" data-set-state="empty" aria-pressed="false">空</button>
+            <button class="btn btn-xs" type="button" data-set-state="loading" aria-pressed="false">加载</button>
+            <button class="btn btn-xs" type="button" data-set-state="error" aria-pressed="false">错误</button>
+            <button class="btn btn-xs" type="button" data-set-state="noperm" aria-pressed="false">无权限</button>
+          </span>
+          <span class="sep" aria-hidden="true"></span>
+          <span>示例单据：</span>
+          <span id="proto-kind" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-kind="unit" aria-pressed="true">单位填报（部门负责人审核）</button>
+            <button class="btn btn-xs" type="button" data-kind="company" aria-pressed="false">全公司预算（CEO 审批）</button>
+            <button class="btn btn-xs" type="button" data-kind="adjust" aria-pressed="false">目标调整（单位 · 财务负责人审核）</button>
+            <button class="btn btn-xs" type="button" data-kind="adjceo" aria-pressed="false">目标调整（CEO 整次终审）</button>
+            <button class="btn btn-xs" type="button" data-kind="rule" aria-pressed="false">规则审批</button>
+          </span>
+        </div>
+        <h1 class="page-title">审批详情</h1>
+        <div data-state="normal">
+          <section class="card head-card" aria-labelledby="h-name">
+            <div class="row" style="margin-bottom: var(--space-2)">
+              <span class="badge" id="h-type">预算编制</span>
+              <span class="badge badge-warn" id="h-status">待你审核</span>
+              <span class="spacer"></span>
+              <span class="small muted" id="h-meta">提交人：王浩 · 提交时间 2026-12-17 19:42</span>
+            </div>
+            <h2 id="h-name">2027 年度预算 · Amazon-US-01</h2>
+            <p class="small muted" id="h-note" style="margin: 0 0 var(--space-4)">审批人只读查看，不能修改数值；如需修改请退回并写明原因。</p>
+            <ol class="chain" id="h-chain" aria-label="审批进度"></ol>
+          </section>
+
+          <!-- 单位填报 -->
+          <section id="k-unit" class="section" aria-label="填报内容">
+            <div class="row" style="margin-bottom: var(--space-3)">
+              <h3 class="section-title" style="margin: 0">填报内容（全年合计，只读）</h3>
+              <span class="spacer"></span>
+              <span class="small muted">预算汇率：USD 7.12（示例值，以财务BP录入为准）</span>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>店铺</th><th>站点</th><th>品类</th><th class="num">全年销量（件）</th><th class="num">本币收入</th><th class="num">人民币收入</th><th class="num">毛利</th><th class="num">毛利率</th></tr></thead>
+                <tbody id="unit-rows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- 全公司预算 -->
+          <section id="k-company" class="section" hidden aria-label="全公司预算">
+            <div class="grid-4 section co-kpi">
+              <div class="card fade-in"><div class="kpi-label">全年收入</div><div class="kpi-value">¥ 335,000,000.00</div></div>
+              <div class="card fade-in"><div class="kpi-label">全年毛利</div><div class="kpi-value">¥ 69,696,000.00</div><div class="kpi-sub">毛利率 20.8%</div></div>
+              <div class="card fade-in"><div class="kpi-label">部门费用</div><div class="kpi-value">¥ 47,000,000.00</div></div>
+              <div class="card fade-in"><div class="kpi-label">净利润</div><div class="kpi-value">¥ 17,396,000.00</div><div class="kpi-sub">净利润率 5.2%</div></div>
+            </div>
+            <div>
+              <div class="section">
+                <h3 class="section-title">按季度</h3>
+                <div class="table-wrap">
+                  <table class="table">
+                    <thead><tr><th>项目</th><th class="num">Q1</th><th class="num">Q2</th><th class="num">Q3</th><th class="num">Q4</th><th class="num">全年</th></tr></thead>
+                    <tbody id="co-q"></tbody>
+                  </table>
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">按渠道 / B端（全年）</h3>
+                <div class="table-wrap">
+                  <table class="table">
+                    <thead><tr><th>渠道 / 客户</th><th class="num">收入</th><th class="num">毛利</th><th class="num">毛利率</th></tr></thead>
+                    <tbody id="co-ch"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <p class="small muted">编制任务「2027 年度预算编制」全部 28 个填报单位已通过部门审核，由财务负责人林晓于 2026-12-27 提交。公共部门费用与公司层其他损益不分摊到渠道。</p>
+          </section>
+
+          <!-- 目标调整 -->
+          <section id="k-adjust" class="section" hidden aria-label="目标调整内容">
+            <div class="notice warn section">
+              <strong>调整原因：</strong>Amazon-US-01 今年 Prime Day 提前至 6 月，7 月部分销量前移至 6 月，全年不变。
+            </div>
+            <div class="row" style="margin-bottom: var(--space-3)">
+              <h3 class="section-title" style="margin: 0">人民币收入：调整前（当前目标 V2）与调整后</h3>
+              <span class="spacer"></span>
+              <span class="small muted">1–4 月已导入金蝶实际，不可调整</span>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr id="adj-head"></tr></thead>
+                <tbody id="adj-rows"></tbody>
+              </table>
+            </div>
+            <p class="small muted">本单位调整合计：人民币收入 <span class="mono" id="adj-sum"></span>。CEO 通过后生成新的「调整后目标」版本，年初原始目标 V1 与此前版本保持不变。可在 <a class="link" href="PAGE-F08-02.html">版本对比</a> 查看已生效版本之间的差额。</p>
+          </section>
+
+          <!-- 目标调整 · CEO 整次终审 -->
+          <section id="k-adjceo" class="section" hidden aria-label="目标调整整次终审内容">
+            <div class="notice section">全部 28 个调整单位已依次经部门负责人、财务负责人审核通过。CEO 对整次调整一次性审批：通过即生成「调整后目标」V3；退回则整次退回财务负责人，由其把指定单位退回填报人修改。</div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th>调整单位</th><th>调整原因</th><th class="num">全年人民币收入 · 调整前（V2）</th><th class="num">调整后</th><th class="num">差额</th><th>两级审核</th></tr></thead>
+                <tbody>
+                  <tr><td class="dim">Amazon-US-01</td><td class="wrap">Prime Day 提前至 6 月，7 月部分销量前移至 6 月</td><td class="num">¥ 134,400,000.00</td><td class="num">¥ 134,400,000.00</td><td class="num">—</td><td>赵磊 → 林晓 已通过</td></tr>
+                  <tr><td class="dim">Amazon-DE-01</td><td class="wrap">1–4 月收入达成率 78.0%，下调 5–12 月单 SPU 平均销量 10%</td><td class="num">¥ 16,800,000.00</td><td class="num">¥ 15,598,800.00</td><td class="num neg">−¥ 1,201,200.00</td><td>赵磊 → 林晓 已通过</td></tr>
+                  <tr><td class="dim">其余 26 个单位</td><td class="wrap muted">已提交并通过，数值未改动</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td>已通过</td></tr>
+                  <tr class="total"><td class="dim">合计</td><td></td><td class="num">¥ 151,200,000.00</td><td class="num">¥ 149,998,800.00</td><td class="num neg">−¥ 1,201,200.00</td><td></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="small muted">已导入金蝶实际的 1–4 月不在调整范围。可在 <a class="link" href="PAGE-F08-02.html">版本对比</a> 查看生效后 V2 与 V3 的差额。</p>
+          </section>
+
+          <!-- 规则审批 -->
+          <section id="k-rule" class="section" hidden aria-label="规则内容">
+            <div class="grid-2">
+              <div class="card">
+                <h3 class="section-title">待审批版本 v1</h3>
+                <dl class="kv">
+                  <dt>规则名称</dt><dd>部门差旅费人均月度额度 2,500 元</dd>
+                  <dt>类型</dt><dd>额度标准（财务负责人通过后还需 CEO 审批）</dd>
+                  <dt>可信度状态</dt><dd><span class="badge">历史观察</span></dd>
+                  <dt>规则内容</dt><dd>差旅费（交通、住宿、出差补贴）按「部门在编人数 × 2,500 元 / 人 / 月」作为部门费用填报的额度标准。</dd>
+                  <dt>依据</dt><dd>2026 年 1–9 月 15 个部门差旅费实际人均月度 1,860–2,940 元，中位数 2,310 元（金蝶科目余额表）。</dd>
+                  <dt>提交人</dt><dd>陈思雨（财务BP）· 2027-05-10 14:32</dd>
+                </dl>
+              </div>
+              <div class="card">
+                <h3 class="section-title">当前生效版本</h3>
+                <p class="muted">这是该规则的第 1 版，当前没有生效版本。审批全部通过后本版本生效。</p>
+                <p><a class="link" href="PAGE-F12-02.html">在规则库中查看该规则与版本历史</a></p>
+              </div>
+            </div>
+          </section>
+
+          <div class="actionbar" id="actionbar">
+            <span class="small muted" id="act-hint">通过后该单位状态变为「已通过」。</span>
+            <span class="spacer"></span>
+            <button class="btn btn-danger" type="button" id="btn-back">退回</button>
+            <button class="btn btn-primary" type="button" id="btn-pass">通过</button>
+          </div>
+          <div class="notice good" id="result" hidden role="status" style="margin-top: var(--space-4)"></div>
+        </div>
+        <div data-state="empty" hidden>
+          <div class="card state">
+            <div class="state-title">该审批事项已不存在或已被处理</div>
+            <p>可能已由其他审批人处理，或提交人已撤回后重新提交。</p>
+            <a class="btn" href="PAGE-F07-01.html">返回待我审批</a>
+          </div>
+        </div>
+        <div data-state="loading" hidden aria-busy="true">
+          <p class="muted small">正在加载…</p>
+          <div class="table-wrap">
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+        <div data-state="error" hidden>
+          <div class="card state" role="alert">
+            <div class="state-title">数据加载失败</div>
+            <p>服务器暂时无法返回数据，已录入的内容不受影响。请稍后重试；多次失败请联系信息数字化部。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click()">重试</button>
+          </div>
+        </div>
+        <div data-state="noperm" hidden>
+          <div class="card state">
+            <div class="state-title">你没有访问该页面的权限</div>
+            <p>你不是该事项当前环节的审批人，不能查看或处理。部门负责人只能审核本部门单位的填报。</p>
+            <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+          </div>
+        </div>
+        <div class="modal-backdrop" id="m-back" hidden>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-back-t">
+            <h2 id="m-back-t">退回</h2>
+            <p class="small muted" id="m-back-desc">退回后该单位解除编辑锁定，填报人在填报页看到退回原因，并收到钉钉工作通知。</p>
+            <div class="field">
+              <label class="req" for="back-reason">退回原因</label>
+              <textarea class="input" id="back-reason" placeholder="写明需要修改的店铺、月份和原因，例如：Amazon-DE-01 11 月单 SPU 平均销量明显高于近两年同月，请核实"></textarea>
+              <div class="field-error" id="back-err" hidden>请填写退回原因</div>
+            </div>
+            <div class="modal-actions">
+              <button class="btn" type="button" data-close="m-back">取消</button>
+              <button class="btn btn-danger" type="button" id="back-ok">确认退回</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-backdrop" id="m-pass" hidden>
+          <div class="modal" role="dialog" aria-modal="true" aria-labelledby="m-pass-t">
+            <h2 id="m-pass-t">确认通过</h2>
+            <p id="m-pass-desc"></p>
+            <div class="modal-actions">
+              <button class="btn" type="button" data-close="m-pass">取消</button>
+              <button class="btn btn-primary" type="button" id="pass-ok">确认通过</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var bar = document.getElementById('proto-states');
+    if (bar) bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-set-state]');
+      if (!b) return;
+      bar.querySelectorAll('[data-set-state]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-state]').forEach(function (s) { s.hidden = s.getAttribute('data-state') !== b.getAttribute('data-set-state'); });
+    });
+  })();
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3000);
+  }
+  function openModal(id) { var m = document.getElementById(id); m.hidden = false; var f = m.querySelector('textarea, input, select, button'); if (f) f.focus(); }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(function (m) { m.hidden = true; });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-close]');
+    if (c) closeModal(c.getAttribute('data-close'));
+  });
+  function fmt(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n < 0 ? '−' : '') + '¥ ' + s; }
+  function fmtSigned(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n > 0 ? '+' : n < 0 ? '−' : '') + '¥ ' + s; }
+  var RATE = { USD: 7.12, CAD: 5.24, GBP: 9.31, EUR: 7.79 };
+  var CAT = [['框镜', 0.34, 85, 0.225], ['灯镜', 0.30, 139, 0.210], ['镜柜', 0.24, 189, 0.205], ['浴室门', 0.12, 329, 0.215]];
+  var STORES = [['Amazon-US-01', '美国', 'USD', 132000000, 1, 0.215]];
+  function n2(v) { return v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function int(v) { return Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  (function unitTable() {
+    var html = '', T = { rmb: 0, gp: 0, qty: 0 };
+    STORES.forEach(function (s) {
+      CAT.forEach(function (c) {
+        var rmb = Math.round(s[3] * c[1] * 100) / 100, local = rmb / RATE[s[2]], qty = local / (c[2] * s[4]), gp = Math.round(rmb * s[5] * c[3] / 0.2145 * 100) / 100;
+        T.rmb += rmb; T.gp += gp; T.qty += Math.round(qty);
+        html += '<tr><td class="dim">' + s[0] + '</td><td>' + s[1] + '</td><td>' + c[0] + '</td><td class="num">' + int(qty) + '</td><td class="num">' + (s[2] === 'USD' ? '$' : s[2] === 'GBP' ? '£' : s[2] === 'EUR' ? '€' : 'C$') + ' ' + n2(local) + ' ' + s[2] + '</td><td class="num">' + fmt(rmb) + '</td><td class="num">' + fmt(gp) + '</td><td class="num">' + (gp / rmb * 100).toFixed(1) + '%</td></tr>';
+      });
+    });
+    html += '<tr class="total"><td class="dim">合计</td><td></td><td></td><td class="num">' + int(T.qty) + '</td><td class="num">—</td><td class="num">' + fmt(T.rmb) + '</td><td class="num">' + fmt(T.gp) + '</td><td class="num">' + (T.gp / T.rmb * 100).toFixed(1) + '%</td></tr>';
+    document.getElementById('unit-rows').innerHTML = html;
+  })();
+  (function companyTables() {
+    var Q = [0.22, 0.23, 0.25, 0.30], rev = 335000000, gp = 69696000, fee = 47000000, oth = -5300000;
+    var rows = [['收入', rev, Q], ['毛利', gp, Q], ['部门费用', -fee, [0.25, 0.25, 0.25, 0.25]], ['公司层其他损益', oth, [0.25, 0.25, 0.25, 0.25]]];
+    var html = '', net = [0, 0, 0, 0], revq = [];
+    rows.forEach(function (r) {
+      html += '<tr><td class="dim">' + r[0] + '</td>' + r[2].map(function (w, i) { var v = r[1] * w; if (r[0] !== '收入') net[i] += v; else revq[i] = v; return '<td class="num">' + fmt(v) + '</td>'; }).join('') + '<td class="num">' + fmt(r[1]) + '</td></tr>';
+    });
+    var nt = net.reduce(function (a, b) { return a + b; }, 0);
+    html += '<tr class="total"><td class="dim">净利润</td>' + net.map(function (v) { return '<td class="num">' + fmt(v) + '</td>'; }).join('') + '<td class="num">' + fmt(nt) + '</td></tr>';
+    html += '<tr><td class="dim">净利润率</td>' + net.map(function (v, i) { return '<td class="num">' + (v / revq[i] * 100).toFixed(1) + '%</td>'; }).join('') + '<td class="num">' + (nt / rev * 100).toFixed(1) + '%</td></tr>';
+    document.getElementById('co-q').innerHTML = html;
+    var CH = [['Amazon', 182600000, 38652000], ['Wayfair', 42000000, 8820000], ['Home Depot', 30000000, 6000000], ["Lowe's", 21600000, 4104000], ['独立站', 14400000, 3456000], ['TikTok Shop（新渠道，起始月 2027-03）', 6000000, 1080000], ['B端 · Ferguson', 18000000, 3600000], ['B端 · Menards', 9600000, 1824000], ['B端 · Bauhaus', 10800000, 2160000]];
+    var h = '', a = 0, b = 0;
+    CH.forEach(function (c) { a += c[1]; b += c[2]; h += '<tr><td class="dim">' + c[0] + '</td><td class="num">' + fmt(c[1]) + '</td><td class="num">' + fmt(c[2]) + '</td><td class="num">' + (c[2] / c[1] * 100).toFixed(1) + '%</td></tr>'; });
+    h += '<tr class="total"><td class="dim">合计</td><td class="num">' + fmt(a) + '</td><td class="num">' + fmt(b) + '</td><td class="num">' + (b / a * 100).toFixed(1) + '%</td></tr>';
+    document.getElementById('co-ch').innerHTML = h;
+  })();
+  (function adjustTable() {
+    var W = [0.070, 0.065, 0.075, 0.075, 0.080, 0.085, 0.095, 0.080, 0.080, 0.085, 0.100, 0.110];
+    var head = '<th>店铺</th><th>口径</th>' + W.map(function (w, i) { return '<th class="num">' + (i + 1) + ' 月</th>'; }).join('') + '<th class="num">全年</th>';
+    document.getElementById('adj-head').innerHTML = head;
+    var defs = [['Amazon-US-01 美国', 134400000, function (i, v) { return i === 5 ? v + 1200000 : i === 6 ? v - 1200000 : v; }]];
+    var html = '', total = 0;
+    defs.forEach(function (d) {
+      var before = W.map(function (w) { return Math.round(d[1] * w * 100) / 100; });
+      var after = before.map(function (v, i) { return d[2](i, v); });
+      var sb = before.reduce(function (a, b) { return a + b; }, 0), sa = after.reduce(function (a, b) { return a + b; }, 0);
+      total += sa - sb;
+      function cells(arr, isDiff) { return arr.map(function (v, i) { if (i < 4) return '<td class="num locked">' + (isDiff ? '' : fmt(v)) + '</td>'; return '<td class="num' + (isDiff && v < 0 ? ' neg' : '') + '">' + (isDiff ? (v === 0 ? '—' : fmtSigned(v)) : fmt(v)) + '</td>'; }).join(''); }
+      html += '<tr class="sub"><td class="dim" rowspan="1">' + d[0] + '</td><td>调整前</td>' + cells(before) + '<td class="num">' + fmt(sb) + '</td></tr>';
+      html += '<tr><td class="dim"></td><td>调整后</td>' + cells(after) + '<td class="num">' + fmt(sa) + '</td></tr>';
+      html += '<tr class="diff"><td class="dim"></td><td>差额</td>' + cells(after.map(function (v, i) { return Math.round((v - before[i]) * 100) / 100; }), true) + '<td class="num' + (sa - sb < 0 ? ' neg' : '') + '">' + fmtSigned(sa - sb) + '</td></tr>';
+    });
+    document.getElementById('adj-rows').innerHTML = html;
+    document.getElementById('adj-sum').textContent = fmtSigned(total);
+  })();
+
+  var KIND = {
+    unit: {
+      who: '赵磊（运营部负责人）', type: '预算编制', name: '2027 年度预算 · Amazon-US-01', meta: '提交人：王浩 · 提交时间 2026-12-17 19:42',
+      chain: [['done', '王浩', '提交 · 2026-12-17 19:42'], ['now', '赵磊 · 部门负责人', '审核中'], ['', '林晓 · 财务负责人', '全部单位通过后提交 CEO'], ['', '周明远 · CEO', '审批全公司预算']],
+      hint: '通过后该单位状态变为「已通过」；全部单位通过后由财务负责人提交 CEO 审批。',
+      passDesc: '确认通过「Amazon-US-01」的 2027 年度预算填报？', passLabel: '确认通过',
+      backDesc: '退回后该单位状态变为「已退回」并解除编辑锁定，填报人王浩在填报页看到退回原因，并收到钉钉工作通知。',
+      passDone: '已通过。该单位状态为「已通过」，已计入编制任务进度。',
+      backDone: '已退回。该单位已解除编辑锁定，填报人王浩会在填报页看到退回原因，钉钉工作通知已发送。'
+    },
+    company: {
+      who: '周明远（CEO）', type: '预算编制', name: '2027 年度全公司预算', meta: '提交人：林晓（财务负责人） · 提交时间 2026-12-27 18:10',
+      chain: [['done', '26 个填报单位', '部门审核全部通过'], ['done', '林晓 · 财务负责人', '提交 · 2026-12-27 18:10'], ['now', '周明远 · CEO', '审批中']],
+      hint: '通过后本版本保存为「年初原始目标」，此后任何角色都不能直接修改该版本的数值。',
+      passDesc: '通过后「2027 年度全公司预算」保存为「年初原始目标」（V1），此后任何角色都不能直接修改该版本的数值。之后的变化只能通过季度目标调整生成新版本。', passLabel: '通过并锁定为年初原始目标',
+      backDesc: '退回后编制任务回到财务负责人林晓并显示退回原因，由财务负责人决定把哪些单位退回给其填报人。',
+      passDone: '已通过。2027 年度预算已锁定为「年初原始目标」V1（2026-12-28 17:30，审批人周明远），数值不可再直接修改。',
+      backDone: '已退回财务负责人林晓。编制任务显示退回原因，财务负责人可在编制任务详情中把指定单位退回给其填报人。'
+    },
+    adjust: {
+      who: '林晓（财务负责人）', type: '目标调整', name: '2027 Q2 目标调整 · Amazon-US-01', meta: '提交人：王浩 · 提交时间 2027-05-08 16:20',
+      chain: [['done', '王浩', '提交 · 2027-05-08 16:20'], ['done', '赵磊 · 部门负责人', '通过 · 2027-05-09 09:15'], ['now', '林晓 · 财务负责人', '审核中'], ['', '周明远 · CEO', '全部单位通过后对整次调整一次性终审']],
+      hint: '通过后本单位完成两级审核；全部单位经财务负责人通过后，CEO 对整次调整一次性终审。',
+      passDesc: '确认通过该单位的目标调整？本单位两级审核完成。全部单位经财务负责人通过后，CEO 对整次调整一次性终审；CEO 通过后生成新的「调整后目标」版本，记录版本号、审批人、审批时间和调整原因，年初原始目标与此前全部版本保持不变。', passLabel: '确认通过',
+      backDesc: '退回后该单位状态变为「已退回」，填报人王浩可在填报页「调整模式」修改后重新提交，并收到钉钉工作通知。',
+      passDone: '已通过。本单位两级审核完成；全部单位通过后转 CEO 周明远整次终审。',
+      backDone: '已退回填报人王浩，钉钉工作通知已发送。'
+    },
+    adjceo: {
+      who: '周明远（CEO）', type: '目标调整', name: '2027 Q2 目标调整（整次终审）', meta: '发起人：林晓（财务负责人） · 发起时间 2027-04-20 · 最后一个单位通过 2027-06-11 17:40',
+      chain: [['done', '28 个调整单位', '全部提交'], ['done', '部门负责人', '逐单位通过'], ['done', '林晓 · 财务负责人', '逐单位通过 · 2027-06-11 17:40'], ['now', '周明远 · CEO', '整次终审中']],
+      hint: '整次通过后生成「调整后目标」V3；年初原始目标 V1 与此前版本保持不变。',
+      passDesc: '确认整次通过 2027 Q2 目标调整？通过后生成新的「调整后目标」V3，记录版本号、审批人、审批时间和调整原因，年初原始目标与此前全部版本保持不变。', passLabel: '整次通过',
+      backDesc: '整次退回财务负责人林晓并显示原因；财务负责人可把指定单位退回其填报人修改，重新经两级审核后再提交 CEO 终审。',
+      passDone: '已通过。已生成「调整后目标」V3，可在预算版本中查看。',
+      backDone: '已整次退回财务负责人林晓，钉钉工作通知已发送。'
+    },
+    rule: {
+      who: '林晓（财务负责人）', type: '规则审批', name: '额度标准：部门差旅费人均月度额度 2,500 元（v1）', meta: '提交人：陈思雨 · 提交时间 2027-05-10 14:32',
+      chain: [['done', '陈思雨 · 财务BP', '提交 · 2027-05-10 14:32'], ['now', '林晓 · 财务负责人', '审批中'], ['', '周明远 · CEO', '额度标准类需 CEO 审批']],
+      hint: '额度标准类规则：财务负责人通过后还需 CEO 审批，CEO 通过后生成新版本并生效。',
+      passDesc: '确认通过？该规则为额度标准类，通过后转 CEO 审批；CEO 通过后生成 v1 并设为生效。', passLabel: '确认通过',
+      backDesc: '退回后规则不生效，提交人陈思雨可修改后重新提交。',
+      passDone: '已通过，已转 CEO 周明远审批。CEO 通过后该规则 v1 生效。',
+      backDone: '已退回提交人陈思雨，该规则不生效。'
+    }
+  };
+  var kind = 'unit';
+  function show(k) {
+    kind = k; var d = KIND[k];
+    document.querySelectorAll('#proto-kind [data-kind]').forEach(function (x) { x.setAttribute('aria-pressed', x.getAttribute('data-kind') === k ? 'true' : 'false'); });
+    ['unit', 'company', 'adjust', 'adjceo', 'rule'].forEach(function (x) { document.getElementById('k-' + x).hidden = x !== k; });
+    document.getElementById('who-name').textContent = d.who;
+    document.getElementById('h-type').textContent = d.type;
+    document.getElementById('h-name').textContent = d.name;
+    document.getElementById('h-meta').textContent = d.meta;
+    document.getElementById('h-status').className = 'badge badge-warn';
+    document.getElementById('h-status').textContent = '待你审批';
+    document.getElementById('h-chain').innerHTML = d.chain.map(function (c) { return '<li class="' + c[0] + '"><div class="who">' + c[1] + '</div><div class="when">' + c[2] + '</div></li>'; }).join('');
+    document.getElementById('act-hint').textContent = d.hint;
+    document.getElementById('btn-pass').textContent = k === 'company' ? '通过并锁定' : k === 'adjceo' ? '整次通过' : '通过';
+    document.getElementById('actionbar').hidden = false;
+    document.getElementById('result').hidden = true;
+  }
+  document.getElementById('proto-kind').addEventListener('click', function (e) { var b = e.target.closest('[data-kind]'); if (b) { location.hash = b.getAttribute('data-kind'); } });
+  window.addEventListener('hashchange', function () { show(KIND[location.hash.slice(1)] ? location.hash.slice(1) : 'unit'); });
+  show(KIND[location.hash.slice(1)] ? location.hash.slice(1) : 'unit');
+
+  document.getElementById('btn-back').addEventListener('click', function () {
+    document.getElementById('m-back-desc').textContent = KIND[kind].backDesc;
+    document.getElementById('back-reason').value = '';
+    document.getElementById('back-reason').removeAttribute('aria-invalid');
+    document.getElementById('back-err').hidden = true;
+    openModal('m-back');
+  });
+  document.getElementById('back-ok').addEventListener('click', function () {
+    var r = document.getElementById('back-reason');
+    if (!r.value.trim()) { r.setAttribute('aria-invalid', 'true'); document.getElementById('back-err').hidden = false; r.focus(); return; }
+    closeModal('m-back'); finish('back');
+  });
+  document.getElementById('btn-pass').addEventListener('click', function () {
+    document.getElementById('m-pass-desc').textContent = KIND[kind].passDesc;
+    document.getElementById('pass-ok').textContent = KIND[kind].passLabel;
+    openModal('m-pass');
+  });
+  document.getElementById('pass-ok').addEventListener('click', function () { closeModal('m-pass'); finish('pass'); });
+  function finish(how) {
+    var d = KIND[kind], s = document.getElementById('h-status'), res = document.getElementById('result');
+    s.className = 'badge ' + (how === 'pass' ? 'badge-good' : 'badge-bad');
+    s.textContent = how === 'pass' ? (kind === 'company' ? '已锁定为年初原始目标' : kind === 'adjceo' ? '已生效 V3' : '已通过') : '已退回';
+    document.getElementById('actionbar').hidden = true;
+    res.className = 'notice ' + (how === 'pass' ? 'good' : 'bad');
+    res.textContent = how === 'pass' ? d.passDone : d.backDone;
+    res.hidden = false;
+    toast(how === 'pass' ? '已通过' : '已退回');
+  }
+  </script>
+</body>
+</html>

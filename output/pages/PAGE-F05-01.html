@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F05-01">
+  <title>部门费用填报 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+  [hidden] { display: none !important; }
+  body { font-family: var(--font-body); color: var(--fg); background: var(--bg); font-size: var(--text-base); line-height: var(--leading-body); }
+  .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); background: var(--surface); }
+  .proto-bar button { height: 24px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--fg-2); font-size: var(--text-xs); cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+  .proto-bar button:hover { background: var(--surface-raised); }
+  .proto-bar button:active { background: var(--border-soft); }
+  .proto-bar button:focus-visible, .proto-bar select:focus-visible, .proto-bar input:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .proto-bar button[aria-pressed="true"] { background: var(--fg-2); color: var(--surface); border-color: var(--fg-2); }
+  .proto-bar label { display: inline-flex; align-items: center; gap: var(--space-1); }
+  .proto-bar select { height: 24px; font-size: var(--text-xs); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--fg-2); }
+  .proto-sep { width: 1px; height: 16px; background: var(--border); margin: 0 var(--space-1); }
+  .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+  .topbar nav a, .topbar a { color: var(--fg-2); }
+  .topbar a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .page-head .page-title { margin: 0; }
+  .sub { color: var(--muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: var(--text-sm); margin-bottom: var(--space-3); }
+  .notice-bad { border-color: color-mix(in oklab, var(--danger), white 60%); background: color-mix(in oklab, var(--danger), white 95%); }
+  .notice-warn { border-color: color-mix(in oklab, var(--warn), white 60%); background: color-mix(in oklab, var(--warn), white 94%); }
+  .notice-info { border-color: color-mix(in oklab, var(--accent), white 70%); background: color-mix(in oklab, var(--accent), white 95%); }
+  .notice .t { font-weight: 600; color: var(--fg); }
+  .err-list { margin: var(--space-2) 0 0; padding-left: var(--space-6); max-height: 140px; overflow: auto; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); font-size: var(--text-sm); color: var(--muted); margin-bottom: var(--space-3); }
+  .meta-row b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+  .kpi-value.sm { font-size: var(--text-xl); }
+  .kpi-foot { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .link { color: var(--fg-2); text-decoration: underline; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+  .link:hover { color: var(--fg); }
+  .link:active { color: var(--muted); }
+  .field { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+  .field label, .field .lbl { font-size: var(--text-sm); color: var(--fg-2); }
+  .req { color: var(--danger); margin-left: 2px; }
+  .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+  .modal.wide { width: 720px; max-height: 86vh; overflow: auto; }
+  textarea.input { height: 80px; padding: var(--space-2) var(--space-3); resize: vertical; font-family: inherit; }
+  .section-title { font-size: var(--text-lg); font-weight: 600; margin: var(--space-6) 0 var(--space-3); }
+  .muted { color: var(--muted); }
+  .muted-cell { color: var(--muted); }
+  /* 类 Excel 填报表格 */
+  .grid-wrap { max-height: 62vh; }
+  .grid th.mth, .grid td.mcell { min-width: 112px; }
+  .grid .fz { position: sticky; z-index: 1; background: var(--surface-warm); overflow: hidden; text-overflow: ellipsis; }
+  .grid th.fz { z-index: 3; }
+  .grid .fz-last { border-right: 1px solid var(--border); }
+  .grid tr.blk td { border-top: 1px solid var(--border); }
+  .grid tr.row-calc td.mcell, .grid tr.row-calc td.tcell { color: var(--fg-2); background: var(--surface-warm); }
+  .grid tr.row-calc td.fz:last-of-type { color: var(--fg-2); }
+  .grid td.tcell { font-weight: 600; }
+  .grid td.mcell .cell-edit, .grid td.mcell .ed { min-height: 20px; padding: 2px 0; }
+  .grid td.mcell.cell-edit, .grid td.mcell .cell-edit { background: var(--surface); }
+  .grid .refv { font-size: var(--text-xs); color: var(--muted); line-height: 1.2; }
+  .grid td.flag { box-shadow: inset 0 0 0 2px var(--danger); }
+  .flag-note { font-size: var(--text-xs); color: var(--danger); line-height: 1.2; font-weight: 400; }
+  .grid tr.row-text td.mcell { text-align: left; max-width: 112px; overflow: hidden; text-overflow: ellipsis; }
+  .grid .cell-locked { cursor: not-allowed; }
+  .grid tr.row-text td.cell-edit:empty::before { content: "必填：超出理由"; color: var(--danger); }
+  .grid-foot { display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+  .save-state { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ratio-table td, .ratio-table th { height: 30px; }
+  .modal-backdrop { z-index: 100; }
+  .toast { z-index: 110; }
+  details.card > summary { cursor: pointer; font-weight: 600; font-size: var(--text-sm); }
+  details.card > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+  </style>
+</head>
+<body style="margin:0">
+<div class="app">
+  <aside class="sidebar">
+   <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+   <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+   <div class="nav-group">预算编制</div>
+   <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+   <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+   <a class="nav-item" href="PAGE-F05-01.html" aria-current="page">部门费用</a>
+   <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+   <div class="nav-group">预算版本</div>
+   <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+   <div class="nav-group">实际数</div>
+   <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+   <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+   <div class="nav-group">报表</div>
+   <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+   <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+   <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+   <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+   <div class="nav-group">预警与规则</div>
+   <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+   <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+   <div class="nav-group">基础数据</div>
+   <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+   <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+   <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+   <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+   <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+   <div class="nav-group">系统设置</div>
+   <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+ <div style="min-width:0">
+  <header class="topbar"><nav aria-label="面包屑">预算编制 / 部门费用 / 人力资源部</nav><div class="who">当前用户：郑可（部门预算专员 · 人力资源部） · <a href="PAGE-F01-01.html">退出</a></div></header>
+  <main class="main">
+
+   <div class="proto-bar" role="region" aria-label="原型说明，非产品功能">
+    <span>原型说明，非产品功能 · 场景日期 2026-12-22（2027 年度编制期，金蝶实际已导入至 2026-11）</span>
+    <button type="button" data-state="normal">正常</button><button type="button" data-state="empty">空</button><button type="button" data-state="loading">加载</button><button type="button" data-state="error">错误</button><button type="button" data-state="noperm">无权限</button>
+    <span class="proto-sep"></span>
+    <label>单位状态 <select id="sim-status"><option value="draft">填报中</option><option value="returned">已退回</option><option value="submitted">已提交</option></select></label>
+    <label>填报场景 <select id="sim-mode"><option value="plan">年度编制（2026-12-22）</option><option value="adjust">2027 Q2 目标调整 · 调整模式（2027-05-12）</option></select></label>
+    <label><input type="checkbox" id="sim-conflict"> 下一次保存模拟冲突</label>
+   </div>
+
+   <div id="v-normal">
+    <div class="page-head">
+     <div>
+      <h1 class="page-title">部门费用填报 · 人力资源部</h1>
+      <p class="sub" id="h-sub">2027 年度预算编制 · 截止 2026-12-20 · 维度：预算科目 × 月 · 金额单位：人民币元</p>
+     </div>
+     <div class="toolbar"><span class="badge" id="st-badge">填报中</span><span class="save-state" id="save-state" aria-live="polite">已保存 · 16:02:27</span></div>
+    </div>
+
+    <div class="notice notice-info" id="adjust-note" hidden role="status"><span class="t">调整模式 · 2027 年第二季度目标调整</span> · 林晓 2027-04-20 发起，截止 2027-05-20。1–4 月已导入金蝶实际，不可修改；只能调整 5–12 月。提交时须填写调整原因，经部门负责人、财务负责人审核后，由 CEO 对整次调整一次性终审。</div>
+
+    <div class="field" id="adj-reason-wrap" hidden><label for="adj-reason">调整原因<span class="req">*</span></label><textarea class="input" id="adj-reason" placeholder="说明本次调整 5–12 月的依据，例如 1–4 月实际与目标的差异及原因"></textarea><div class="field-error" id="adj-err" hidden>请填写调整原因</div></div>
+
+    <div class="notice notice-bad" id="returned-note" hidden role="status"><span class="t">已退回</span> · 吴静（人力资源部负责人）2026-12-21 11:40：招聘费 3 月、9 月为校招旺季，请与 2026 实际对照后补充说明。</div>
+    <div class="notice notice-info" id="locked-note" hidden role="status"><span class="t">已提交，内容已锁定</span> · 2026-12-22 15:06 提交，等待人力资源部负责人吴静审核；被退回之前任何人不能修改本部门内容。</div>
+    <div class="notice notice-bad" id="conflict-note" hidden role="alert"></div>
+    <div class="notice notice-bad" id="err-box" hidden role="alert"></div>
+
+    <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+     <div class="card fade-in"><div class="kpi-label">2027 全年预算合计</div><div class="kpi-value sm tnum" id="k-budget">—</div><div class="kpi-foot" id="k-budget-foot"></div></div>
+     <div class="card fade-in"><div class="kpi-label">近 12 月实际合计（2025-12～2026-11）</div><div class="kpi-value sm tnum" id="k-l12">—</div><div class="kpi-foot">最近 12 个已导入月份；无历史的科目不计入</div></div>
+     <div class="card fade-in"><div class="kpi-label">专项预留额度</div><div class="kpi-value sm tnum" id="k-sp">—</div><div class="kpi-foot"><a class="link" href="PAGE-F05-02.html">管理专项预留额度</a></div></div>
+    </div>
+
+    <div class="toolbar" style="justify-content:space-between;margin-bottom:var(--space-3)">
+     <span class="sub" style="margin:0">每个单元格下方灰字为该科目上一年同月实际；「近 12 月实际合计」列为最近 12 个已导入月份之和。</span>
+     <button class="btn btn-primary" type="button" id="btn-submit">提交审核</button>
+    </div>
+    <div class="table-wrap grid-wrap"><table class="table grid" id="grid" aria-label="部门费用填报表格"></table></div>
+    <div class="grid-foot">
+     <span>白底单元格可编辑：失焦即保存并刷新合计；Enter 下移，Esc 还原；可从 Excel 复制整块粘贴。专项预留在「专项预留额度」中维护，自动计入对应科目和月份。</span>
+     <span>金额四舍五入保留 2 位小数</span>
+    </div>
+   </div>
+   <div id="v-state" hidden></div>
+
+  </main>
+ </div>
+</div>
+<script>
+/* ===== 公共：工具、轻提示、弹窗、原型状态 ===== */
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+function r2(x) { return Math.round((x + (x >= 0 ? 1 : -1) * 1e-9) * 100) / 100; }
+function fmtNum(v, d) { return Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtMoney(v) { return fmtNum(v, 2); }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function nowTime() { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => String(x).padStart(2, '0')).join(':'); }
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+}
+let _modal = null;
+function openModal(html, onMount) {
+  closeModal();
+  const bd = document.createElement('div'); bd.className = 'modal-backdrop';
+  bd.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + '</div>';
+  bd.addEventListener('click', e => { if (e.target === bd) closeModal(); });
+  document.body.appendChild(bd); _modal = bd;
+  $$('[data-close]', bd).forEach(b => b.addEventListener('click', closeModal));
+  if (onMount) onMount(bd.firstChild);
+  const f = $('input,select,textarea,button', bd.firstChild); if (f) f.focus();
+  return bd.firstChild;
+}
+function closeModal() { if (_modal) { _modal.remove(); _modal = null; } }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && _modal) closeModal(); });
+
+/* 原型状态切换：正常 / 空 / 加载 / 错误 / 无权限 */
+function setupStates(cfg) {
+  const normal = $('#v-normal'), st = $('#v-state');
+  function show(s) {
+    $$('.proto-bar [data-state]').forEach(b => b.setAttribute('aria-pressed', b.dataset.state === s ? 'true' : 'false'));
+    if (s === 'normal') { normal.hidden = false; st.hidden = true; return; }
+    normal.hidden = true; st.hidden = false;
+    if (s === 'loading') {
+      let rows = ''; for (let i = 0; i < 8; i++) rows += '<div class="skeleton" style="margin:14px 0;width:' + (60 + (i * 13) % 40) + '%"></div>';
+      st.innerHTML = '<div class="card" aria-busy="true"><div class="kpi-label">' + esc(cfg.loading || '正在加载…') + '</div>' + rows + '</div>';
+      return;
+    }
+    const c = cfg[s];
+    st.innerHTML = '<div class="card"><div class="state"><div class="state-title">' + esc(c.title) + '</div><div>' + esc(c.desc) + '</div>' +
+      (c.btn ? '<div style="margin-top:16px"><button class="btn ' + (c.primary ? 'btn-primary' : '') + '" type="button" id="state-btn">' + esc(c.btn) + '</button></div>' : '') + '</div></div>';
+    const b = $('#state-btn'); if (b) b.addEventListener('click', () => { if (c.onClick) c.onClick(); else show('normal'); });
+  }
+  $$('.proto-bar [data-state]').forEach(b => b.addEventListener('click', () => show(b.dataset.state)));
+  show('normal');
+  return show;
+}
+
+/* ===== 类 Excel 填报表格引擎（原型）=====
+   行 kind：in 可编辑输入 / calc 计算只读 / sum 合计 / text 文字输入（超出理由）
+   类型 type：int / num / price / rate / money / smoney / text            */
+const TYPES = {
+  int:    { d: 0, ok: v => Number.isInteger(v) && v >= 0, range: '允许范围：大于等于 0 的整数' },
+  num:    { d: 1, ok: v => v >= 0, range: '允许范围：大于等于 0' },
+  price:  { d: 2, ok: v => v >= 0, range: '允许范围：大于等于 0' },
+  rate:   { d: 1, ok: v => v >= 0 && v <= 100, range: '允许范围：0% 到 100%', pct: true },
+  money:  { d: 2, ok: v => v >= 0, range: '允许范围：大于等于 0，最多 2 位小数' },
+  smoney: { d: 2, ok: v => true, range: '允许范围：任意金额（损失或支出填负数），最多 2 位小数' },
+  qty:    { d: 0, ok: () => true },
+  gm:     { d: 1, ok: () => true, pct: true }
+};
+const MONTHS = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+function fmtCell(type, v) {
+  if (v === null || v === undefined || v === '') return '—';
+  if (type === 'text') return v;
+  const t = TYPES[type];
+  if (type === 'qty') return Number.isInteger(v) ? fmtNum(v, 0) : fmtNum(v, 2);
+  return fmtNum(v, t.d) + (t.pct ? '%' : '');
+}
+function parseCell(type, raw) {
+  const s = String(raw).trim();
+  if (type === 'text') return { ok: true, v: s };
+  if (s === '') return { ok: true, v: 0 };
+  const n = Number(s.replace(/[,，¥$%\s]/g, ''));
+  if (!isFinite(n)) return { ok: false, msg: '请输入数字。' + TYPES[type].range };
+  if (!TYPES[type].ok(n)) return { ok: false, msg: TYPES[type].range };
+  if ((type === 'money' || type === 'smoney' || type === 'price') && Math.abs(r2(n) - n) > 1e-9) return { ok: false, msg: TYPES[type].range };
+  return { ok: true, v: n };
+}
+
+function makeGrid(cfg) {
+  const g = { cfg, rows: cfg.rows, invalid: new Map(), locked: false, focusRow: null };
+  const table = cfg.table;
+  const showTotal = cfg.totalCol !== false;
+  const extra = cfg.extraCols || [];
+  // 表头
+  let left = 0, h = '<thead><tr>';
+  cfg.dimCols.forEach((c, i) => {
+    h += '<th class="fz' + (i === cfg.dimCols.length - 1 ? ' fz-last' : '') + '" style="left:' + left + 'px;min-width:' + c.w + 'px;max-width:' + c.w + 'px" scope="col">' + c.label + '</th>';
+    c.left = left; left += c.w;
+  });
+  MONTHS.forEach((m, i) => { h += '<th class="num mth" scope="col" title="' + cfg.year + '-' + String(i + 1).padStart(2, '0') + '">' + m + '</th>'; });
+  if (showTotal) h += '<th class="num mth" scope="col">' + (cfg.totalLabel || '全年') + '</th>';
+  extra.forEach(c => { h += '<th class="num mth" scope="col">' + c.label + '</th>'; });
+  h += '</tr></thead><tbody></tbody>';
+  table.innerHTML = h;
+  const tbody = $('tbody', table);
+
+  g.rows.forEach(row => {
+    const tr = document.createElement('tr'); row.tr = tr;
+    tr.className = 'row-' + row.kind + (row.blockStart ? ' blk' : '') + (row.kind === 'sum' ? ' total' : '');
+    let html = '';
+    cfg.dimCols.forEach((c, i) => {
+      const val = (row.dims && row.dims[i] !== undefined) ? row.dims[i] : '';
+      html += '<td class="fz' + (i === cfg.dimCols.length - 1 ? ' fz-last' : '') + '" style="left:' + c.left + 'px;min-width:' + c.w + 'px;max-width:' + c.w + 'px">' + val + '</td>';
+    });
+    tr.innerHTML = html;
+    row.tds = []; row.eds = [];
+    if (row.span) {
+      const td = document.createElement('td'); td.colSpan = 12 + (showTotal ? 1 : 0) + extra.length; td.className = 'muted-cell'; td.textContent = row.span; tr.appendChild(td);
+    } else {
+      for (let m = 0; m < 12; m++) {
+        const td = document.createElement('td'); td.className = 'num mcell';
+        let ed = td;
+        if (row.refLine) { ed = document.createElement('div'); ed.className = 'ed'; td.appendChild(ed); const rl = document.createElement('div'); rl.className = 'refv'; rl.textContent = row.refLine(m); td.appendChild(rl); }
+        if (row.kind === 'in' || row.kind === 'text') {
+          ed.classList.add('cell-edit'); ed.setAttribute('contenteditable', 'true'); ed.setAttribute('role', 'textbox');
+          ed.setAttribute('aria-label', (row.aria || row.label) + ' ' + MONTHS[m]);
+          bindCell(ed, row, m);
+        }
+        row.tds.push(td); row.eds.push(ed); tr.appendChild(td);
+      }
+      if (showTotal) { const td = document.createElement('td'); td.className = 'num tcell'; row.totTd = td; tr.appendChild(td); }
+      row.extraTds = extra.map(c => { const td = document.createElement('td'); td.className = 'num tcell'; td.innerHTML = c.render(row); tr.appendChild(td); return td; });
+    }
+    tbody.appendChild(tr);
+    if (!row.span && (row.kind === 'in' || row.kind === 'text')) for (let m = 0; m < 12; m++) row.eds[m].textContent = fmtCell(row.type, row.v[m]);
+  });
+
+  function key(row, m) { return g.rows.indexOf(row) + ':' + m; }
+  function editableRows() { return g.rows.filter(r => r.kind === 'in' && !r.hidden && !r.span); }
+  function isEditable(row, m) { return row.eds[m] && row.eds[m].getAttribute('contenteditable') === 'true'; }
+  function markInvalid(row, m, raw, msg) {
+    row.eds[m].setAttribute('aria-invalid', 'true'); row.eds[m].title = msg;
+    g.invalid.set(key(row, m), { row, m, raw, msg }); renderErrors();
+  }
+  function clearInvalid(row, m) {
+    if (!g.invalid.has(key(row, m))) return;
+    row.eds[m].removeAttribute('aria-invalid'); row.eds[m].removeAttribute('title');
+    g.invalid.delete(key(row, m)); renderErrors();
+  }
+  function renderErrors() {
+    if (!cfg.errEl) return;
+    if (!g.invalid.size) { cfg.errEl.hidden = true; cfg.errEl.innerHTML = ''; return; }
+    let li = '';
+    g.invalid.forEach(e => { li += '<li><b>' + esc(e.row.aria || e.row.label) + ' · ' + MONTHS[e.m] + '</b>：输入「' + esc(e.raw.trim()) + '」未保存，' + esc(e.msg) + '</li>'; });
+    cfg.errEl.hidden = false;
+    cfg.errEl.innerHTML = '<b>' + g.invalid.size + ' 个单元格超出取值范围，未保存</b>（红框单元格仍保留上一次保存的值参与计算，按 Esc 可还原）<ul class="err-list">' + li + '</ul>';
+  }
+  function saved() {
+    if (!cfg.saveEl) return;
+    cfg.saveEl.textContent = '正在保存…';
+    setTimeout(() => { cfg.saveEl.textContent = '已保存 · ' + nowTime(); }, 350);
+  }
+  function bindCell(ed, row, m) {
+    ed.addEventListener('focus', () => {
+      ed.dataset.orig = ed.textContent; g.focusRow = row;
+      const r = document.createRange(); r.selectNodeContents(ed); const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+    });
+    ed.addEventListener('blur', () => commit(row, m));
+    ed.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); move(row, m); }
+      else if (e.key === 'Escape') { e.preventDefault(); ed.textContent = fmtCell(row.type, row.v[m]); clearInvalid(row, m); ed.dataset.orig = ed.textContent; ed.blur(); }
+    });
+    ed.addEventListener('paste', e => { e.preventDefault(); paste(row, m, (e.clipboardData || window.clipboardData).getData('text')); });
+  }
+  function commit(row, m) {
+    if (g.locked) return;
+    const ed = row.eds[m], raw = ed.textContent;
+    if (raw === ed.dataset.orig) return;
+    ed.dataset.orig = raw;
+    const res = parseCell(row.type, raw);
+    if (!res.ok) { markInvalid(row, m, raw, res.msg); return; }
+    if (typeof PROTO !== 'undefined' && PROTO.conflictNext) {
+      PROTO.conflictNext = false; const cb = $('#sim-conflict'); if (cb) cb.checked = false;
+      ed.textContent = fmtCell(row.type, row.v[m]); clearInvalid(row, m);
+      if (cfg.onConflict) cfg.onConflict(row, m);
+      return;
+    }
+    clearInvalid(row, m); row.v[m] = res.v; ed.textContent = fmtCell(row.type, res.v); ed.dataset.orig = ed.textContent;
+    saved(); g.recompute();
+  }
+  function move(row, m) {
+    const er = editableRows(); const i = er.indexOf(row);
+    row.eds[m].blur();
+    for (let j = i + 1; j < er.length; j++) if (isEditable(er[j], m)) { er[j].eds[m].focus(); return; }
+  }
+  function paste(row, m, text) {
+    if (g.locked) return;
+    const lines = String(text).replace(/\r/g, '').split('\n'); if (lines.length && lines[lines.length - 1] === '') lines.pop();
+    const er = row.kind === 'text' ? [row] : editableRows(); const ri = er.indexOf(row); let ok = 0, bad = 0;
+    lines.forEach((ln, i) => {
+      const r = er[ri + i]; if (!r) return;
+      ln.split('\t').forEach((s, j) => {
+        const mm = m + j; if (mm > 11 || !isEditable(r, mm)) return;
+        const res = parseCell(r.type, s);
+        if (res.ok) { r.v[mm] = res.v; r.eds[mm].textContent = fmtCell(r.type, res.v); clearInvalid(r, mm); ok++; }
+        else { r.eds[mm].textContent = s.trim(); markInvalid(r, mm, s, res.msg); bad++; }
+        r.eds[mm].dataset.orig = r.eds[mm].textContent;
+      });
+    });
+    if (ok) saved();
+    g.recompute();
+    toast('已粘贴 ' + (ok + bad) + ' 个单元格' + (bad ? '，其中 ' + bad + ' 个超出取值范围未保存' : '，已保存并刷新合计'));
+  }
+  g.recompute = function () {
+    if (cfg.compute) cfg.compute(g);
+    g.rows.forEach(row => {
+      if (row.span) return;
+      if (row.kind === 'calc' || row.kind === 'sum') for (let m = 0; m < 12; m++) {
+        const v = row.v[m]; row.eds[m].textContent = (row.zeroDash && !v) ? '—' : fmtCell(row.type, v);
+        row.eds[m].classList.toggle('neg', typeof v === 'number' && v < 0);
+      }
+      if (row.totTd) {
+        let t = row.total;
+        if (typeof t === 'function') t = t(row);
+        else if (t === 'sum') t = r2(row.v.reduce((a, b) => a + (b || 0), 0));
+        row.totTd.textContent = (t === null || t === undefined) ? '—' : (typeof t === 'number' ? fmtCell(row.totType || row.type, t) : t);
+        row.totTd.classList.toggle('neg', typeof t === 'number' && t < 0);
+      }
+      if (row.extraTds) row.extraTds.forEach((td, i) => { td.innerHTML = extra[i].render(row); });
+    });
+    if (cfg.after) cfg.after(g);
+  };
+  g.setEditable = function (row, m, on) {
+    const ed = row.eds[m];
+    if (on && !g.locked) { ed.setAttribute('contenteditable', 'true'); ed.classList.add('cell-edit'); ed.classList.remove('cell-locked'); }
+    else { ed.setAttribute('contenteditable', 'false'); ed.classList.remove('cell-edit'); }
+  };
+  g.lock = function (on) {
+    g.locked = on;
+    g.rows.forEach(row => {
+      if (row.span || !(row.kind === 'in' || row.kind === 'text')) return;
+      for (let m = 0; m < 12; m++) {
+        if (row.kind === 'text' && !row.allow[m]) continue;
+        row.eds[m].setAttribute('contenteditable', on ? 'false' : 'true');
+        row.eds[m].classList.toggle('cell-edit', !on); row.eds[m].classList.toggle('cell-locked', on);
+      }
+    });
+  };
+  g.fillYear = function (row, raw) {
+    const res = parseCell(row.type, raw); if (!res.ok) return res;
+    let n = 0;
+    for (let m = 0; m < 12; m++) if (isEditable(row, m)) { row.v[m] = res.v; row.eds[m].textContent = fmtCell(row.type, res.v); clearInvalid(row, m); n++; }
+    saved(); g.recompute(); return { ok: true, n };
+  };
+  g.reloadCell = function (row, m, v) { row.v[m] = v; row.eds[m].textContent = fmtCell(row.type, v); g.recompute(); };
+  g.rateRows = function () { return g.rows.filter(r => r.kind === 'in' && r.type === 'rate' && !r.hidden); };
+  g.recompute();
+  return g;
+}
+
+/* 填充全年弹窗（AC-F04-06） */
+function openFillYear(g) {
+  const rows = g.rateRows();
+  const cur = (g.focusRow && g.focusRow.type === 'rate') ? g.focusRow : rows[0];
+  const opts = rows.map((r, i) => '<option value="' + i + '"' + (r === cur ? ' selected' : '') + '>' + esc(r.aria || r.label) + '</option>').join('');
+  const m = openModal('<h2>填充全年</h2><div class="field"><label for="fy-row">维度组合与比率<span class="req">*</span></label><select class="select" id="fy-row">' + opts + '</select></div>' +
+    '<div class="field"><label for="fy-val">比率（%）<span class="req">*</span></label><input class="input" id="fy-val" inputmode="decimal" placeholder="例如 8.5"><div class="field-error" id="fy-err" hidden></div></div>' +
+    '<p class="sub">将写入该组合当前可编辑的月份：编制期为全部 12 个月；调整模式下为尚未导入金蝶实际的月份。已有值会被覆盖。</p>' +
+    '<div class="modal-actions"><button class="btn" type="button" data-close>取消</button><button class="btn btn-primary" type="button" id="fy-ok">填充可编辑月份</button></div>');
+  $('#fy-ok', m).addEventListener('click', () => {
+    const v = $('#fy-val', m).value, r = rows[+$('#fy-row', m).value], err = $('#fy-err', m);
+    if (String(v).trim() === '') { err.hidden = false; err.textContent = '请输入比率'; $('#fy-val', m).setAttribute('aria-invalid', 'true'); return; }
+    const res = g.fillYear(r, v);
+    if (!res.ok) { err.hidden = false; err.textContent = res.msg; $('#fy-val', m).setAttribute('aria-invalid', 'true'); return; }
+    closeModal(); toast('已为「' + (r.aria || r.label) + '」填充 ' + res.n + ' 个月');
+  });
+}
+
+
+// 人力资源部 2027 预算（日常部分）与 2026 实际（12 月尚未导入）
+const SUBJECTS = [
+  { name: '工资薪金', budget: [168000, 168000, 168000, 176000, 176000, 176000, 176000, 176000, 176000, 176000, 176000, 176000],
+    act: [152300, 152300, 152300, 158600, 158600, 158600, 158600, 158600, 158600, 158600, 158600, null], prevDec: 149800 },
+  { name: '社保公积金', budget: [46000, 46000, 46000, 48200, 48200, 48200, 48200, 48200, 48200, 48200, 48200, 48200],
+    act: [41850, 41850, 41850, 43620, 43620, 43620, 43620, 43620, 43620, 43620, 43620, null], prevDec: 41200 },
+  { name: '招聘费', budget: [12000, 12000, 18000, 12000, 12000, 12000, 12000, 12000, 16000, 12000, 12000, 12000],
+    act: [8600, 6200, 15200, 11800, 9400, 7300, 10900, 8200, 13600, 9900, 7100, null], prevDec: 6800 },
+  { name: '培训费', budget: [6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000],
+    act: [5200, 3800, 6900, 4400, 5600, 7200, 3900, 4800, 6100, 5300, 6700, null], prevDec: 8400, act2026Dec: 9100 },
+  { name: '员工福利费', budget: [15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000],
+    act: [238500, 12400, 13800, 14100, 15600, 13200, 82300, 12900, 21600, 13500, 14200, null], prevDec: 16800, act2026Dec: 17300 },
+  { name: '办公费', budget: [3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500],
+    act: [3180, 2960, 3420, 3050, 3610, 3280, 3390, 2870, 3520, 3140, 3300, null], prevDec: 3640 },
+  { name: '雇主品牌建设费', budget: [8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000], act: null, prevDec: null }
+];
+// 专项预留额度（月份为 0 起算的下标）
+const SPECIALS = [
+  { name: '2027 年会', subject: '员工福利费', month: 0, amount: 260000 },
+  { name: '管理层领导力训练营', subject: '培训费', month: 3, amount: 180000 },
+  { name: '夏季团建', subject: '员工福利费', month: 6, amount: 90000 }
+];
+
+const PROTO = { conflictNext: false };
+const arr = v => Array.from({ length: 12 }, () => v);
+const rows = [], totalsBySubject = [];
+const l12 = s => s.act ? r2(s.act.slice(0, 11).reduce((a, b) => a + b, 0) + s.prevDec) : null;
+SUBJECTS.forEach(s => {
+  const sp = arr(0); SPECIALS.filter(x => x.subject === s.name).forEach(x => sp[x.month] = r2(sp[x.month] + x.amount));
+  const hasSp = sp.some(v => v);
+  const main = { kind: 'in', type: 'money', label: '预算', aria: s.name + ' · 预算', subj: s, v: s.budget.slice(), total: 'sum', blockStart: true,
+    dims: [s.name + (s.act ? '' : '<div class="refv">无历史数据</div>'), hasSp ? '日常预算' : '预算'],
+    refLine: m => !s.act ? '' : (s.act[m] === null ? '上年 未导入' : '上年 ' + fmtMoney(s.act[m])) };
+  rows.push(main);
+  let tot = main;
+  if (hasSp) {
+    rows.push({ kind: 'calc', type: 'money', label: '专项预留', dims: ['', '专项预留'], v: sp, total: 'sum', zeroDash: true });
+    tot = { kind: 'calc', type: 'money', label: '科目预算合计', dims: ['', '科目预算合计'], v: arr(0), total: 'sum', main, sp };
+    rows.push(tot);
+  }
+  totalsBySubject.push(tot);
+});
+const TOT = { kind: 'sum', type: 'money', label: '部门预算合计', dims: ['部门合计', '预算合计'], v: arr(0), total: 'sum', blockStart: true,
+  refLine: m => { const v = SUBJECTS.filter(s => s.act && s.act[m] !== null).reduce((a, s) => a + s.act[m], 0); return m === 11 ? '上年 未导入' : '上年 ' + fmtMoney(r2(v)); } };
+rows.push(TOT);
+function compute() {
+  totalsBySubject.forEach(t => { if (t.sp) for (let m = 0; m < 12; m++) t.v[m] = r2(t.main.v[m] + t.sp[m]); });
+  for (let m = 0; m < 12; m++) TOT.v[m] = r2(totalsBySubject.reduce((a, t) => a + t.v[m], 0));
+}
+function after() {
+  const B = r2(TOT.v.reduce((a, b) => a + b, 0)); $('#k-budget').textContent = '¥ ' + fmtMoney(B);
+  const L = r2(SUBJECTS.reduce((a, s) => a + (l12(s) || 0), 0)); $('#k-l12').textContent = '¥ ' + fmtMoney(L);
+  const SP = r2(SPECIALS.reduce((a, x) => a + x.amount, 0)); $('#k-sp').textContent = '¥ ' + fmtMoney(SP);
+  $('#k-budget-foot').textContent = '其中专项预留 ¥ ' + fmtMoney(SP) + '，共 ' + SPECIALS.length + ' 项';
+}
+const g = makeGrid({ table: $('#grid'), year: 2027, rows, errEl: $('#err-box'), saveEl: $('#save-state'), compute, after, onConflict: showConflict,
+  dimCols: [{ label: '预算科目', w: 120 }, { label: '项目', w: 104 }], totalLabel: '全年',
+  extraCols: [{ label: '近 12 月实际合计', render: r => {
+    if (r === TOT) return fmtMoney(r2(SUBJECTS.reduce((a, s) => a + (l12(s) || 0), 0)));
+    if (r.kind !== 'in') return '';
+    return r.subj.act ? fmtMoney(l12(r.subj)) : '<span class="muted">无历史数据</span>';
+  } }] });
+function showConflict(row, m) {
+  const box = $('#conflict-note'); box.hidden = false;
+  box.innerHTML = '<span class="t">保存未成功</span>：「' + esc(row.aria) + ' · ' + MONTHS[m] + '」该数据已被 吴静 于 2026-12-22 15:31 修改，请刷新后再改 <button class="btn" type="button" id="btn-refresh" style="margin-left:8px">刷新</button>';
+  $('#btn-refresh').addEventListener('click', () => { g.reloadCell(row, m, r2(row.v[m] + 2000)); box.hidden = true; toast('已刷新为最新数据'); });
+}
+function applyStatus(s) {
+  const badge = $('#st-badge');
+  badge.className = 'badge' + (s === 'returned' ? ' badge-bad' : s === 'submitted' ? ' badge-info' : '');
+  badge.textContent = s === 'returned' ? '已退回' : s === 'submitted' ? '已提交' : '填报中';
+  $('#returned-note').hidden = s !== 'returned'; $('#locked-note').hidden = s !== 'submitted';
+  g.lock(s === 'submitted'); $('#btn-submit').disabled = s === 'submitted';
+  $('#btn-submit').textContent = s === 'submitted' ? '已提交' : (s === 'returned' ? '重新提交审核' : '提交审核');
+}
+$('#btn-submit').addEventListener('click', () => {
+  if (g.invalid.size) { openModal('<h2>暂不能提交</h2><p>仍有 ' + g.invalid.size + ' 个单元格超出取值范围未保存，请修正或按 Esc 还原。</p><div class="modal-actions"><button class="btn btn-primary" type="button" data-close>知道了</button></div>'); return; }
+  const m = openModal('<h2>提交人力资源部 2027 年度费用预算？</h2><p>全年预算合计 ' + $('#k-budget').textContent + '（含专项预留）。提交后状态变为「已提交」，并通知人力资源部负责人吴静审核；被退回之前不能再修改，也不能新增专项。</p><div class="modal-actions"><button class="btn" type="button" data-close>取消</button><button class="btn btn-primary" type="button" id="ok-submit">确认提交</button></div>');
+  $('#ok-submit', m).addEventListener('click', () => { closeModal(); applyStatus('submitted'); $('#sim-status').value = 'submitted'; toast('已提交，已通知吴静审核'); });
+});
+$('#sim-status').addEventListener('change', e => applyStatus(e.target.value));
+$('#sim-conflict').addEventListener('change', e => { PROTO.conflictNext = e.target.checked; });
+setupStates({
+  loading: '正在加载部门费用…',
+  empty: { title: '本部门还没有可填报的预算科目', desc: '预算科目来自「科目映射 · 预算科目」清单。请联系财务BP 维护预算科目后再填报。', btn: '返回我的填报', onClick: () => location.href = 'PAGE-F04-01.html' },
+  error: { title: '部门费用加载失败', desc: '网络异常或服务暂不可用，已保存的内容不会丢失。', btn: '重试', primary: true },
+  noperm: { title: '无权限', desc: '你只能查看和填写被分配部门的费用预算。如需开通，请联系财务负责人。', btn: '返回工作台', onClick: () => location.href = 'PAGE-F00-01.html' }
+});
+
+
+// 目标调整：调整模式（DEC-F08-04；AC-F08-02、AC-F08-03、AC-F08-04）
+let MODE = location.hash === '#adjust' ? 'adjust' : 'plan';
+const ACTUAL_TO = 4; // 2027-01～04 已导入金蝶实际
+const H_SUB = $('#h-sub').textContent;
+function adjGrids() { return typeof GRIDS !== 'undefined' ? Object.values(GRIDS) : [g]; }
+function applyMode() {
+  const adj = MODE === 'adjust', sub = $('#st-badge').textContent === '已提交';
+  $('#adjust-note').hidden = !adj; $('#adj-reason-wrap').hidden = !adj; $('#adj-reason').disabled = sub;
+  $('#h-sub').textContent = adj ? H_SUB.replace('2027 年度预算编制 · 截止 2026-12-20', '2027 年第二季度目标调整 · 调整模式 · 截止 2027-05-20') : H_SUB;
+  if (!sub) $('#btn-submit').textContent = adj ? '提交调整' : $('#btn-submit').textContent.replace('提交调整', '提交审核');
+  adjGrids().forEach(gg => {
+    $$('thead th.mth', gg.cfg.table).forEach((th, i) => { if (i < 12) th.textContent = MONTHS[i] + (adj && i < ACTUAL_TO ? '（实际）' : ''); });
+    gg.rows.forEach(row => {
+      if (row.span || row.kind !== 'in' || !row.eds) return;
+      for (let m = 0; m < ACTUAL_TO; m++) {
+        const ed = row.eds[m]; if (!ed) continue;
+        if (adj) { ed.setAttribute('contenteditable', 'false'); ed.classList.remove('cell-edit'); ed.classList.add('cell-locked'); ed.title = '已导入金蝶实际，不可调整'; }
+        else if (!sub) { ed.setAttribute('contenteditable', 'true'); ed.classList.add('cell-edit'); ed.classList.remove('cell-locked'); ed.removeAttribute('title'); }
+      }
+    });
+  });
+}
+const _applyStatus = applyStatus;
+applyStatus = function (s) { _applyStatus(s); applyMode(); };
+$('#btn-submit').addEventListener('click', e => {
+  if (MODE !== 'adjust') return;
+  const r = $('#adj-reason');
+  if (!r.value.trim()) { e.stopImmediatePropagation(); r.setAttribute('aria-invalid', 'true'); $('#adj-err').hidden = false; r.focus(); return; }
+  r.removeAttribute('aria-invalid'); $('#adj-err').hidden = true;
+}, true);
+$('#btn-submit').addEventListener('click', () => {
+  if (MODE !== 'adjust') return;
+  const h = $('.modal h2'), p = $('.modal h2 + p');
+  if (!h || !$('#ok-submit')) return;
+  h.textContent = h.textContent.replace(/2027 年度(填报|费用预算)?/, x => x === '2027 年度' ? '2027 Q2 目标调整 · ' : '2027 Q2 目标调整');
+  if (p) p.textContent = '提交后依次由部门负责人、财务负责人审核；全部单位通过后，CEO 对整次调整一次性终审，通过即生成新的「调整后目标」版本，年初原始目标保持不变。被退回之前不能再修改。';
+});
+$('#sim-mode').value = MODE;
+$('#sim-mode').addEventListener('change', e => { MODE = e.target.value; applyStatus($('#st-badge').textContent === '已提交' ? 'submitted' : $('#st-badge').textContent === '已退回' ? 'returned' : 'draft'); });
+applyMode();
+</script>
+</body>
+</html>

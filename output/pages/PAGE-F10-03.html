@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F10-03">
+  <title>品类×新老品偏差</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    body { margin: 0; }
+    .app > div { min-width: 0; }
+    .modal-backdrop { z-index: 50; }
+    .toast { z-index: 60; }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar div { font-size: var(--text-sm); color: var(--fg-2); }
+    .topbar div a { color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .page-head .page-title { margin-bottom: var(--space-1); }
+    .meta { font-size: var(--text-sm); color: var(--muted); }
+    .filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--space-4); margin-bottom: var(--space-3); }
+    .filters label { display: grid; gap: var(--space-1); font-size: var(--text-xs); color: var(--muted); }
+    .hint { font-size: var(--text-xs); color: var(--muted); padding-bottom: 8px; }
+    .info-strip { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-3); }
+    .info-strip b { color: var(--fg-2); font-weight: 600; }
+    .table th.grp { text-align: center; border-left: 1px solid var(--border-soft); }
+    .table thead tr:nth-child(2) th { top: 34px; }
+    .table td.sep, .table th.sep { border-left: 1px solid var(--border-soft); }
+    .table tr.sub td { font-weight: 600; background: var(--surface-warm); }
+    .muted { color: var(--muted); }
+    .note-cell { min-width: 220px; max-width: 280px; white-space: normal; line-height: var(--leading-tight); padding-top: 6px !important; padding-bottom: 6px !important; }
+    .note-text { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; color: var(--fg-2); }
+    .note-by { font-size: var(--text-xs); color: var(--muted); }
+    .link-btn { padding: 0; border: 0; background: none; color: var(--fg-2); text-decoration: underline; font-size: var(--text-xs); cursor: pointer; border-radius: var(--radius-sm); }
+    .link-btn:hover { color: var(--fg); }
+    .link-btn:active { color: var(--muted); }
+    .link-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .modal textarea { width: 100%; min-height: 120px; box-sizing: border-box; padding: var(--space-2) var(--space-3); border: 1px solid var(--border); border-radius: var(--radius-md); font: inherit; color: var(--fg); background: var(--surface); resize: vertical; }
+    .modal textarea:hover { border-color: var(--muted); }
+    .modal textarea:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+    .modal h3 { margin: 0 0 var(--space-1); font-size: var(--text-lg); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+    .skeleton-row { display: grid; gap: var(--space-3); padding: var(--space-4); }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="主导航">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html" aria-current="page">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">报表 / 品类×新老品偏差</nav>
+      <div>当前用户：<span id="who">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+        <strong>原型说明，非产品功能</strong>
+        <span>页面状态：</span>
+        <button class="btn" data-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-state="denied" aria-pressed="false">无权限</button>
+        <span style="margin-left:12px">视角：</span>
+        <button class="btn" data-view="lead" aria-pressed="true">财务负责人</button>
+        <button class="btn" data-view="bp" aria-pressed="false">财务BP</button>
+        <button class="btn" data-view="ops" aria-pressed="false">运营（Amazon）</button>
+      </div>
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">品类×新老品偏差</h1>
+          <div class="meta">按品类与新品/老品对比 SPU 数、销量、品效和收入 · 每两个月随 BI 数据更新 · 金额单位：人民币元</div>
+        </div>
+        <button class="btn btn-primary" id="btn-export" type="button">
+          <svg width="16" height="16" viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/></svg>
+          <span>导出 Excel</span>
+        </button>
+      </div>
+
+      <div class="filters">
+        <label>月份
+          <select class="select" id="f-month">
+            <option value="2027-04" selected>2027-04</option>
+            <option value="2027-03">2027-03</option>
+            <option value="2027-02">2027-02</option>
+            <option value="2027-01">2027-01</option>
+          </select>
+        </label>
+        <div class="hint">只能选择已有 BI 实际的月份。最近 BI 数据截至 2027-04，下一批（2027-05 至 2027-06）预计 2027-07 导入。</div>
+      </div>
+
+      <div id="st-normal">
+        <div class="info-strip" id="info"></div>
+        <div class="table-wrap">
+          <table class="table" id="tbl">
+            <thead>
+              <tr>
+                <th rowspan="2" style="position:sticky;left:0;z-index:3">品类</th>
+                <th rowspan="2">新品/老品</th>
+                <th class="grp" colspan="3">SPU 数</th>
+                <th class="grp" colspan="3">销量（件）</th>
+                <th class="grp" colspan="3">品效（折后 · 人民币元/SPU）</th>
+                <th class="grp" colspan="3">收入</th>
+                <th class="grp" rowspan="2">偏差说明</th>
+              </tr>
+              <tr>
+                <th class="num sep">预算</th><th class="num">实际</th><th class="num">差额</th>
+                <th class="num sep">预算</th><th class="num">实际</th><th class="num">差额</th>
+                <th class="num sep">预算</th><th class="num">实际</th><th class="num">差额</th>
+                <th class="num sep">预算</th><th class="num">实际</th><th class="num">差额</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="meta" style="font-size:var(--text-xs)">品效按折后口径：预算品效 = 单 SPU 平均销量 × 平均单价 × (1 − 折扣率)；实际品效 = 实际销售额（本币）÷ SPU 数。单一店铺站点内按本币计算；本表各行、小计与合计跨店铺、跨币种，按人民币汇总：Σ(销量 × 折后单价 × 汇率) ÷ ΣSPU 数，即人民币收入 ÷ SPU 数（预算用预算汇率，实际用当月平均汇率）。SPU 数跨店铺站点累加。新品/老品按 SKU 对照表中的首次上架日期判定。销量、品效、收入高于预算为有利。</p>
+      </div>
+
+      <div class="card state" id="st-empty" hidden>
+        <div class="state-title">2027 年还没有导入 BI 数据</div>
+        <div>品类报告只对已有 BI 实际的月份生成。BI 双月数据导入后这里显示对比。</div>
+        <div style="margin-top:16px" id="empty-act" hidden><a class="btn btn-primary" href="PAGE-F09-01.html">去导入 BI 数据</a></div>
+      </div>
+      <div id="st-loading" hidden aria-busy="true">
+        <div class="table-wrap skeleton-row"><div class="skeleton" style="width:30%"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+      </div>
+      <div class="card state" id="st-error" hidden role="alert">
+        <div class="state-title">品类报告加载失败</div>
+        <div>服务器未返回数据，可能是网络中断。请重试。</div>
+        <div style="margin-top:16px"><button class="btn" type="button" id="btn-retry">重试</button></div>
+      </div>
+      <div class="card state" id="st-denied" hidden>
+        <div class="state-title">无权限</div>
+        <div>你没有被分配任何渠道或店铺，无法查看品类报告。如需查看请联系财务负责人分配数据范围。</div>
+        <div style="margin-top:16px"><a class="btn" href="PAGE-F00-01.html">返回工作台</a></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="note-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="note-title">
+    <h3 id="note-title">偏差说明</h3>
+    <div class="meta" id="note-sub" style="margin-bottom:12px"></div>
+    <div id="note-view"></div>
+    <div id="note-edit" hidden>
+      <textarea id="note-input" aria-label="偏差说明" placeholder="写明偏差原因，例如：3 款新品因包装认证延期上架"></textarea>
+      <div class="field-error" id="note-err" hidden>请填写说明内容</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" type="button" id="note-cancel">关闭</button>
+      <button class="btn btn-primary" type="button" id="note-save" hidden>保存说明</button>
+    </div>
+  </div>
+</div>
+<div id="toast-host" aria-live="polite"></div>
+
+<script>
+  // 2027-04 平台渠道合计（与 PAGE-F10-02 一致）：预算 = 最新调整后目标；实际 = BI 本币销售额 × 当月平均汇率
+  var TOTAL = {
+    all: { bRev: 23787311.18, bU: 47580, aRev: 22315562.03, aU: 43586, spu: 1 },
+    ops: { bRev: 14594401.50, bU: 32280, aRev: 13524752.59, aU: 29489, spu: 0.62 } // Amazon 四个站点
+  };
+  var BF = { '2027-01': 0.96, '2027-02': 0.84, '2027-03': 1.03, '2027-04': 1 };
+  var AF = { '2027-01': 0.99, '2027-02': 0.80, '2027-03': 1.06, '2027-04': 1 };
+  // [品类, 新/老, 预算SPU, 预算销量占比, 预算收入占比, 实际SPU, 实际销量占比, 实际收入占比]
+  var ROWS = [
+    ['框镜', '老品', 46, .37, .28, 46, .385, .295],
+    ['框镜', '新品', 18, .08, .085, 15, .062, .066],
+    ['灯镜', '老品', 38, .22, .25, 38, .228, .262],
+    ['灯镜', '新品', 16, .07, .09, 16, .074, .095],
+    ['镜柜', '老品', 24, .14, .14, 23, .138, .135],
+    ['镜柜', '新品', 10, .04, .05, 8, .028, .034],
+    ['浴室门', '老品', 12, .06, .075, 12, .063, .079],
+    ['浴室门', '新品', 6, .02, .03, 6, .022, .034]
+  ];
+  var NOTES = {
+    '2027-04|框镜·新品': { text: '4 月计划上新 18 款框镜新品，实际上架 15 款，3 款因包装认证延期到 5 月；已上架新品单 SPU 销量比预算低约 15%。', by: '陈思雨', at: '2027-05-10 18:10' },
+    '2027-04|镜柜·新品': { text: '2 款镜柜新品工厂交期延误，5 月下旬到仓，4 月新品收入比预算少约 43 万元。', by: '陈思雨', at: '2027-05-10 18:16' }
+  };
+
+  var r2 = function (x) { return Math.round(x * 100) / 100; };
+  function fmt(n) { return (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function fmtS(n) { return (n > 0 ? '+' : '') + fmt(n); }
+  function int(n) { return (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('zh-CN'); }
+  function intS(n) { return (n > 0 ? '+' : '') + int(n); }
+  function cls(d) { return Math.abs(d) < 0.005 ? '' : d > 0 ? 'good' : 'bad'; }
+
+  var view = 'lead';
+  var VIEWS = { lead: { who: '林晓（财务负责人）' }, bp: { who: '陈思雨（财务BP）', edit: true }, ops: { who: '王浩（运营 · Amazon 负责人）' } };
+
+  // 按占比把渠道合计拆到 8 行；最后一行取余数，保证合计与渠道报告一致
+  function calc(m) {
+    var T = TOTAL[view === 'ops' ? 'ops' : 'all'];
+    var bRevT = r2(T.bRev * BF[m]), aRevT = r2(T.aRev * AF[m]), bUT = Math.round(T.bU * BF[m]), aUT = Math.round(T.aU * AF[m]);
+    var acc = { bRev: 0, aRev: 0, bU: 0, aU: 0 };
+    return ROWS.map(function (x, i) {
+      var last = i === ROWS.length - 1;
+      var bRev = last ? r2(bRevT - acc.bRev) : r2(bRevT * x[4]);
+      var aRev = last ? r2(aRevT - acc.aRev) : r2(aRevT * x[7]);
+      var bU = last ? bUT - acc.bU : Math.round(bUT * x[3]);
+      var aU = last ? aUT - acc.aU : Math.round(aUT * x[6]);
+      acc.bRev += bRev; acc.aRev += aRev; acc.bU += bU; acc.aU += aU;
+      var bSpu = Math.max(1, Math.round(x[2] * T.spu)), aSpu = Math.max(1, Math.round(x[5] * T.spu));
+      // 品效（折后，AC-F10-06）：行内跨店铺、跨币种，按人民币口径 Σ(销量 × 平均单价 × (1 − 折扣率) × 汇率) ÷ ΣSPU 数 = 人民币收入 ÷ SPU 数
+      return { cat: x[0], kind: x[1], key: x[0] + '·' + x[1], bSpu: bSpu, aSpu: aSpu, bU: bU, aU: aU, bEff: r2(bRev / bSpu), aEff: r2(aRev / aSpu), bRev: bRev, aRev: aRev };
+    });
+  }
+
+  function noteCell(m, key) {
+    if (!key) return '<td class="sep"></td>';
+    var n = NOTES[m + '|' + key], edit = VIEWS[view].edit;
+    if (n) return '<td class="note-cell sep"><div class="note-text" title="' + n.text + '">' + n.text + '</div><div class="note-by">' + n.by + ' · ' + n.at + ' · <button class="link-btn" data-note="' + key + '">' + (edit ? '查看/编辑' : '查看全文') + '</button></div></td>';
+    return '<td class="note-cell sep">' + (edit ? '<button class="link-btn" data-note="' + key + '">填写说明</button>' : '<span class="muted">—</span>') + '</td>';
+  }
+  function line(c1, c2, r, trCls, m, key) {
+    return '<tr' + (trCls ? ' class="' + trCls + '"' : '') + '><td class="dim">' + c1 + '</td><td>' + c2 + '</td>' +
+      '<td class="num sep">' + int(r.bSpu) + '</td><td class="num">' + int(r.aSpu) + '</td><td class="num">' + intS(r.aSpu - r.bSpu) + '</td>' +
+      '<td class="num sep">' + int(r.bU) + '</td><td class="num">' + int(r.aU) + '</td><td class="num ' + cls(r.aU - r.bU) + '">' + intS(r.aU - r.bU) + '</td>' +
+      '<td class="num sep">' + fmt(r.bEff) + '</td><td class="num">' + fmt(r.aEff) + '</td><td class="num ' + cls(r.aEff - r.bEff) + '">' + fmtS(r2(r.aEff - r.bEff)) + '</td>' +
+      '<td class="num sep">' + fmt(r.bRev) + '</td><td class="num">' + fmt(r.aRev) + '</td><td class="num ' + cls(r.aRev - r.bRev) + '">' + fmtS(r2(r.aRev - r.bRev)) + '</td>' + noteCell(m, key) + '</tr>';
+  }
+  function agg(list) {
+    var a = { bSpu: 0, aSpu: 0, bU: 0, aU: 0, bRev: 0, aRev: 0 };
+    list.forEach(function (r) { for (var k in a) a[k] += r[k]; });
+    a.bRev = r2(a.bRev); a.aRev = r2(a.aRev);
+    a.bEff = r2(a.bRev / a.bSpu); a.aEff = r2(a.aRev / a.aSpu); // 小计 / 合计品效按人民币：Σ人民币收入 ÷ ΣSPU 数
+    return a;
+  }
+
+  function render() {
+    var m = document.getElementById('f-month').value, rows = calc(m), body = '';
+    ['框镜', '灯镜', '镜柜', '浴室门'].forEach(function (c) {
+      var list = rows.filter(function (r) { return r.cat === c; });
+      list.forEach(function (r) { body += line(r.cat, r.kind, r, '', m, r.key); });
+      body += line(c + ' 小计', '', agg(list), 'sub', m, null);
+    });
+    body += line('合计', '品效按人民币汇总', agg(rows), 'total', m, null);
+    document.querySelector('#tbl tbody').innerHTML = body;
+    document.getElementById('info').innerHTML = '<span>BI 数据截至：<b>2027-04</b></span><span>本表月份：<b>' + m + '</b></span><span>对比基准：<b>' + (m >= '2027-04' ? 'V2 2027Q2 目标调整（2027-04-08 生效）' : '年初原始目标（该月未调整）') + '</b></span>' +
+      '<span>范围：<b>' + (view === 'ops' ? 'Amazon（美国、加拿大、英国、德国）' : '全部平台渠道') + '</b></span><span>预算收入按预算汇率折算，实际收入按当月平均汇率折算；品效为折后、按人民币汇总</span>';
+  }
+
+  document.getElementById('f-month').addEventListener('change', render);
+  document.getElementById('tbl').addEventListener('click', function (e) { var n = e.target.closest('[data-note]'); if (n) openNote(n.dataset.note); });
+
+  var noteKey = null;
+  function openNote(key) {
+    var m = document.getElementById('f-month').value, n = NOTES[m + '|' + key], edit = VIEWS[view].edit;
+    noteKey = key;
+    document.getElementById('note-sub').textContent = m + ' · ' + key + (n ? ' · ' + n.by + ' 于 ' + n.at + ' 填写' : '');
+    document.getElementById('note-view').innerHTML = n ? '<p style="margin:0;white-space:pre-wrap">' + n.text + '</p>' : '';
+    document.getElementById('note-view').hidden = edit;
+    document.getElementById('note-edit').hidden = !edit;
+    document.getElementById('note-save').hidden = !edit;
+    document.getElementById('note-input').value = n ? n.text : '';
+    document.getElementById('note-err').hidden = true;
+    document.getElementById('note-input').removeAttribute('aria-invalid');
+    document.getElementById('note-modal').hidden = false;
+    (edit ? document.getElementById('note-input') : document.getElementById('note-cancel')).focus();
+  }
+  document.getElementById('note-cancel').addEventListener('click', function () { document.getElementById('note-modal').hidden = true; });
+  document.getElementById('note-save').addEventListener('click', function () {
+    var v = document.getElementById('note-input').value.trim();
+    if (!v) { document.getElementById('note-err').hidden = false; document.getElementById('note-input').setAttribute('aria-invalid', 'true'); return; }
+    var m = document.getElementById('f-month').value, now = new Date();
+    NOTES[m + '|' + noteKey] = { text: v, by: '陈思雨', at: '2027-05-12 ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0') };
+    document.getElementById('note-modal').hidden = true; render(); toast('偏差说明已保存');
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.getElementById('note-modal').hidden = true; });
+
+  var states = ['normal', 'empty', 'loading', 'error', 'denied'];
+  function setState(st) {
+    states.forEach(function (k) { document.getElementById('st-' + k).hidden = k !== st; });
+    document.querySelectorAll('[data-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.state === st); });
+    document.getElementById('btn-export').disabled = st !== 'normal';
+  }
+  document.querySelectorAll('[data-state]').forEach(function (b) { b.addEventListener('click', function () { setState(b.dataset.state); }); });
+  document.getElementById('btn-retry').addEventListener('click', function () { setState('loading'); setTimeout(function () { setState('normal'); }, 800); });
+  document.querySelectorAll('[data-view]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      view = b.dataset.view;
+      document.querySelectorAll('[data-view]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      document.getElementById('who').textContent = VIEWS[view].who;
+      document.getElementById('empty-act').hidden = view !== 'bp';
+      render();
+    });
+  });
+
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.getElementById('toast-host').appendChild(t); setTimeout(function () { t.remove(); }, 3000);
+  }
+  document.getElementById('btn-export').addEventListener('click', function () {
+    var btn = this, label = btn.querySelector('span'), m = document.getElementById('f-month').value;
+    btn.disabled = true; label.textContent = '正在导出…';
+    setTimeout(function () { btn.disabled = false; label.textContent = '导出 Excel'; toast('已导出 品类新老品偏差_' + m + '.xlsx · 8 行 + 小计与合计（仅含你的数据范围）'); }, 900);
+  });
+
+  render();
+</script>
+</body>
+</html>

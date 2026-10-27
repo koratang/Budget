@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F05-02">
+  <title>专项预留额度 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+  [hidden] { display: none !important; }
+  body { font-family: var(--font-body); color: var(--fg); background: var(--bg); font-size: var(--text-base); line-height: var(--leading-body); }
+  .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin-bottom: var(--space-4); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); background: var(--surface); }
+  .proto-bar button { height: 24px; padding: 0 var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--fg-2); font-size: var(--text-xs); cursor: pointer; transition: background var(--motion-fast) var(--ease-standard); }
+  .proto-bar button:hover { background: var(--surface-raised); }
+  .proto-bar button:active { background: var(--border-soft); }
+  .proto-bar button:focus-visible, .proto-bar select:focus-visible, .proto-bar input:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+  .proto-bar button[aria-pressed="true"] { background: var(--fg-2); color: var(--surface); border-color: var(--fg-2); }
+  .proto-bar label { display: inline-flex; align-items: center; gap: var(--space-1); }
+  .proto-bar select { height: 24px; font-size: var(--text-xs); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--fg-2); }
+  .proto-sep { width: 1px; height: 16px; background: var(--border); margin: 0 var(--space-1); }
+  .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+  .topbar nav a, .topbar a { color: var(--fg-2); }
+  .topbar a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); border-radius: var(--radius-sm); }
+  .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+  .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); }
+  .page-head .page-title { margin: 0; }
+  .sub { color: var(--muted); font-size: var(--text-sm); margin: var(--space-1) 0 0; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .notice { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--surface); font-size: var(--text-sm); margin-bottom: var(--space-3); }
+  .notice-bad { border-color: color-mix(in oklab, var(--danger), white 60%); background: color-mix(in oklab, var(--danger), white 95%); }
+  .notice-warn { border-color: color-mix(in oklab, var(--warn), white 60%); background: color-mix(in oklab, var(--warn), white 94%); }
+  .notice-info { border-color: color-mix(in oklab, var(--accent), white 70%); background: color-mix(in oklab, var(--accent), white 95%); }
+  .notice .t { font-weight: 600; color: var(--fg); }
+  .err-list { margin: var(--space-2) 0 0; padding-left: var(--space-6); max-height: 140px; overflow: auto; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-6); font-size: var(--text-sm); color: var(--muted); margin-bottom: var(--space-3); }
+  .meta-row b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+  .kpi-value.sm { font-size: var(--text-xl); }
+  .kpi-foot { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
+  .tnum { font-variant-numeric: tabular-nums; }
+  .link { color: var(--fg-2); text-decoration: underline; cursor: pointer; background: none; border: 0; padding: 0; font: inherit; }
+  .link:hover { color: var(--fg); }
+  .link:active { color: var(--muted); }
+  .field { display: flex; flex-direction: column; gap: var(--space-1); margin-bottom: var(--space-3); }
+  .field label, .field .lbl { font-size: var(--text-sm); color: var(--fg-2); }
+  .req { color: var(--danger); margin-left: 2px; }
+  .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+  .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+  .modal.wide { width: 720px; max-height: 86vh; overflow: auto; }
+  textarea.input { height: 80px; padding: var(--space-2) var(--space-3); resize: vertical; font-family: inherit; }
+  .section-title { font-size: var(--text-lg); font-weight: 600; margin: var(--space-6) 0 var(--space-3); }
+  .muted { color: var(--muted); }
+  .muted-cell { color: var(--muted); }
+  /* 类 Excel 填报表格 */
+  .grid-wrap { max-height: 62vh; }
+  .grid th.mth, .grid td.mcell { min-width: 112px; }
+  .grid .fz { position: sticky; z-index: 1; background: var(--surface-warm); overflow: hidden; text-overflow: ellipsis; }
+  .grid th.fz { z-index: 3; }
+  .grid .fz-last { border-right: 1px solid var(--border); }
+  .grid tr.blk td { border-top: 1px solid var(--border); }
+  .grid tr.row-calc td.mcell, .grid tr.row-calc td.tcell { color: var(--fg-2); background: var(--surface-warm); }
+  .grid tr.row-calc td.fz:last-of-type { color: var(--fg-2); }
+  .grid td.tcell { font-weight: 600; }
+  .grid td.mcell .cell-edit, .grid td.mcell .ed { min-height: 20px; padding: 2px 0; }
+  .grid td.mcell.cell-edit, .grid td.mcell .cell-edit { background: var(--surface); }
+  .grid .refv { font-size: var(--text-xs); color: var(--muted); line-height: 1.2; }
+  .grid td.flag { box-shadow: inset 0 0 0 2px var(--danger); }
+  .flag-note { font-size: var(--text-xs); color: var(--danger); line-height: 1.2; font-weight: 400; }
+  .grid tr.row-text td.mcell { text-align: left; max-width: 112px; overflow: hidden; text-overflow: ellipsis; }
+  .grid .cell-locked { cursor: not-allowed; }
+  .grid tr.row-text td.cell-edit:empty::before { content: "必填：超出理由"; color: var(--danger); }
+  .grid-foot { display: flex; justify-content: space-between; gap: var(--space-4); font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+  .save-state { font-size: var(--text-sm); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .ratio-table td, .ratio-table th { height: 30px; }
+  .modal-backdrop { z-index: 100; }
+  .toast { z-index: 110; }
+  details.card > summary { cursor: pointer; font-weight: 600; font-size: var(--text-sm); }
+  details.card > summary:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+
+  </style>
+</head>
+<body style="margin:0">
+<div class="app">
+  <aside class="sidebar">
+   <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+   <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+   <div class="nav-group">预算编制</div>
+   <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+   <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+   <a class="nav-item" href="PAGE-F05-01.html" aria-current="page">部门费用</a>
+   <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+   <div class="nav-group">预算版本</div>
+   <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+   <div class="nav-group">实际数</div>
+   <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+   <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+   <div class="nav-group">报表</div>
+   <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+   <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+   <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+   <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+   <div class="nav-group">预警与规则</div>
+   <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+   <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+   <div class="nav-group">基础数据</div>
+   <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+   <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+   <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+   <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+   <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+   <div class="nav-group">系统设置</div>
+   <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+ <div style="min-width:0">
+  <header class="topbar"><nav aria-label="面包屑">预算编制 / <a href="PAGE-F05-01.html">部门费用</a> / 专项预留额度</nav><div class="who">当前用户：郑可（部门预算专员 · 人力资源部） · <a href="PAGE-F01-01.html">退出</a></div></header>
+  <main class="main">
+
+   <div class="proto-bar" role="region" aria-label="原型说明，非产品功能">
+    <span>原型说明，非产品功能</span>
+    <button type="button" data-state="normal">正常</button><button type="button" data-state="empty">空</button><button type="button" data-state="loading">加载</button><button type="button" data-state="error">错误</button><button type="button" data-state="noperm">无权限</button>
+    <span class="proto-sep"></span>
+    <label>视角 <select id="sim-view"><option value="clerk">郑可 · 部门预算专员（编制期 2026-12-22）</option><option value="bp">陈思雨 · 财务BP（执行期 2027-05-12）</option></select></label>
+    <label id="sim-lock-wrap"><input type="checkbox" id="sim-lock"> 部门费用已提交（锁定）</label>
+   </div>
+
+   <div id="v-normal">
+    <div class="page-head">
+     <div>
+      <h1 class="page-title">专项预留额度</h1>
+      <p class="sub" id="sub"></p>
+     </div>
+     <div class="toolbar">
+      <label class="sub" id="dept-wrap" style="margin:0" hidden>部门 <select class="select" id="dept"><option>人力资源部</option><option>市场部</option></select></label>
+      <button class="btn btn-primary" type="button" id="btn-new">新增专项</button>
+     </div>
+    </div>
+    <div class="notice notice-info" id="lock-note" hidden role="status">人力资源部 2027 年度费用预算已提交，内容已锁定，被退回之前不能新增专项。</div>
+    <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+     <div class="card fade-in"><div class="kpi-label">预留金额合计</div><div class="kpi-value sm tnum" id="k-res">—</div></div>
+     <div class="card fade-in"><div class="kpi-label">已用金额合计</div><div class="kpi-value sm tnum" id="k-used">—</div></div>
+     <div class="card fade-in"><div class="kpi-label">剩余金额合计</div><div class="kpi-value sm tnum" id="k-left">—</div></div>
+    </div>
+    <div class="table-wrap">
+     <table class="table" aria-label="专项预留额度列表">
+      <thead><tr><th>专项名称</th><th>所属预算科目</th><th class="num">计划月份</th><th class="num">预留金额</th><th class="num">已用金额</th><th class="num">剩余金额</th><th class="num" id="th-prev">上年同科目全年实际</th><th>操作</th></tr></thead>
+      <tbody id="tb"></tbody>
+     </table>
+    </div>
+    <p class="sub">专项金额计入所属科目在计划月份的部门预算（见 <a class="link" href="PAGE-F05-01.html">部门费用填报</a>）。剩余金额 = 预留金额 − 已用金额；已用金额由财务BP 按金蝶凭证登记。</p>
+   </div>
+   <div id="v-state" hidden></div>
+
+  </main>
+ </div>
+</div>
+<script>
+/* ===== 公共：工具、轻提示、弹窗、原型状态 ===== */
+const $ = (s, el) => (el || document).querySelector(s);
+const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
+function r2(x) { return Math.round((x + (x >= 0 ? 1 : -1) * 1e-9) * 100) / 100; }
+function fmtNum(v, d) { return Number(v).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtMoney(v) { return fmtNum(v, 2); }
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function nowTime() { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map(x => String(x).padStart(2, '0')).join(':'); }
+function toast(msg) {
+  const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+  document.body.appendChild(t); setTimeout(() => t.remove(), 3000);
+}
+let _modal = null;
+function openModal(html, onMount) {
+  closeModal();
+  const bd = document.createElement('div'); bd.className = 'modal-backdrop';
+  bd.innerHTML = '<div class="modal" role="dialog" aria-modal="true">' + html + '</div>';
+  bd.addEventListener('click', e => { if (e.target === bd) closeModal(); });
+  document.body.appendChild(bd); _modal = bd;
+  $$('[data-close]', bd).forEach(b => b.addEventListener('click', closeModal));
+  if (onMount) onMount(bd.firstChild);
+  const f = $('input,select,textarea,button', bd.firstChild); if (f) f.focus();
+  return bd.firstChild;
+}
+function closeModal() { if (_modal) { _modal.remove(); _modal = null; } }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && _modal) closeModal(); });
+
+/* 原型状态切换：正常 / 空 / 加载 / 错误 / 无权限 */
+function setupStates(cfg) {
+  const normal = $('#v-normal'), st = $('#v-state');
+  function show(s) {
+    $$('.proto-bar [data-state]').forEach(b => b.setAttribute('aria-pressed', b.dataset.state === s ? 'true' : 'false'));
+    if (s === 'normal') { normal.hidden = false; st.hidden = true; return; }
+    normal.hidden = true; st.hidden = false;
+    if (s === 'loading') {
+      let rows = ''; for (let i = 0; i < 8; i++) rows += '<div class="skeleton" style="margin:14px 0;width:' + (60 + (i * 13) % 40) + '%"></div>';
+      st.innerHTML = '<div class="card" aria-busy="true"><div class="kpi-label">' + esc(cfg.loading || '正在加载…') + '</div>' + rows + '</div>';
+      return;
+    }
+    const c = cfg[s];
+    st.innerHTML = '<div class="card"><div class="state"><div class="state-title">' + esc(c.title) + '</div><div>' + esc(c.desc) + '</div>' +
+      (c.btn ? '<div style="margin-top:16px"><button class="btn ' + (c.primary ? 'btn-primary' : '') + '" type="button" id="state-btn">' + esc(c.btn) + '</button></div>' : '') + '</div></div>';
+    const b = $('#state-btn'); if (b) b.addEventListener('click', () => { if (c.onClick) c.onClick(); else show('normal'); });
+  }
+  $$('.proto-bar [data-state]').forEach(b => b.addEventListener('click', () => show(b.dataset.state)));
+  show('normal');
+  return show;
+}
+
+
+
+// 人力资源部 2027 预算（日常部分）与 2026 实际（12 月尚未导入）
+const SUBJECTS = [
+  { name: '工资薪金', budget: [168000, 168000, 168000, 176000, 176000, 176000, 176000, 176000, 176000, 176000, 176000, 176000],
+    act: [152300, 152300, 152300, 158600, 158600, 158600, 158600, 158600, 158600, 158600, 158600, null], prevDec: 149800 },
+  { name: '社保公积金', budget: [46000, 46000, 46000, 48200, 48200, 48200, 48200, 48200, 48200, 48200, 48200, 48200],
+    act: [41850, 41850, 41850, 43620, 43620, 43620, 43620, 43620, 43620, 43620, 43620, null], prevDec: 41200 },
+  { name: '招聘费', budget: [12000, 12000, 18000, 12000, 12000, 12000, 12000, 12000, 16000, 12000, 12000, 12000],
+    act: [8600, 6200, 15200, 11800, 9400, 7300, 10900, 8200, 13600, 9900, 7100, null], prevDec: 6800 },
+  { name: '培训费', budget: [6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000, 6000],
+    act: [5200, 3800, 6900, 4400, 5600, 7200, 3900, 4800, 6100, 5300, 6700, null], prevDec: 8400, act2026Dec: 9100 },
+  { name: '员工福利费', budget: [15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000, 15000],
+    act: [238500, 12400, 13800, 14100, 15600, 13200, 82300, 12900, 21600, 13500, 14200, null], prevDec: 16800, act2026Dec: 17300 },
+  { name: '办公费', budget: [3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500, 3500],
+    act: [3180, 2960, 3420, 3050, 3610, 3280, 3390, 2870, 3520, 3140, 3300, null], prevDec: 3640 },
+  { name: '雇主品牌建设费', budget: [8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000, 8000], act: null, prevDec: null }
+];
+// 专项预留额度（月份为 0 起算的下标）
+const SPECIALS = [
+  { name: '2027 年会', subject: '员工福利费', month: 0, amount: 260000 },
+  { name: '管理层领导力训练营', subject: '培训费', month: 3, amount: 180000 },
+  { name: '夏季团建', subject: '员工福利费', month: 6, amount: 90000 }
+];
+
+let view = 'clerk', dept = '人力资源部';
+const prevYear = (subj, full) => {
+  const s = SUBJECTS.find(x => x.name === subj);
+  if (!s || !s.act) return null;
+  return r2(s.act.slice(0, 11).reduce((a, b) => a + b, 0) + (full ? (s.act2026Dec || 0) : 0));
+};
+const DATA = {
+  '人力资源部': SPECIALS.map((x, i) => ({ ...x, uses: [[['2027-01-16', 248600, '记-2027-01-0186']], [['2027-04-22', 96000, '记-2027-04-0233']], []][i] })),
+  '市场部': [
+    { name: 'KBIS 2027 厨卫展', subject: '展会费', month: 1, amount: 420000, uses: [['2027-02-27', 437800, '记-2027-02-0112']], prevFull: 862400 },
+    { name: 'Home Depot 年度供应商大会参展', subject: '展会费', month: 2, amount: 350000, uses: [['2027-03-18', 332400, '记-2027-03-0147']], prevFull: 862400 }
+  ]
+};
+const clerkData = DATA['人力资源部'].map(x => ({ ...x, uses: [] }));
+const ym = m => '2027-' + String(m + 1).padStart(2, '0');
+function list() { return view === 'clerk' ? clerkData : DATA[dept]; }
+function render() {
+  const L = list(), bp = view === 'bp';
+  $('#sub').textContent = bp ? dept + ' · 2027 年度 · 登记专项实际使用（金额、日期、金蝶凭证号）' : '人力资源部 · 2027 年度预算编制 · 培训、福利等临时活动提前预留额度';
+  $('#th-prev').textContent = bp ? '上年同科目全年实际（2026）' : '上年同科目实际（2026-01～11，12 月未导入）';
+  const locked = !bp && $('#sim-lock').checked;
+  $('#btn-new').hidden = bp || locked; $('#lock-note').hidden = !locked; $('#dept-wrap').hidden = !bp; $('#sim-lock-wrap').hidden = bp;
+  let html = '';
+  L.forEach((x, i) => {
+    const used = r2(x.uses.reduce((a, u) => a + u[1], 0)), left = r2(x.amount - used);
+    const prev = x.prevFull !== undefined ? x.prevFull : prevYear(x.subject, bp);
+    html += '<tr><td>' + esc(x.name) + '</td><td>' + esc(x.subject) + '</td><td class="num">' + ym(x.month) + '</td><td class="num">' + fmtMoney(x.amount) + '</td><td class="num">' + fmtMoney(used) +
+      '</td><td class="num' + (left < 0 ? ' bad' : '') + '">' + fmtMoney(left) + '</td><td class="num">' + (prev === null ? '<span class="muted">无历史数据</span>' : fmtMoney(prev)) + '</td><td>' +
+      (bp ? '<button class="btn" type="button" data-use="' + i + '">登记使用</button> ' + (x.uses.length ? '<button class="link" type="button" data-det="' + i + '" aria-expanded="false">明细（' + x.uses.length + '）</button>' : '') : '<span class="muted">—</span>') + '</td></tr>';
+    if (bp && x.uses.length) html += '<tr id="det-' + i + '" hidden><td colspan="8" style="white-space:normal;background:var(--surface-warm)"><table class="table" style="width:auto"><thead><tr><th class="num">使用日期</th><th class="num">金额</th><th>金蝶凭证号</th></tr></thead><tbody>' + x.uses.map(u => '<tr><td class="num">' + u[0] + '</td><td class="num">' + fmtMoney(u[1]) + '</td><td class="tnum">' + u[2] + '</td></tr>').join('') + '</tbody></table></td></tr>';
+  });
+  $('#tb').innerHTML = html || '<tr><td colspan="8"><div class="state"><div class="state-title">还没有专项预留额度</div><div>培训、年会、团建等临时活动可以提前预留额度，金额会计入所属科目当月预算。</div></div></td></tr>';
+  const R = r2(L.reduce((a, x) => a + x.amount, 0)), U = r2(L.reduce((a, x) => a + x.uses.reduce((b, u) => b + u[1], 0), 0));
+  $('#k-res').textContent = '¥ ' + fmtMoney(R); $('#k-used').textContent = '¥ ' + fmtMoney(U);
+  $('#k-left').textContent = '¥ ' + fmtMoney(r2(R - U)); $('#k-left').classList.toggle('bad', R - U < 0);
+  $$('[data-use]').forEach(b => b.addEventListener('click', () => openUse(L[+b.dataset.use])));
+  $$('[data-det]').forEach(b => b.addEventListener('click', () => { const r = $('#det-' + b.dataset.det); r.hidden = !r.hidden; b.setAttribute('aria-expanded', String(!r.hidden)); }));
+}
+function fieldErr(m, id, msg, inp) { const e = $(id, m); e.hidden = !msg; e.textContent = msg || ''; if (inp) $(inp, m).setAttribute('aria-invalid', msg ? 'true' : 'false'); return !msg; }
+function openNew() {
+  const m = openModal('<h2>新增专项预留额度</h2>' +
+    '<div class="field"><label for="n-name">专项名称<span class="req">*</span></label><input class="input" id="n-name" placeholder="例如：新员工入职训练营"><div class="field-error" id="e-name" hidden></div></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)"><div class="field"><label for="n-subj">所属预算科目<span class="req">*</span></label><select class="select" id="n-subj"><option value="">请选择</option>' + SUBJECTS.map(s => '<option>' + s.name + '</option>').join('') + '</select><div class="field-error" id="e-subj" hidden></div></div>' +
+    '<div class="field"><label for="n-month">计划月份<span class="req">*</span></label><select class="select" id="n-month"><option value="">请选择</option>' + Array.from({ length: 12 }, (_, i) => '<option value="' + i + '">' + ym(i) + '</option>').join('') + '</select><div class="field-error" id="e-month" hidden></div></div></div>' +
+    '<div class="field"><label for="n-amt">预留金额（人民币）<span class="req">*</span></label><input class="input tnum" id="n-amt" inputmode="decimal" placeholder="例如 50,000.00"><div class="field-error" id="e-amt" hidden></div></div>' +
+    '<p class="sub" id="n-ref"></p>' +
+    '<div class="modal-actions"><button class="btn" type="button" data-close>取消</button><button class="btn btn-primary" type="button" id="n-ok">保存并计入预算</button></div>');
+  $('#n-subj', m).addEventListener('change', e => { const v = prevYear(e.target.value, false); $('#n-ref', m).textContent = e.target.value ? '参考：' + e.target.value + ' 2026 年 1–11 月实际 ' + (v === null ? '无历史数据' : '¥ ' + fmtMoney(v)) : ''; });
+  $('#n-ok', m).addEventListener('click', () => {
+    const name = $('#n-name', m).value.trim(), subj = $('#n-subj', m).value, mon = $('#n-month', m).value, amt = Number($('#n-amt', m).value.replace(/[,，¥\s]/g, ''));
+    let ok = fieldErr(m, '#e-name', name ? '' : '请填写专项名称', '#n-name');
+    ok = fieldErr(m, '#e-subj', subj ? '' : '请选择所属预算科目', '#n-subj') && ok;
+    ok = fieldErr(m, '#e-month', mon !== '' ? '' : '请选择计划月份', '#n-month') && ok;
+    ok = fieldErr(m, '#e-amt', !$('#n-amt', m).value.trim() ? '请填写预留金额' : (!(amt > 0) || Math.abs(r2(amt) - amt) > 1e-9 ? '金额须大于 0，最多 2 位小数' : ''), '#n-amt') && ok;
+    if (!ok) return;
+    clerkData.push({ name, subject: subj, month: +mon, amount: r2(amt), uses: [] });
+    closeModal(); render(); toast('已新增「' + name + '」，¥ ' + fmtMoney(amt) + ' 已计入' + subj + ' ' + ym(+mon) + ' 预算');
+  });
+}
+function openUse(x) {
+  const used = r2(x.uses.reduce((a, u) => a + u[1], 0));
+  const m = openModal('<h2>登记专项使用 · ' + esc(x.name) + '</h2><p class="sub">预留 ¥ ' + fmtMoney(x.amount) + ' · 已用 ¥ ' + fmtMoney(used) + ' · 剩余 ¥ ' + fmtMoney(r2(x.amount - used)) + '</p>' +
+    '<div class="field"><label for="u-amt">使用金额（人民币）<span class="req">*</span></label><input class="input tnum" id="u-amt" inputmode="decimal"><div class="field-error" id="e-uamt" hidden></div></div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3)"><div class="field"><label for="u-date">使用日期<span class="req">*</span></label><input class="input" type="date" id="u-date" min="2027-01-01" max="2027-12-31"><div class="field-error" id="e-udate" hidden></div></div>' +
+    '<div class="field"><label for="u-vno">金蝶凭证号<span class="req">*</span></label><input class="input tnum" id="u-vno" placeholder="例如 记-2027-05-0061"><div class="field-error" id="e-uvno" hidden></div></div></div>' +
+    '<div class="modal-actions"><button class="btn" type="button" data-close>取消</button><button class="btn btn-primary" type="button" id="u-ok">登记</button></div>');
+  $('#u-ok', m).addEventListener('click', () => {
+    const raw = $('#u-amt', m).value.trim(), amt = Number(raw.replace(/[,，¥\s]/g, '')), d = $('#u-date', m).value, v = $('#u-vno', m).value.trim();
+    let ok = fieldErr(m, '#e-uamt', !raw ? '请填写使用金额' : (!(amt > 0) || Math.abs(r2(amt) - amt) > 1e-9 ? '金额须大于 0，最多 2 位小数' : ''), '#u-amt');
+    ok = fieldErr(m, '#e-udate', !d ? '请选择使用日期' : (d < '2027-01-01' || d > '2027-12-31' ? '使用日期须在 2027 年内' : ''), '#u-date') && ok;
+    ok = fieldErr(m, '#e-uvno', v ? '' : '请填写金蝶凭证号', '#u-vno') && ok;
+    if (!ok) return;
+    x.uses.push([d, r2(amt), v]); closeModal(); render();
+    const left = r2(x.amount - x.uses.reduce((a, u) => a + u[1], 0));
+    toast('已登记，' + x.name + ' 剩余 ¥ ' + fmtMoney(left));
+  });
+}
+$('#btn-new').addEventListener('click', openNew);
+$('#sim-view').addEventListener('change', e => {
+  view = e.target.value;
+  $('.topbar .who').firstChild.textContent = '当前用户：' + (view === 'bp' ? '陈思雨（财务BP）' : '郑可（部门预算专员 · 人力资源部）') + ' · ';
+  render();
+});
+$('#sim-lock').addEventListener('change', render);
+$('#dept').addEventListener('change', e => { dept = e.target.value; render(); });
+render();
+setupStates({
+  loading: '正在加载专项预留额度…',
+  empty: { title: '还没有专项预留额度', desc: '培训、年会、团建等临时活动可以提前预留额度，金额会计入所属科目当月预算。', btn: '新增专项', primary: true, onClick: () => { $$('.proto-bar [data-state="normal"]')[0].click(); openNew(); } },
+  error: { title: '专项预留额度加载失败', desc: '网络异常或服务暂不可用，请稍后重试。', btn: '重试', primary: true },
+  noperm: { title: '无权限', desc: '你只能查看被分配部门的专项预留额度。如需开通，请联系财务负责人。', btn: '返回工作台', onClick: () => location.href = 'PAGE-F00-01.html' }
+});
+
+</script>
+</body>
+</html>

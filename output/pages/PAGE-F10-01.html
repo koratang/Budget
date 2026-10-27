@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F10-01">
+  <title>公司汇总</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    body { margin: 0; }
+    .app > div { min-width: 0; }
+    .toast { z-index: 60; }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar nav a, .topbar div a { color: var(--fg-2); }
+    .topbar div { font-size: var(--text-sm); color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .page-head .page-title { margin-bottom: var(--space-1); }
+    .meta { font-size: var(--text-sm); color: var(--muted); }
+    .grid-kpi { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
+    .kpi-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin: var(--space-2) 0 var(--space-3); }
+    .kpi-sub { font-size: var(--text-sm); color: var(--fg-2); font-variant-numeric: tabular-nums; }
+    .kpi-sub span { color: var(--muted); }
+    .attain-lg { width: 100%; }
+    .section { margin-bottom: var(--space-6); }
+    .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-3); }
+    .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0; }
+    .two-col { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-4); align-items: start; }
+    .growth-cmp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .growth-cmp .kpi-value { font-size: var(--text-2xl); }
+    .note { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+    .chart-card svg { display: block; width: 100%; height: auto; }
+    .chart-card .axis { stroke: var(--border); stroke-width: 1; }
+    .chart-card .grid { stroke: var(--border-soft); stroke-width: 1; }
+    .chart-card .threshold { stroke: var(--danger); stroke-width: 1; stroke-dasharray: 4 3; }
+    .chart-card .bar { fill: var(--fg-2); }
+    .chart-card .bar.is-bad { fill: var(--danger); }
+    .chart-card text { fill: var(--muted); font-size: 11px; font-family: var(--font-body); }
+    .chart-card text.val { fill: var(--fg); font-variant-numeric: tabular-nums; }
+    .chart-card text.thr { fill: var(--danger); }
+    .table a { color: var(--fg-2); }
+    .link-row { display: flex; gap: var(--space-4); font-size: var(--text-sm); }
+    .link-row a { color: var(--fg-2); }
+    .skeleton-row { display: grid; gap: var(--space-3); padding: var(--space-4); }
+    [hidden] { display: none !important; }
+    @media (max-width: 1360px) { .two-col { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="主导航">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html" aria-current="page">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">报表 / 公司汇总</nav>
+      <div>当前用户：<span id="who">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+        <strong>原型说明，非产品功能</strong>
+        <span>页面状态：</span>
+        <button class="btn" data-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-state="denied" aria-pressed="false">无权限</button>
+        <span style="margin-left:12px">视角：</span>
+        <button class="btn" data-view="林晓（财务负责人）" aria-pressed="true">财务负责人</button>
+        <button class="btn" data-view="周明远（CEO）" aria-pressed="false">CEO</button>
+        <button class="btn" data-view="陈思雨（财务BP）" aria-pressed="false">财务BP</button>
+        <span style="margin-left:12px">上年同期：</span>
+        <button class="btn" id="toggle-ly" aria-pressed="true">已导入</button>
+      </div>
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-title">公司汇总</h1>
+          <div class="meta">截至 2027-04（最近金蝶导入期间）· 预算年度 2027 · 金额单位：人民币元</div>
+        </div>
+        <button class="btn btn-primary" id="btn-export" type="button">
+          <svg width="16" height="16" viewBox="0 0 256 256" aria-hidden="true" fill="currentColor"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V32a8,8,0,0,0-16,0v92.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"/></svg>
+          <span>导出 Excel</span>
+        </button>
+      </div>
+
+      <!-- 正常态 -->
+      <div id="st-normal">
+        <section class="grid-kpi" aria-label="累计净利润达成率">
+          <div class="card fade-in">
+            <div class="kpi-label">累计净利润达成率 · 按年初原始目标</div>
+            <div class="kpi-row">
+              <div class="kpi-value" id="k-orig-rate">—</div>
+              <span class="badge" id="k-orig-badge">V1 年初原始目标</span>
+            </div>
+            <div class="attain attain-lg" id="k-orig-bar" role="img"></div>
+            <div class="kpi-sub" style="margin-top:12px"><span>累计实际</span> ¥ <span id="k-act-1" style="color:var(--fg)"></span> <span>÷ 累计目标</span> ¥ <span id="k-orig-np" style="color:var(--fg)"></span></div>
+            <div class="kpi-sub"><span>口径：年初至最近导入月实际净利润合计 ÷ 同期目标净利润合计；同期目标合计 ≤ 0 时显示「—」</span></div>
+          </div>
+          <div class="card fade-in">
+            <div class="kpi-label">累计净利润达成率 · 按最新调整后目标</div>
+            <div class="kpi-row">
+              <div class="kpi-value" id="k-adj-rate">—</div>
+              <span class="badge" id="k-adj-badge">V2 2027Q2 目标调整（2027-04-08 生效）</span>
+            </div>
+            <div class="attain attain-lg" id="k-adj-bar" role="img"></div>
+            <div class="kpi-sub" style="margin-top:12px"><span>累计实际</span> ¥ <span id="k-act-2" style="color:var(--fg)"></span> <span>÷ 累计目标</span> ¥ <span id="k-adj-np" style="color:var(--fg)"></span></div>
+            <div class="kpi-sub"><span>口径：年初至最近导入月实际净利润合计 ÷ 同期目标净利润合计；同期目标合计 ≤ 0 时显示「—」</span></div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="t-np">
+          <div class="section-head">
+            <h2 class="section-title" id="t-np">净利润按月构成</h2>
+            <div class="meta">达成条刻度线 = 100%（累计对累计）</div>
+          </div>
+          <div class="table-wrap">
+            <table class="table" id="tbl-np">
+              <thead>
+                <tr>
+                  <th>月份</th>
+                  <th class="num">年初原始目标净利润</th>
+                  <th class="num">最新调整后目标净利润</th>
+                  <th class="num">实际净利润</th>
+                  <th class="num">达成率（原始）</th>
+                  <th class="num">达成率（调整后）</th>
+                  <th>达成条（调整后）</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="t-growth">
+          <div class="section-head">
+            <h2 class="section-title" id="t-growth">部门费用增速 vs 收入增速</h2>
+            <div class="meta">2027-01 至 2027-04 对比 2026-01 至 2026-04 金蝶实际</div>
+          </div>
+          <div id="growth-ok">
+            <div class="growth-cmp" style="margin-bottom:16px">
+              <div class="card">
+                <div class="kpi-label">收入合计增速</div>
+                <div class="kpi-value" id="g-rev">—</div>
+              </div>
+              <div class="card">
+                <div class="kpi-label">部门费用合计增速</div>
+                <div class="kpi-value" id="g-exp">—</div>
+              </div>
+              <div class="card">
+                <div class="kpi-label">部门费用增速 − 收入增速</div>
+                <div class="kpi-value" id="g-gap">—</div>
+                <div class="note" id="g-gap-note"></div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>项目</th><th class="num">2026-01 至 2026-04 实际</th><th class="num">2027-01 至 2027-04 实际</th><th class="num">增额</th><th class="num">增速</th><th>明细</th></tr>
+                </thead>
+                <tbody id="tbl-growth"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card state" id="growth-missing" hidden>
+            <div class="state-title">上年同期实际未导入，暂不计算增速</div>
+            <div>需要 2026-01 至 2026-04 的金蝶实际。由财务BP在实际数导入中做历史导入后自动显示。</div>
+            <div style="margin-top:16px" id="growth-missing-act"><a class="btn" href="PAGE-F09-01.html">去做历史导入</a></div>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="t-acc">
+          <div class="section-head">
+            <h2 class="section-title" id="t-acc">季度预测准确度</h2>
+            <div class="meta">|快照预测净利润率 − 实际净利润率|，大于 1.5 个百分点标红</div>
+          </div>
+          <div class="two-col">
+            <div class="table-wrap">
+              <table class="table">
+                <thead>
+                  <tr><th>月份</th><th>所属季度快照</th><th class="num">快照预测净利润率</th><th class="num">实际净利润率</th><th class="num">偏差（百分点）</th><th>判定</th></tr>
+                </thead>
+                <tbody id="tbl-acc"></tbody>
+              </table>
+              <div class="note" style="padding:0 10px 8px">Q1 快照以年初原始目标发布；Q2 快照为 2027Q2 滚动预测。净利润率 = 净利润 ÷ 人民币收入。</div>
+            </div>
+            <div class="card chart-card">
+              <div class="kpi-label" style="margin-bottom:8px">各月偏差（百分点）</div>
+              <svg id="acc-chart" viewBox="0 0 320 180" role="img" aria-label="各月净利润率预测偏差柱状图"></svg>
+            </div>
+          </div>
+        </section>
+
+        <div class="link-row">
+          <a href="PAGE-F10-02.html">查看渠道×站点偏差</a>
+          <a href="PAGE-F10-04.html">查看部门费用报告</a>
+          <a href="PAGE-F08-01.html">查看预算版本</a>
+        </div>
+      </div>
+
+      <!-- 空态 -->
+      <div class="card state" id="st-empty" hidden>
+        <div class="state-title">2027 年还没有导入金蝶实际</div>
+        <div>导入第一个月的金蝶实际后，这里显示净利润达成率、增速对比和预测准确度。</div>
+        <div style="margin-top:16px" id="empty-act"><a class="btn btn-primary" href="PAGE-F09-01.html">去导入实际数</a></div>
+      </div>
+      <!-- 加载态 -->
+      <div id="st-loading" hidden aria-busy="true">
+        <div class="grid-kpi">
+          <div class="card skeleton-row"><div class="skeleton" style="width:40%"></div><div class="skeleton" style="height:28px;width:30%"></div><div class="skeleton"></div></div>
+          <div class="card skeleton-row"><div class="skeleton" style="width:40%"></div><div class="skeleton" style="height:28px;width:30%"></div><div class="skeleton"></div></div>
+        </div>
+        <div class="table-wrap skeleton-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+      </div>
+      <!-- 错误态 -->
+      <div class="card state" id="st-error" hidden role="alert">
+        <div class="state-title">公司汇总加载失败</div>
+        <div>服务器未返回数据，可能是网络中断。数据未受影响，请重试。</div>
+        <div style="margin-top:16px"><button class="btn" type="button" id="btn-retry">重试</button></div>
+      </div>
+      <!-- 无权限 -->
+      <div class="card state" id="st-denied" hidden>
+        <div class="state-title">无权限</div>
+        <div>公司汇总包含全公司数据，只对 CEO、财务负责人和财务BP 开放。如需查看请联系财务负责人。</div>
+        <div style="margin-top:16px"><a class="btn" href="PAGE-F00-01.html">返回工作台</a></div>
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-host" aria-live="polite"></div>
+
+<script>
+  // 样例数据（人民币元）。V1 年初原始目标；V2 为 2027Q2 目标调整（只改 4–12 月）。
+  var MONTHS = [
+    { m: '2027-01', origRev: 27200000.00, origNp: 1360000.00, adjNp: 1360000.00, rev: 27856420.35, np: 1448533.86, snap: 'Q1 快照 · 2027-01-04', fRate: 5.0 },
+    { m: '2027-02', origRev: 23800000.00, origNp: 1094800.00, adjNp: 1094800.00, rev: 22964180.20, np: 757817.95, snap: 'Q1 快照 · 2027-01-04', fRate: 4.6 },
+    { m: '2027-03', origRev: 28600000.00, origNp: 1544400.00, adjNp: 1544400.00, rev: 29312760.88, np: 1817391.17, snap: 'Q1 快照 · 2027-01-04', fRate: 5.4 },
+    { m: '2027-04', origRev: 29400000.00, origNp: 1646400.00, adjNp: 1425000.00, rev: 26905334.12, np: 941686.69, snap: 'Q2 快照 · 2027-04-10', fRate: 5.3 }
+  ];
+  var PENDING = [
+    { m: '2027-05', snap: 'Q2 快照 · 2027-04-10', fRate: 5.6 },
+    { m: '2027-06', snap: 'Q2 快照 · 2027-04-10', fRate: 5.9 }
+  ];
+  // 部门费用 1–4 月累计实际与 PAGE-F10-04 合计一致
+  var LY = { rev: 95618230.40, exp: 14762410.56 };
+  var TY = { exp: 17119036.83 };
+  var THRESHOLD = 1.5;
+
+  function fmt(n) { return (n < 0 ? '−' : '') + Math.abs(n).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function pct(n) { return n.toFixed(1) + '%'; }
+  // AC-F10-08：目标合计 ≤ 0 时不计算，显示「—」
+  function ach(act, tgt) { return tgt > 0 ? act / tgt * 100 : null; }
+  function rateTd(v) { return v === null ? '<td class="num" style="color:var(--muted)">—</td>' : '<td class="num ' + (v < 100 ? 'bad' : 'good') + '">' + pct(v) + '</td>'; }
+  function signPct(n) { return (n > 0 ? '+' : n < 0 ? '−' : '') + Math.abs(n).toFixed(1) + '%'; }
+  // 达成条：0–120% 映射到条宽；收入类规则（低于刻度 10 个百分点琥珀，低于 70% 红）
+  function attain(el, ratio, tick) {
+    var w = Math.min(ratio, 120) / 120 * 100;
+    var cls = ratio < 70 ? 'is-bad' : ratio < tick - 10 ? 'is-warn' : '';
+    el.className = el.className.replace(/\s?is-(good|warn|bad)/g, '') + (cls ? ' ' + cls : '');
+    el.innerHTML = '<span class="fill" style="width:' + w + '%"></span><span class="tick" style="left:calc(' + (tick / 120 * 100) + '% - 1px)"></span>';
+    el.setAttribute('aria-label', '达成 ' + pct(ratio) + '，刻度 ' + pct(tick));
+  }
+  function miniAttain(ratio, tick) { var d = document.createElement('div'); d.className = 'attain'; attain(d, ratio, tick); return d.outerHTML; }
+
+  function render() {
+    var sOrig = 0, sAdj = 0, sAct = 0, sRev = 0, rows = '';
+    MONTHS.forEach(function (r) {
+      sOrig += r.origNp; sAdj += r.adjNp; sAct += r.np; sRev += r.rev;
+      var ro = ach(r.np, r.origNp), ra = ach(r.np, r.adjNp);
+      rows += '<tr><td>' + r.m + '</td><td class="num">' + fmt(r.origNp) + '</td><td class="num">' + fmt(r.adjNp) + '</td><td class="num">' + fmt(r.np) + '</td>' +
+        rateTd(ro) + rateTd(ra) + '<td>' + (ra === null ? '' : miniAttain(ra, 100)) + '</td></tr>';
+    });
+    var cO = ach(sAct, sOrig), cA = ach(sAct, sAdj);
+    rows += '<tr class="total"><td>1–4 月累计</td><td class="num">' + fmt(sOrig) + '</td><td class="num">' + fmt(sAdj) + '</td><td class="num">' + fmt(sAct) + '</td>' + rateTd(cO) + rateTd(cA) + '<td>' + (cA === null ? '' : miniAttain(cA, 100)) + '</td></tr>';
+    document.querySelector('#tbl-np tbody').innerHTML = rows;
+    document.getElementById('k-orig-rate').textContent = cO === null ? '—' : pct(cO);
+    document.getElementById('k-adj-rate').textContent = cA === null ? '—' : pct(cA);
+    document.getElementById('k-act-1').textContent = fmt(sAct);
+    document.getElementById('k-act-2').textContent = fmt(sAct);
+    document.getElementById('k-orig-np').textContent = fmt(sOrig);
+    document.getElementById('k-adj-np').textContent = fmt(sAdj);
+    if (cO === null) document.getElementById('k-orig-bar').innerHTML = ''; else attain(document.getElementById('k-orig-bar'), cO, 100);
+    if (cA === null) document.getElementById('k-adj-bar').innerHTML = ''; else attain(document.getElementById('k-adj-bar'), cA, 100);
+
+    // AC-F10-09
+    var gRev = (sRev - LY.rev) / LY.rev * 100, gExp = (TY.exp - LY.exp) / LY.exp * 100, gap = gExp - gRev;
+    var gr = document.getElementById('g-rev'), ge = document.getElementById('g-exp'), gg = document.getElementById('g-gap');
+    gr.textContent = signPct(gRev); ge.textContent = signPct(gExp);
+    gg.textContent = (gap > 0 ? '+' : gap < 0 ? '−' : '') + Math.abs(gap).toFixed(1) + ' 个百分点';
+    ge.className = 'kpi-value' + (gExp > gRev ? ' bad' : '');
+    gg.className = 'kpi-value' + (gExp > gRev ? ' bad' : ' good');
+    document.getElementById('g-gap-note').textContent = gExp > gRev ? '部门费用增长快于收入' : '部门费用增长未快于收入';
+    document.getElementById('tbl-growth').innerHTML =
+      '<tr><td>收入合计</td><td class="num">' + fmt(LY.rev) + '</td><td class="num">' + fmt(sRev) + '</td><td class="num">' + fmt(sRev - LY.rev) + '</td><td class="num">' + signPct(gRev) + '</td><td><a href="PAGE-F10-02.html">渠道×站点偏差</a></td></tr>' +
+      '<tr><td>部门费用合计</td><td class="num">' + fmt(LY.exp) + '</td><td class="num">' + fmt(TY.exp) + '</td><td class="num">' + fmt(TY.exp - LY.exp) + '</td><td class="num' + (gExp > gRev ? ' bad' : '') + '">' + signPct(gExp) + '</td><td><a href="PAGE-F10-04.html">部门费用报告</a></td></tr>';
+
+    // AC-F10-10
+    var acc = '', bars = [];
+    MONTHS.forEach(function (r) {
+      var actRate = r.np / r.rev * 100, dev = Math.abs(r.fRate - actRate), bad = dev > THRESHOLD;
+      bars.push({ m: r.m, v: dev, bad: bad });
+      acc += '<tr><td>' + r.m + '</td><td>' + r.snap + '</td><td class="num">' + pct(r.fRate) + '</td><td class="num">' + pct(actRate) + '</td><td class="num' + (bad ? ' bad' : '') + '">' + dev.toFixed(1) + '</td><td>' +
+        (bad ? '<span class="badge badge-bad">超阈值</span>' : '<span class="badge">未超</span>') + '</td></tr>';
+    });
+    PENDING.forEach(function (r) {
+      acc += '<tr><td>' + r.m + '</td><td>' + r.snap + '</td><td class="num">' + pct(r.fRate) + '</td><td class="num" style="color:var(--muted)">实际未导入</td><td class="num" style="color:var(--muted)">—</td><td><span class="badge">待金蝶实际</span></td></tr>';
+    });
+    document.getElementById('tbl-acc').innerHTML = acc;
+    drawChart(bars);
+  }
+
+  // 柱状图：同一比例尺 0–2.5 个百分点
+  function drawChart(bars) {
+    var W = 320, H = 180, L = 32, R = 8, T = 12, B = 28, max = 2.5;
+    var y = function (v) { return T + (H - T - B) * (1 - v / max); };
+    var s = '';
+    [0, 0.5, 1, 1.5, 2, 2.5].forEach(function (v) {
+      s += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>';
+      s += '<text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + v.toFixed(1) + '</text>';
+    });
+    var bw = (W - L - R) / bars.length;
+    bars.forEach(function (b, i) {
+      var x = L + i * bw + bw * 0.25, w = bw * 0.5;
+      s += '<rect class="bar' + (b.bad ? ' is-bad' : '') + '" x="' + x + '" y="' + y(b.v) + '" width="' + w + '" height="' + (y(0) - y(b.v)) + '"/>';
+      s += '<text class="val" x="' + (x + w / 2) + '" y="' + (y(b.v) - 4) + '" text-anchor="middle">' + b.v.toFixed(1) + '</text>';
+      s += '<text x="' + (x + w / 2) + '" y="' + (H - 10) + '" text-anchor="middle">' + b.m.slice(5) + ' 月</text>';
+    });
+    s += '<line class="threshold" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(THRESHOLD) + '" y2="' + y(THRESHOLD) + '"/>';
+    s += '<text class="thr" x="' + (L + 4) + '" y="' + (y(THRESHOLD) - 4) + '" text-anchor="start">阈值 1.5</text>';
+    s += '<line class="axis" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(0) + '" y2="' + y(0) + '"/>';
+    document.getElementById('acc-chart').innerHTML = s;
+  }
+
+  // 原型状态与视角切换
+  var states = ['normal', 'empty', 'loading', 'error', 'denied'];
+  function setState(st) {
+    states.forEach(function (k) { document.getElementById('st-' + k).hidden = k !== st; });
+    document.querySelectorAll('[data-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.state === st); });
+    document.getElementById('btn-export').disabled = st !== 'normal';
+  }
+  document.querySelectorAll('[data-state]').forEach(function (b) { b.addEventListener('click', function () { setState(b.dataset.state); }); });
+  document.getElementById('btn-retry').addEventListener('click', function () { setState('loading'); setTimeout(function () { setState('normal'); }, 800); });
+  document.querySelectorAll('[data-view]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.querySelectorAll('[data-view]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      document.getElementById('who').textContent = b.dataset.view;
+      // 只有财务BP能导入实际数，空态与缺上年数据时的操作按钮只对其显示
+      var isBP = b.dataset.view.indexOf('财务BP') > -1;
+      document.getElementById('empty-act').hidden = !isBP;
+      document.getElementById('growth-missing-act').hidden = !isBP;
+    });
+  });
+  document.getElementById('empty-act').hidden = true;
+  document.getElementById('growth-missing-act').hidden = true;
+  document.getElementById('toggle-ly').addEventListener('click', function () {
+    var on = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', on); this.textContent = on ? '已导入' : '未导入';
+    document.getElementById('growth-ok').hidden = !on;
+    document.getElementById('growth-missing').hidden = on;
+  });
+
+  // 导出（AC-F14-01）：列与页面一致，公司汇总只对全公司范围角色开放
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.getElementById('toast-host').appendChild(t); setTimeout(function () { t.remove(); }, 3000);
+  }
+  document.getElementById('btn-export').addEventListener('click', function () {
+    var btn = this, label = btn.querySelector('span'); btn.disabled = true; label.textContent = '正在导出…';
+    setTimeout(function () { btn.disabled = false; label.textContent = '导出 Excel'; toast('已导出 公司汇总_截至2027-04.xlsx（3 个工作表：净利润、增速对比、预测准确度）'); }, 900);
+  });
+
+  render();
+</script>
+</body>
+</html>

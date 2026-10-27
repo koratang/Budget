@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F02-02">
+  <title>SKU 对照表 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); color: var(--fg); background: var(--bg); }
+    .drawer-mask, .drawer { z-index: 10; }
+    .modal-backdrop { z-index: 20; }
+    .toast { z-index: 30; }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-4); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .topbar nav { color: var(--muted); font-size: var(--text-sm); }
+    .topbar a { color: var(--fg-2); }
+    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-2); }
+    .page-head .page-title { margin: 0; }
+    .meta { color: var(--muted); font-size: var(--text-sm); }
+    .summary { display: flex; gap: var(--space-6); margin-bottom: var(--space-4); }
+    .summary .num { font-variant-numeric: tabular-nums; color: var(--fg); font-weight: 600; }
+    .rule { display: flex; gap: var(--space-4); align-items: center; padding: var(--space-3) var(--space-4); margin-bottom: var(--space-3); }
+    .rule strong { font-size: var(--text-sm); }
+    .rule .meta { font-variant-numeric: tabular-nums; }
+    .filters { display: flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-3); }
+    .filters .input { width: 220px; }
+    .filters label { font-size: var(--text-sm); color: var(--fg-2); }
+    .code { font-family: var(--font-mono); letter-spacing: 0.02em; }
+    .table td.date { font-variant-numeric: tabular-nums; }
+    .pager { display: flex; justify-content: space-between; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .modal { width: 560px; }
+    .modal h3 { margin: 0 0 var(--space-3); font-size: var(--text-lg); }
+    .modal p { margin: 0 0 var(--space-3); color: var(--fg-2); font-size: var(--text-sm); }
+    .modal .acts { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-4); }
+    .drop { border: 1px dashed var(--border); border-radius: var(--radius-md); padding: var(--space-6); text-align: center; color: var(--muted); font-size: var(--text-sm); background: var(--surface-warm); }
+    .cols { display: flex; gap: var(--space-2); flex-wrap: wrap; margin: var(--space-2) 0 var(--space-3); }
+    .demo { border: 1px dashed var(--muted); border-radius: var(--radius-md); padding: var(--space-2) var(--space-3); font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-3); display: flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+    .demo .btn { height: 26px; font-size: var(--text-xs); padding: 0 var(--space-3); }
+    .err-title { color: var(--danger); font-weight: 600; margin-bottom: var(--space-2); }
+    .ok-title { color: var(--success); font-weight: 600; margin-bottom: var(--space-2); }
+    .err-list { max-height: 200px; overflow: auto; border: 1px solid var(--border-soft); border-radius: var(--radius-md); }
+    .err-list .table td { height: 28px; }
+    .badge-new { color: var(--fg); font-weight: 600; border: 1px solid var(--border); background: var(--surface); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html" aria-current="page">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">基础数据 / SKU 对照表</nav>
+      <div>当前用户：<span id="cur-user">陈思雨（财务BP）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型状态切换">
+        <strong>原型说明，非产品功能：</strong>
+        <span>视角</span>
+        <button class="btn" data-role="bp" aria-pressed="true">财务BP</button>
+        <button class="btn" data-role="ro" aria-pressed="false">CEO / 财务负责人（只读）</button>
+        <span>状态</span>
+        <button class="btn" data-proto-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-proto-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-proto-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-proto-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-proto-state="noperm" aria-pressed="false">无权限</button>
+      </div>
+
+      <div class="page-head">
+        <h1 class="page-title">SKU 对照表</h1>
+        <button class="btn btn-primary" id="open-up" data-upload>上传对照表</button>
+      </div>
+
+      <div data-view="normal">
+        <div class="summary meta">
+          <span>当前对照表：<span class="num">1,286</span> 个 SKU · <span class="num">412</span> 个 SPU · 4 个品类</span>
+          <span>最近上传：2027-04-28 16:05 · 陈思雨 · SKU对照表_2027-04.xlsx</span>
+        </div>
+
+        <div class="card rule">
+          <label for="month"><strong>判定月份</strong></label>
+          <input class="input" type="month" id="month" value="2027-05" min="2025-01" max="2028-12">
+          <span class="meta" id="rule-text"></span>
+        </div>
+
+        <div class="filters">
+          <input class="input" type="search" id="q" placeholder="搜索 SKU 或 SPU 编码" aria-label="搜索 SKU 或 SPU 编码">
+          <select class="select" id="f-cat" aria-label="品类"><option value="">全部品类</option><option>框镜</option><option>灯镜</option><option>镜柜</option><option>浴室门</option></select>
+          <select class="select" id="f-new" aria-label="新老品"><option value="">新品与老品</option><option value="新品">只看新品</option><option value="老品">只看老品</option></select>
+          <span class="meta" id="stat" style="margin-left:auto"></span>
+        </div>
+
+        <div class="table-wrap">
+          <table class="table" aria-label="SKU 对照表与新老品判定">
+            <thead><tr><th>SKU</th><th>SPU 编码</th><th>品类</th><th class="num">SKU 首次上架日期</th><th class="num">SPU 首次上架日期（取最早 SKU）</th><th class="num">新品期截止（SPU 首次上架 + 12 个月）</th><th id="th-month">2027-05 判定</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="pager"><span>显示第 1–12 条，共 1,286 条</span><span>第 1 / 26 页 · 每页 50 条</span></div>
+      </div>
+
+      <div data-view="empty" hidden>
+        <div class="table-wrap"><div class="state">
+          <div class="state-title">还没有 SKU 对照表</div>
+          <p>上传包含 SKU、SPU 编码、品类、首次上架日期四列的 Excel 后，BI 数据才能归集到品类和新老品。</p>
+          <button class="btn" data-upload>上传对照表</button>
+        </div></div>
+      </div>
+
+      <div data-view="loading" hidden aria-busy="true">
+        <div class="table-wrap" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:30%"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px;width:70%"></div>
+        </div>
+      </div>
+
+      <div data-view="error" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">SKU 对照表加载失败</div>
+          <p>网络异常或服务暂时不可用，请重试。</p>
+          <button class="btn" data-goto="normal">重试</button>
+        </div></div>
+      </div>
+
+      <div data-view="noperm" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">无权限</div>
+          <p>SKU 对照表由财务BP 维护。</p>
+          <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+        </div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 上传弹窗 -->
+<div class="modal-backdrop" id="up" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="up-title">
+    <h3 id="up-title">上传 SKU 对照表</h3>
+
+    <div id="up-pick">
+      <p>整表上传 Excel（.xlsx），按 SKU 新增或更新，文件中未出现的 SKU 保留不删除。必须包含以下四列；任一行缺字段、日期格式错误、SKU 重复、品类不在清单（框镜、灯镜、镜柜、浴室门）或同一 SPU 下 SKU 品类不一致时，整份文件不写入：</p>
+      <div class="cols"><span class="badge">SKU</span><span class="badge">SPU 编码</span><span class="badge">品类</span><span class="badge">首次上架日期（YYYY-MM-DD）</span></div>
+      <label class="drop" for="file">点击选择文件，或将文件拖到这里<input type="file" id="file" accept=".xlsx" hidden></label>
+      <div class="demo"><span>原型说明，非产品功能：模拟上传</span><button class="btn" data-demo="bad">SKU对照表_2027-05.xlsx（含问题行）</button><button class="btn" data-demo="ok">SKU对照表_2027-05.xlsx（校验通过）</button></div>
+    </div>
+
+    <div id="up-checking" hidden aria-live="polite">
+      <p>正在校验 SKU对照表_2027-05.xlsx …</p>
+      <div class="skeleton"></div>
+    </div>
+
+    <div id="up-bad" hidden role="alert">
+      <div class="err-title">校验未通过，整份文件未写入（7 行有问题）</div>
+      <p>请在 Excel 中修正后重新上传。当前对照表保持不变。</p>
+      <div class="err-list">
+        <table class="table">
+          <thead><tr><th class="num">行号</th><th>SKU</th><th>问题</th></tr></thead>
+          <tbody>
+            <tr><td class="num">18</td><td class="code">FM-2416-WH</td><td>缺少品类</td></tr>
+            <tr><td class="num">203</td><td class="code">LM-4032-LED</td><td>缺少首次上架日期</td></tr>
+            <tr><td class="num">512</td><td class="code">MC-3026-GY</td><td>日期格式错误：2027/13/02，应为 YYYY-MM-DD</td></tr>
+            <tr><td class="num">845</td><td class="code">SD-6076-CL</td><td>SKU 重复：与第 760 行相同</td></tr>
+            <tr><td class="num">977</td><td class="code">—</td><td>缺少 SKU、SPU 编码</td></tr>
+            <tr><td class="num">1120</td><td class="code">BT-1701-WH</td><td>品类不在清单：浴缸</td></tr>
+            <tr><td class="num">1203</td><td class="code">FM-3022-WH</td><td>同一 SPU 品类不一致：SPU-FM-3022 在第 640 行为「框镜」，本行为「灯镜」</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="up-ok" hidden>
+      <div class="ok-title">校验通过：共 1,302 行（新增 16 个 SKU，更新 3 个 SKU）</div>
+      <p>确认写入后，按 SKU 新增或更新对照表；文件中未出现的 SKU 保留不删除。各月新老品判定按新对照表重新计算。</p>
+    </div>
+
+    <div class="acts">
+      <button class="btn" id="up-cancel">取消</button>
+      <button class="btn" id="up-retry" hidden>重新选择文件</button>
+      <button class="btn btn-primary" id="up-confirm" hidden>确认写入</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+  var rows = [
+    ['FM-2416-BK', 'SPU-FM-2416', '框镜', '2025-03-10'],
+    ['FM-2416-GD', 'SPU-FM-2416', '框镜', '2025-03-10'],
+    ['FM-3022-BK', 'SPU-FM-3022', '框镜', '2026-06-15'],
+    ['FM-3022-SV', 'SPU-FM-3022', '框镜', '2026-08-01'],
+    ['LM-3624-LED', 'SPU-LM-3624', '灯镜', '2026-05-20'],
+    ['LM-4032-LED', 'SPU-LM-4032', '灯镜', '2026-11-02'],
+    ['LM-4032-AF', 'SPU-LM-4032', '灯镜', '2026-11-02'],
+    ['MC-2430-WH', 'SPU-MC-2430', '镜柜', '2024-08-01'],
+    ['MC-3026-WH', 'SPU-MC-3026', '镜柜', '2027-01-18'],
+    ['MC-3026-OK', 'SPU-MC-3026', '镜柜', '2027-01-18'],
+    ['SD-6076-CL', 'SPU-SD-6076', '浴室门', '2025-12-05'],
+    ['SD-6080-FR', 'SPU-SD-6080', '浴室门', '2026-09-25']
+  ];
+  function plus12(d) { return (+d.slice(0, 4) + 1) + d.slice(4); }
+  function lastDay(ym) { var y = +ym.slice(0, 4), m = +ym.slice(5); var d = new Date(y, m, 0).getDate(); return ym + '-' + d; }
+  function spuFirst(spu) { return rows.filter(function (r) { return r[1] === spu; }).map(function (r) { return r[3]; }).sort()[0]; }
+  function judge(ym, first) { return lastDay(ym) < plus12(first) ? '新品' : '老品'; }
+
+  function render() {
+    var ym = document.getElementById('month').value || '2027-05';
+    var q = document.getElementById('q').value.trim().toUpperCase(), cat = document.getElementById('f-cat').value, fn = document.getElementById('f-new').value;
+    document.getElementById('th-month').textContent = ym + ' 判定';
+    document.getElementById('rule-text').textContent = '规则：该月最后一天（' + lastDay(ym) + '）早于「首次上架日期 + 12 个月」为新品，否则为老品';
+    var list = rows.filter(function (r) {
+      return (!q || r[0].indexOf(q) >= 0 || r[1].indexOf(q) >= 0) && (!cat || r[2] === cat) && (!fn || judge(ym, spuFirst(r[1])) === fn);
+    });
+    var newSpu = {}, allSpu = {};
+    rows.forEach(function (r) { allSpu[r[1]] = 1; if (judge(ym, spuFirst(r[1])) === '新品') newSpu[r[1]] = 1; });
+    document.getElementById('stat').textContent = '本页样例 ' + ym + '：新品 SPU ' + Object.keys(newSpu).length + ' 个 / 共 ' + Object.keys(allSpu).length + ' 个';
+    document.getElementById('rows').innerHTML = list.length ? list.map(function (r) {
+      var f = spuFirst(r[1]), j = judge(ym, f);
+      return '<tr><td class="code">' + r[0] + '</td><td class="code">' + r[1] + '</td><td>' + r[2] + '</td><td class="num date">' + r[3] + '</td><td class="num date">' + f + '</td><td class="num date">' + plus12(f) + '</td><td>' + (j === '新品' ? '<span class="badge badge-new">新品</span>' : '<span class="badge">老品</span>') + '</td></tr>';
+    }).join('') : '<tr><td colspan="7"><div class="state" style="padding:var(--space-8)"><div class="state-title">没有符合条件的 SKU</div><p>调整筛选条件后再试。</p></div></td></tr>';
+  }
+
+  var up = document.getElementById('up');
+  function step(id) { ['up-pick', 'up-checking', 'up-bad', 'up-ok'].forEach(function (x) { document.getElementById(x).hidden = x !== id; }); document.getElementById('up-retry').hidden = id !== 'up-bad'; document.getElementById('up-confirm').hidden = id !== 'up-ok'; }
+  function openUp() { step('up-pick'); up.hidden = false; up.querySelector('.drop').focus(); }
+  document.querySelectorAll('[data-upload]').forEach(function (b) { b.addEventListener('click', openUp); });
+  function check(result) { step('up-checking'); setTimeout(function () { step(result === 'ok' ? 'up-ok' : 'up-bad'); }, 700); }
+  document.querySelectorAll('[data-demo]').forEach(function (b) { b.addEventListener('click', function () { check(b.dataset.demo); }); });
+  document.getElementById('file').addEventListener('change', function () { if (this.files.length) check('ok'); });
+  document.getElementById('up-retry').addEventListener('click', function () { step('up-pick'); });
+  document.getElementById('up-cancel').addEventListener('click', function () { up.hidden = true; });
+  document.getElementById('up-confirm').addEventListener('click', function () { up.hidden = true; show('normal'); toast('已写入 SKU 对照表，共 1,302 行'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') up.hidden = true; });
+
+  function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function () { t.hidden = true; }, 3000); }
+  ['month', 'q', 'f-cat', 'f-new'].forEach(function (id) { document.getElementById(id).addEventListener('input', render); });
+
+  function show(state) {
+    document.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.dataset.view !== state; });
+    document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.protoState === state); });
+    document.getElementById('open-up').style.visibility = state === 'normal' && role === 'bp' ? 'visible' : 'hidden';
+  }
+  var role = 'bp';
+  function setRole(r) {
+    role = r;
+    document.getElementById('cur-user').textContent = r === 'bp' ? '陈思雨（财务BP）' : '林晓（财务负责人）';
+    document.querySelectorAll('[data-role]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.role === r); });
+    show('normal');
+  }
+  document.querySelectorAll('[data-role]').forEach(function (b) { b.addEventListener('click', function () { setRole(b.dataset.role); }); });
+  document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.protoState); }); });
+  document.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.goto); }); });
+  render();
+</script>
+</body>
+</html>

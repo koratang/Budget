@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F07-01">
+  <title>待我审批</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    .app > div { min-width: 0; }
+    .sidebar { position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .brand { font-weight: 600; padding: var(--space-2) var(--space-3) var(--space-3); }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar nav a, .topbar .who a, .link { color: var(--fg-2); text-decoration: underline; text-underline-offset: 2px; border-radius: var(--radius-sm); transition: color var(--motion-fast) var(--ease-standard); }
+    .topbar nav a:hover, .topbar .who a:hover, .link:hover { color: var(--fg); }
+    .topbar nav a:active, .topbar .who a:active, .link:active { color: var(--muted); }
+    .topbar nav a:focus-visible, .topbar .who a:focus-visible, .link:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .topbar .who { font-size: var(--text-sm); color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-1); }
+    .btn-xs { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .btn-sm { height: 28px; padding: 0 var(--space-3); }
+    .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .spacer { flex: 1; }
+    .section { margin-bottom: var(--section-y-desktop); }
+    .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); line-height: var(--leading-tight); }
+    .muted { color: var(--muted); }
+    .small { font-size: var(--text-xs); }
+    .num { font-variant-numeric: tabular-nums; }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .field { margin-bottom: var(--space-4); }
+    .field > label, .field > .label { display: block; font-size: var(--text-sm); color: var(--fg-2); margin-bottom: var(--space-1); }
+    .req::after { content: " *"; color: var(--danger); }
+    textarea.input { width: 100%; height: auto; min-height: 88px; padding: var(--space-2) var(--space-3); font-family: inherit; line-height: var(--leading-body); resize: vertical; box-sizing: border-box; }
+    .modal-backdrop { z-index: 20; }
+    .modal-backdrop[hidden] { display: none; }
+    .modal h2 { font-size: var(--text-lg); margin: 0 0 var(--space-3); }
+    .modal-wide { width: 640px; }
+    .modal-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-5); }
+    .notice { border-left: 3px solid var(--border); background: var(--surface-warm); padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); color: var(--fg-2); }
+    .notice.bad { border-left-color: var(--danger); }
+    .notice.warn { border-left-color: var(--warn); }
+    .notice.good { border-left-color: var(--success); }
+    .table td.wrap { white-space: normal; min-width: 220px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table td.w-n { white-space: normal; min-width: 96px; line-height: var(--leading-tight); padding-top: var(--space-2); padding-bottom: var(--space-2); }
+    .table tr.is-bad td { background: color-mix(in oklab, var(--danger), white 94%); }
+    .table tr.is-bad:hover td { background: color-mix(in oklab, var(--danger), white 90%); }
+    .chain { display: flex; gap: 0; list-style: none; padding: 0; margin: 0; }
+    .chain li { flex: 1; position: relative; padding: 0 var(--space-3) 0 var(--space-6); font-size: var(--text-sm); }
+    .chain li::before { content: ""; position: absolute; left: var(--space-1); top: 5px; width: 10px; height: 10px; border-radius: var(--radius-pill); background: var(--border); }
+    .chain li.done::before { background: var(--success); }
+    .chain li.now::before { background: var(--warn); }
+    .chain li.back::before { background: var(--danger); }
+    .chain .who { color: var(--fg); font-weight: 600; }
+    .chain .when { color: var(--muted); font-size: var(--text-xs); }
+    .kv { display: grid; grid-template-columns: 120px 1fr; gap: var(--space-2) var(--space-4); font-size: var(--text-sm); margin: 0; }
+    .kv dt { color: var(--muted); }
+    .kv dd { margin: 0; color: var(--fg); }
+    .skel-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: var(--space-4); padding: var(--space-3) var(--space-4); border-bottom: 1px solid var(--border-soft); }
+    .pager { display: flex; justify-content: space-between; align-items: center; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    [hidden] { display: none !important; }
+    .type-col { width: 132px; }
+    .count { display: inline-flex; min-width: 20px; justify-content: center; margin-left: var(--space-1); font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="主导航">
+      <div class="brand">预算管理平台</div>
+      <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+      <div class="nav-group">预算编制</div>
+      <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+      <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+      <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+      <a class="nav-item" href="PAGE-F07-01.html" aria-current="page">待我审批</a>
+      <div class="nav-group">预算版本</div>
+      <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+      <div class="nav-group">实际数</div>
+      <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+      <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+      <div class="nav-group">报表</div>
+      <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+      <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+      <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+      <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+      <div class="nav-group">预警与规则</div>
+      <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+      <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+      <div class="nav-group">基础数据</div>
+      <a class="nav-item" href="PAGE-F02-01.html">渠道与店铺</a>
+      <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+      <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+      <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+      <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+      <div class="nav-group">系统设置</div>
+      <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+    </aside>
+    <div>
+      <header class="topbar">
+        <nav aria-label="面包屑"><a href="PAGE-F00-01.html">工作台</a> / 预算编制 / 待我审批</nav>
+        <div class="who">当前用户：<span id="who-name">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+      </header>
+      <main class="main">
+        <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+          <strong>原型说明，非产品功能</strong>
+          <span>页面状态：</span>
+          <span id="proto-states" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-set-state="normal" aria-pressed="true">正常</button>
+            <button class="btn btn-xs" type="button" data-set-state="empty" aria-pressed="false">空</button>
+            <button class="btn btn-xs" type="button" data-set-state="loading" aria-pressed="false">加载</button>
+            <button class="btn btn-xs" type="button" data-set-state="error" aria-pressed="false">错误</button>
+            <button class="btn btn-xs" type="button" data-set-state="noperm" aria-pressed="false">无权限</button>
+          </span>
+          <span class="sep" aria-hidden="true"></span>
+          <span>查看视角：</span>
+          <span id="proto-role" class="row" style="gap: var(--space-1)">
+            <button class="btn btn-xs" type="button" data-role="fin" aria-pressed="true">林晓（财务负责人）</button>
+            <button class="btn btn-xs" type="button" data-role="dept" aria-pressed="false">赵磊（运营部负责人）</button>
+            <button class="btn btn-xs" type="button" data-role="ceo" aria-pressed="false">周明远（CEO）</button>
+          </span>
+        </div>
+        <h1 class="page-title">待我审批</h1>
+        <div data-state="normal">
+          <div class="row section" style="margin-bottom: var(--space-3)">
+            <div class="tabs" role="tablist" style="margin-bottom: 0">
+              <a class="tab" href="#" role="tab" id="tab-todo" aria-selected="true">待处理<span class="count" id="cnt-todo">4</span></a>
+              <a class="tab" href="#" role="tab" id="tab-done" aria-selected="false">已处理<span class="count" id="cnt-done">3</span></a>
+            </div>
+            <span class="spacer"></span>
+            <label class="small muted" for="f-type">类型</label>
+            <select class="select" id="f-type">
+              <option value="">全部类型</option>
+              <option value="预算编制">预算编制</option>
+              <option value="目标调整">目标调整</option>
+              <option value="规则审批">规则审批</option>
+            </select>
+          </div>
+          <p class="small muted" style="margin: 0 0 var(--space-3)">新的待审批事项会同时发送钉钉工作通知；点击「审批」进入只读详情页后通过或退回。</p>
+          <div class="table-wrap">
+            <table class="table" aria-describedby="tab-todo">
+              <thead>
+                <tr><th class="type-col">类型</th><th>审批事项</th><th>提交人</th><th>当前环节</th><th>提交时间</th><th id="th-result">停留</th><th>操作</th></tr>
+              </thead>
+              <tbody id="rows"></tbody>
+            </table>
+            <div class="state" id="filter-empty" hidden>
+              <div class="state-title">没有符合筛选条件的事项</div>
+              <p>换一个类型，或查看全部类型。</p>
+            </div>
+          </div>
+          <div class="pager"><span id="pager-text">共 3 条</span><span>每页 50 条</span></div>
+        </div>
+        <div data-state="empty" hidden>
+          <div class="card state">
+            <div class="state-title">当前没有待你审批的事项</div>
+            <p>填报单位提交、目标调整提交或规则提交后会出现在这里，同时发送钉钉工作通知。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click(); document.getElementById('tab-done').click();">查看已处理</button>
+          </div>
+        </div>
+        <div data-state="loading" hidden aria-busy="true">
+          <p class="muted small">正在加载…</p>
+          <div class="table-wrap">
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+            <div class="skel-row"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+          </div>
+        </div>
+        <div data-state="error" hidden>
+          <div class="card state" role="alert">
+            <div class="state-title">数据加载失败</div>
+            <p>服务器暂时无法返回数据，已录入的内容不受影响。请稍后重试；多次失败请联系信息数字化部。</p>
+            <button class="btn" type="button" onclick="document.querySelector('[data-set-state=normal]').click()">重试</button>
+          </div>
+        </div>
+        <div data-state="noperm" hidden>
+          <div class="card state">
+            <div class="state-title">你没有访问该页面的权限</div>
+            <p>待我审批只对部门负责人、财务负责人和 CEO 开放。如需审核职责，请联系财务负责人在「角色与权限」中分配。</p>
+            <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+          </div>
+        </div>
+
+      </main>
+    </div>
+  </div>
+  <script>
+  (function () {
+    var bar = document.getElementById('proto-states');
+    if (bar) bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-set-state]');
+      if (!b) return;
+      bar.querySelectorAll('[data-set-state]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+      document.querySelectorAll('[data-state]').forEach(function (s) { s.hidden = s.getAttribute('data-state') !== b.getAttribute('data-set-state'); });
+    });
+  })();
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 3000);
+  }
+  function openModal(id) { var m = document.getElementById(id); m.hidden = false; var f = m.querySelector('textarea, input, select, button'); if (f) f.focus(); }
+  function closeModal(id) { document.getElementById(id).hidden = true; }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') document.querySelectorAll('.modal-backdrop:not([hidden])').forEach(function (m) { m.hidden = true; });
+  });
+  document.addEventListener('click', function (e) {
+    var c = e.target.closest('[data-close]');
+    if (c) closeModal(c.getAttribute('data-close'));
+  });
+  function fmt(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n < 0 ? '−' : '') + '¥ ' + s; }
+  function fmtSigned(n) { var s = Math.abs(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ','); return (n > 0 ? '+' : n < 0 ? '−' : '') + '¥ ' + s; }
+  var DATA = {
+    fin: {
+      who: '林晓（财务负责人）',
+      todo: [
+        ['目标调整', '2027 Q2 目标调整 · Amazon-US-01', '王浩', '财务负责人审核（部门负责人赵磊已通过）', '2027-05-08 16:20', '4 天', 'PAGE-F07-02.html#adjust'],
+        ['目标调整', '2027 Q2 目标调整 · 美国业务部（Ferguson、Menards）', '孙婷', '财务负责人审核（部门负责人已通过）', '2027-05-09 10:05', '3 天', 'PAGE-F07-02.html#adjust'],
+        ['规则审批', '额度标准：部门差旅费人均月度额度 2,500 元（v1）', '陈思雨', '财务负责人审批，之后需 CEO 审批', '2027-05-10 14:32', '2 天', 'PAGE-F07-02.html#rule'],
+        ['规则审批', '预警规则：部门费用额度使用率超出时间进度 10 个百分点以上（v2）', '陈思雨', '财务负责人审批', '2027-05-10 11:05', '2 天', 'PAGE-F07-02.html#rule']
+      ],
+      done: [
+        ['目标调整', '2027 Q2 目标调整 · 物流物控部（物流比例）', '何建国', '已通过', '2027-05-11 09:40', '', 'PAGE-F07-02.html#adjust'],
+        ['规则审批', '额度标准：市场部单场展会费上限 300,000.00 元（v1）', '陈思雨', '已通过，转 CEO 审批', '2027-05-06 17:12', '', 'PAGE-F07-02.html#rule'],
+        ['预算编制', '2027 年度预算 · 财务部（成本比例与公司层其他损益）', '陈思雨', '已通过', '2026-12-24 11:30', '', 'PAGE-F07-02.html#unit']
+      ]
+    },
+    dept: {
+      who: '赵磊（运营部负责人）',
+      todo: [
+        ['目标调整', '2027 Q2 目标调整 · Amazon-CA-01', '王浩', '部门负责人审核', '2027-05-11 18:02', '1 天', 'PAGE-F07-02.html#adjust']
+      ],
+      done: [
+        ['目标调整', '2027 Q2 目标调整 · Amazon-US-01', '王浩', '已通过', '2027-05-09 09:15', '', 'PAGE-F07-02.html#adjust'],
+        ['预算编制', '2027 年度预算 · Amazon-US-01', '王浩', '已通过', '2026-12-18 15:46', '', 'PAGE-F07-02.html#unit'],
+        ['预算编制', '2027 年度预算 · Amazon-DE-01', '王浩', '已退回：Amazon-DE-01 11 月单 SPU 平均销量 420 件明显高于近两年同月 260–290 件，请核实后重填', '2026-12-15 10:22', '', 'PAGE-F07-02.html#unit']
+      ]
+    },
+    ceo: {
+      who: '周明远（CEO）',
+      todo: [
+        ['规则审批', '额度标准：市场部单场展会费上限 300,000.00 元（v1）', '陈思雨', 'CEO 审批（财务负责人林晓已通过）', '2027-05-06 17:12', '6 天', 'PAGE-F07-02.html#rule']
+      ],
+      done: [
+        ['目标调整', '2027 Q1 目标调整（全公司）', '林晓', '已通过，生成调整后目标 V2', '2027-03-26 16:05', '', 'PAGE-F08-01.html'],
+        ['预算编制', '2027 年度全公司预算', '林晓', '已通过，锁定为年初原始目标 V1', '2026-12-28 17:30', '', 'PAGE-F07-02.html#company']
+      ]
+    }
+  };
+  var role = 'fin', tab = 'todo';
+  function badge(t) { return '<span class="badge">' + t + '</span>'; }
+  function render() {
+    var d = DATA[role], list = d[tab], type = document.getElementById('f-type').value;
+    document.getElementById('who-name').textContent = d.who;
+    document.getElementById('cnt-todo').textContent = d.todo.length;
+    document.getElementById('cnt-done').textContent = d.done.length;
+    document.getElementById('th-result').textContent = tab === 'todo' ? '已等待' : '';
+    var rows = list.filter(function (r) { return !type || r[0] === type; });
+    document.getElementById('rows').innerHTML = rows.map(function (r) {
+      var status = tab === 'todo' ? r[3] : (r[3].indexOf('已退回') === 0 ? '<span class="badge badge-bad">已退回</span> <span class="small muted">' + r[3].slice(4) + '</span>' : '<span class="badge badge-good">' + r[3].split('，')[0] + '</span>' + (r[3].indexOf('，') > 0 ? ' <span class="small muted">' + r[3].split('，')[1] + '</span>' : ''));
+      var op = tab === 'todo' ? '<a class="btn btn-sm" href="' + r[6] + '">审批</a>' : '<a class="link" href="' + r[6] + '">查看</a>';
+      return '<tr><td>' + badge(r[0]) + '</td><td class="wrap">' + r[1] + '</td><td>' + r[2] + '</td><td class="wrap">' + status + '</td><td class="num">' + r[4] + '</td><td class="num">' + r[5] + '</td><td>' + op + '</td></tr>';
+    }).join('');
+    document.getElementById('filter-empty').hidden = rows.length > 0;
+    document.getElementById('pager-text').textContent = '共 ' + rows.length + ' 条';
+  }
+  document.getElementById('tab-todo').addEventListener('click', function (e) { e.preventDefault(); tab = 'todo'; this.setAttribute('aria-selected', 'true'); document.getElementById('tab-done').setAttribute('aria-selected', 'false'); render(); });
+  document.getElementById('tab-done').addEventListener('click', function (e) { e.preventDefault(); tab = 'done'; this.setAttribute('aria-selected', 'true'); document.getElementById('tab-todo').setAttribute('aria-selected', 'false'); render(); });
+  document.getElementById('f-type').addEventListener('change', render);
+  document.getElementById('proto-role').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-role]'); if (!b) return;
+    this.querySelectorAll('[data-role]').forEach(function (x) { x.setAttribute('aria-pressed', x === b ? 'true' : 'false'); });
+    role = b.getAttribute('data-role'); render();
+  });
+  render();
+  </script>
+</body>
+</html>

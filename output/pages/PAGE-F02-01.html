@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F02-01">
+  <title>渠道与店铺 · 预算管理平台</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    [hidden] { display: none !important; }
+    body { margin: 0; font-family: var(--font-body); font-size: var(--text-base); line-height: var(--leading-body); color: var(--fg); background: var(--bg); }
+    .drawer-mask, .drawer { z-index: 10; }
+    .modal-backdrop { z-index: 20; }
+    .toast { z-index: 30; }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px dashed var(--muted); border-radius: var(--radius-md); background: var(--surface-warm); font-size: var(--text-xs); color: var(--muted); margin-bottom: var(--space-4); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-3); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); font-weight: 600; }
+    .proto-bar .sep { width: 1px; height: 18px; background: var(--border); margin: 0 var(--space-2); }
+    .topbar nav { color: var(--muted); font-size: var(--text-sm); }
+    .topbar a { color: var(--fg-2); }
+    .page-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+    .page-head .page-title { margin: 0; }
+    .actions { display: flex; gap: var(--space-2); }
+    .filters { display: flex; gap: var(--space-3); align-items: center; margin-bottom: var(--space-3); }
+    .filters label { font-size: var(--text-sm); color: var(--fg-2); display: inline-flex; gap: var(--space-1); align-items: center; }
+    .meta { color: var(--muted); font-size: var(--text-sm); }
+    .code { font-family: var(--font-mono); letter-spacing: 0.02em; }
+    .cur { letter-spacing: 0.06em; }
+    .link-btn { background: none; border: 0; padding: 0; color: var(--fg-2); text-decoration: underline; cursor: pointer; font: inherit; border-radius: var(--radius-sm); }
+    .link-btn:hover { color: var(--fg); }
+    .link-btn:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    tr.off td { color: var(--muted); }
+    .table td.ch { font-weight: 600; }
+    .pager { display: flex; justify-content: space-between; margin-top: var(--space-3); font-size: var(--text-sm); color: var(--muted); }
+    .drawer-mask { position: fixed; inset: 0; background: color-mix(in oklab, var(--fg), transparent 70%); }
+    .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 480px; background: var(--surface); box-shadow: var(--elev-float); display: flex; flex-direction: column; animation: toast-in var(--motion-base) var(--ease-standard); }
+    .drawer header { padding: var(--space-4) var(--space-6); border-bottom: 1px solid var(--border-soft); }
+    .drawer header h2 { margin: 0; font-size: var(--text-xl); }
+    .drawer .body { padding: var(--space-4) var(--space-6); overflow: auto; flex: 1; }
+    .drawer footer { padding: var(--space-3) var(--space-6); border-top: 1px solid var(--border-soft); display: flex; justify-content: flex-end; gap: var(--space-2); }
+    .field { margin-bottom: var(--space-4); }
+    .field > label, .field > .flabel { display: block; font-size: var(--text-sm); font-weight: 600; margin-bottom: var(--space-1); }
+    .req { color: var(--danger); }
+    .field .input, .field .select { width: 100%; box-sizing: border-box; }
+    .field .input[readonly], .field .select[disabled] { background: var(--surface-warm); color: var(--muted); }
+    .hint { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); }
+    .hint a { color: var(--fg-2); }
+    .warn-line { font-size: var(--text-xs); color: var(--warn); margin-top: var(--space-1); }
+    .radio { display: flex; gap: var(--space-4); font-size: var(--text-sm); }
+    .radio label { display: inline-flex; gap: var(--space-1); align-items: center; font-weight: 400; }
+    .box { border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-3) var(--space-4); background: var(--surface-warm); }
+    .box h3 { margin: 0 0 var(--space-2); font-size: var(--text-base); }
+    .modal h3 { margin: 0 0 var(--space-3); font-size: var(--text-lg); }
+    .modal p { margin: 0 0 var(--space-4); color: var(--fg-2); }
+    .modal .acts { display: flex; justify-content: flex-end; gap: var(--space-2); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F04-01.html">我的填报</a>
+    <a class="nav-item" href="PAGE-F05-01.html">部门费用</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">预警与规则</div>
+    <a class="nav-item" href="PAGE-F11-01.html">预警中心</a>
+    <a class="nav-item" href="PAGE-F12-01.html">规则库</a>
+    <div class="nav-group">基础数据</div>
+    <a class="nav-item" href="PAGE-F02-01.html" aria-current="page">渠道与店铺</a>
+    <a class="nav-item" href="PAGE-F02-02.html">SKU 对照表</a>
+    <a class="nav-item" href="PAGE-F02-03.html">B端客户与部门</a>
+    <a class="nav-item" href="PAGE-F02-04.html">科目映射</a>
+    <a class="nav-item" href="PAGE-F02-05.html">汇率</a>
+    <div class="nav-group">系统设置</div>
+    <a class="nav-item" href="PAGE-F01-02.html">角色与权限</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">基础数据 / 渠道与店铺</nav>
+      <div>当前用户：<span id="cur-user">陈思雨（财务BP）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型切换">
+        <strong>原型说明，非产品功能：</strong>
+        <span>视角</span>
+        <button class="btn" data-role="bp" aria-pressed="true">财务BP</button>
+        <button class="btn" data-role="fin" aria-pressed="false">财务负责人</button>
+        <button class="btn" data-role="ceo" aria-pressed="false">CEO（只读）</button>
+        <span class="sep"></span>
+        <span>状态</span>
+        <button class="btn" data-proto-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-proto-state="empty" aria-pressed="false">空</button>
+        <button class="btn" data-proto-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-proto-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-proto-state="noperm" aria-pressed="false">无权限</button>
+      </div>
+
+      <div class="page-head">
+        <h1 class="page-title">渠道与店铺</h1>
+        <div class="actions" id="bp-actions">
+          <button class="btn" id="add-ch">新增渠道</button>
+          <button class="btn btn-primary" id="add-shop">新增店铺</button>
+        </div>
+      </div>
+
+      <div data-view="normal">
+        <div class="filters">
+          <select class="select" id="f-ch" aria-label="渠道"><option value="">全部渠道</option></select>
+          <select class="select" id="f-st" aria-label="状态"><option value="">全部状态</option><option value="on">启用</option><option value="off">停用</option></select>
+          <label><input type="checkbox" id="f-new"> 只看新渠道</label>
+          <span class="meta" style="margin-left:auto">店铺名称须与金蝶辅助核算、BI 中的店铺名称一致</span>
+        </div>
+        <div class="table-wrap">
+          <table class="table" aria-label="渠道与店铺">
+            <thead><tr><th>渠道</th><th>店铺名称</th><th>站点</th><th>结算币种</th><th>状态</th><th>新渠道</th><th>操作</th></tr></thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="pager"><span id="count"></span><span>第 1 / 1 页</span></div>
+      </div>
+
+      <div data-view="empty" hidden>
+        <div class="table-wrap"><div class="state">
+          <div class="state-title">还没有渠道和店铺</div>
+          <p>先新增渠道，再在渠道下新增店铺；店铺会出现在预算填报和实际数导入的校验中。</p>
+          <button class="btn" data-open="ch">新增渠道</button>
+        </div></div>
+      </div>
+
+      <div data-view="loading" hidden aria-busy="true">
+        <div class="table-wrap" style="padding:var(--space-4)">
+          <div class="skeleton" style="width:30%"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px"></div><div class="skeleton" style="margin-top:16px;width:70%"></div>
+        </div>
+      </div>
+
+      <div data-view="error" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">渠道与店铺加载失败</div>
+          <p>网络异常或服务暂时不可用，请重试。</p>
+          <button class="btn" data-goto="normal">重试</button>
+        </div></div>
+      </div>
+
+      <div data-view="noperm" hidden>
+        <div class="table-wrap"><div class="state" role="alert">
+          <div class="state-title">无权限</div>
+          <p>渠道与店铺由财务BP 维护，新渠道标记由财务负责人设置。</p>
+          <a class="btn" href="PAGE-F00-01.html">返回工作台</a>
+        </div></div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- 店铺抽屉 -->
+<div id="drawer" hidden>
+  <div class="drawer-mask" data-close></div>
+  <section class="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title">
+    <header><h2 id="d-title">新增店铺</h2></header>
+    <div class="body">
+      <div class="field">
+        <label for="s-ch"><span class="req">*</span> 所属渠道</label>
+        <select class="select" id="s-ch"></select>
+        <div class="field-error" id="e-ch" hidden>请选择所属渠道</div>
+      </div>
+      <div class="field">
+        <label for="s-name"><span class="req">*</span> 店铺名称</label>
+        <input class="input" id="s-name" placeholder="与金蝶、BI 中的店铺名称一致，如 Amazon-US-02">
+        <div class="field-error" id="e-name" hidden></div>
+      </div>
+      <div class="field">
+        <label for="s-site"><span class="req">*</span> 站点</label>
+        <select class="select" id="s-site"><option value="">请选择</option><option>美国</option><option>加拿大</option><option>英国</option><option>德国</option></select>
+        <div class="field-error" id="e-site" hidden>请选择站点</div>
+      </div>
+      <div class="field">
+        <label for="s-cur"><span class="req">*</span> 结算币种</label>
+        <select class="select" id="s-cur"><option value="">请选择</option><option>USD</option><option>CAD</option><option>GBP</option><option>EUR</option><option>JPY</option></select>
+        <div class="field-error" id="e-cur" hidden>请选择结算币种</div>
+        <div class="hint" id="h-cur" hidden>该店铺已被填报或导入使用，结算币种不可修改</div>
+        <div class="warn-line" id="w-cur" hidden>2027 年度尚无该币种的预算汇率，涉及该币种的填报将无法提交。<a href="PAGE-F02-05.html">去汇率页补录</a></div>
+      </div>
+      <div class="field">
+        <span class="flabel">状态</span>
+        <div class="radio"><label><input type="radio" name="s-st" value="on" checked> 启用</label><label><input type="radio" name="s-st" value="off"> 停用</label></div>
+        <div class="hint">停用后新预算填报不再列出该店铺；历史实际导入仍接受该店铺的数据</div>
+      </div>
+
+      <div class="box" id="new-box">
+        <h3>新渠道标记</h3>
+        <div id="new-ro" class="hint" style="margin:0"></div>
+        <div id="new-edit" hidden>
+          <label style="display:flex;gap:var(--space-2);align-items:center;font-size:var(--text-sm)"><input type="checkbox" id="s-new"> 标记为新渠道</label>
+          <div class="field" style="margin:var(--space-3) 0 0" id="start-wrap" hidden>
+            <label for="s-start"><span class="req">*</span> 起始月</label>
+            <input class="input" id="s-start" type="month" min="2026-01">
+            <div class="field-error" id="e-start" hidden>请选择起始月</div>
+            <div class="hint" id="start-hint">起始月起 12 个月内按新渠道处理，满 12 个月自动转为常规渠道</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <footer>
+      <button class="btn" data-close>取消</button>
+      <button class="btn btn-primary" id="d-save">保存</button>
+    </footer>
+  </section>
+</div>
+
+<!-- 新增渠道弹窗 -->
+<div class="modal-backdrop" id="ch-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ch-title">
+    <h3 id="ch-title">新增渠道</h3>
+    <div class="field">
+      <label for="c-name"><span class="req">*</span> 渠道名称</label>
+      <input class="input" id="c-name" placeholder="如 Temu">
+      <div class="field-error" id="e-cname" hidden></div>
+    </div>
+    <div class="acts"><button class="btn" id="c-cancel">取消</button><button class="btn btn-primary" id="c-ok">保存</button></div>
+  </div>
+</div>
+
+<!-- 渠道级新渠道标记（财务负责人） -->
+<div class="modal-backdrop" id="cn-modal" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="cn-title">
+    <h3 id="cn-title">新渠道标记</h3>
+    <p class="hint" style="margin:0 0 var(--space-3)">标记在渠道上时，该渠道下全部店铺按新渠道处理</p>
+    <label style="display:flex;gap:var(--space-2);align-items:center;font-size:var(--text-sm);margin-bottom:var(--space-3)"><input type="checkbox" id="cn-on"> 标记为新渠道</label>
+    <div class="field" id="cn-wrap" hidden>
+      <label for="cn-start"><span class="req">*</span> 起始月</label>
+      <input class="input" id="cn-start" type="month">
+      <div class="field-error" id="e-cnstart" hidden>请选择起始月</div>
+      <div class="hint">起始月起 12 个月内按新渠道处理，满 12 个月自动转为常规渠道</div>
+    </div>
+    <div class="acts"><button class="btn" id="cn-cancel">取消</button><button class="btn btn-primary" id="cn-ok">保存</button></div>
+  </div>
+</div>
+
+<!-- 改名确认 -->
+<div class="modal-backdrop" id="rn-modal" hidden>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="rn-title">
+    <h3 id="rn-title">修改店铺名称？</h3>
+    <p id="rn-body"></p>
+    <div class="acts"><button class="btn" id="rn-cancel">取消</button><button class="btn btn-primary" id="rn-ok">确认改名</button></div>
+  </div>
+</div>
+
+<!-- 停用确认 -->
+<div class="modal-backdrop" id="off-modal" hidden>
+  <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="off-title">
+    <h3 id="off-title">停用店铺？</h3>
+    <p id="off-body"></p>
+    <div class="acts"><button class="btn" id="off-cancel">取消</button><button class="btn btn-danger" id="off-ok">确认停用</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" hidden></div>
+
+<script>
+  var TODAY = '2027-05';
+  var RATES = ['USD', 'CAD', 'EUR', 'GBP'];
+  var channels = [
+    { n: 'Amazon' }, { n: 'Wayfair' }, { n: 'Home Depot' }, { n: "Lowe's" }, { n: '独立站' },
+    { n: 'TikTok Shop', start: '2027-03' }
+  ];
+  var shops = [
+    { ch: 'Amazon', n: 'Amazon-US-01', site: '美国', cur: 'USD', on: true, used: true },
+    { ch: 'Amazon', n: 'Amazon-CA-01', site: '加拿大', cur: 'CAD', on: true, used: true },
+    { ch: 'Amazon', n: 'Amazon-UK-01', site: '英国', cur: 'GBP', on: true, used: true },
+    { ch: 'Amazon', n: 'Amazon-DE-01', site: '德国', cur: 'EUR', on: true, used: true },
+    { ch: 'Amazon', n: 'Amazon-US-02', site: '美国', cur: 'USD', on: false, used: true },
+    { ch: 'Wayfair', n: 'Wayfair-US-01', site: '美国', cur: 'USD', on: true, used: true },
+    { ch: 'Home Depot', n: 'HomeDepot-US-01', site: '美国', cur: 'USD', on: true, used: true },
+    { ch: "Lowe's", n: 'Lowes-US-01', site: '美国', cur: 'USD', on: true, used: true },
+    { ch: '独立站', n: 'Shopify-US-01', site: '美国', cur: 'USD', on: true, used: true },
+    { ch: 'TikTok Shop', n: 'TikTok-US-01', site: '美国', cur: 'USD', on: true }
+  ];
+  var role = 'bp', cur = null;
+
+  function addMonths(ym, k) { var y = +ym.slice(0, 4), m = +ym.slice(5) - 1 + k; y += Math.floor(m / 12); m = ((m % 12) + 12) % 12 + 1; return y + '-' + (m < 10 ? '0' : '') + m; }
+  function newInfo(start) {
+    if (!start) return null;
+    var end = addMonths(start, 11);
+    return { start: start, end: end, active: TODAY >= start && TODAY <= end };
+  }
+  function shopStart(s) { var c = channels.filter(function (x) { return x.n === s.ch; })[0]; return s.start || (c && c.start); }
+
+  function render() {
+    var fch = document.getElementById('f-ch').value, fst = document.getElementById('f-st').value, fnew = document.getElementById('f-new').checked;
+    var list = shops.filter(function (s) {
+      var ni = newInfo(shopStart(s));
+      return (!fch || s.ch === fch) && (!fst || (fst === 'on') === s.on) && (!fnew || (ni && ni.active));
+    });
+    var html = '', last = null;
+    list.forEach(function (s) {
+      var ni = newInfo(shopStart(s));
+      var nb = ni ? (ni.active ? '<span class="badge badge-warn">新渠道</span> <span class="meta">' + ni.start + '～' + ni.end + (s.start ? '' : '（渠道级）') + '</span>' : '<span class="meta">已转常规（' + ni.end + ' 满 12 个月）</span>') : '—';
+      html += '<tr class="' + (s.on ? '' : 'off') + '"><td class="ch">' + (s.ch === last ? '' : s.ch + (role === 'fin' ? ' <button class="link-btn" style="font-weight:400;font-size:var(--text-xs)" data-chmark="' + s.ch + '">渠道标记</button>' : '')) + '</td><td class="code">' + s.n + '</td><td>' + s.site + '</td><td class="cur">' + s.cur + '</td><td>' + (s.on ? '<span class="badge badge-good">启用</span>' : '<span class="badge">停用</span>') + '</td><td>' + nb + '</td><td>' + (role === 'ceo' ? '<span class="meta">只读</span>' : '<button class="link-btn" data-edit="' + shops.indexOf(s) + '">' + (role === 'fin' ? '设置新渠道' : '编辑') + '</button>') + '</td></tr>';
+      last = s.ch;
+    });
+    document.getElementById('rows').innerHTML = html || '<tr><td colspan="7"><div class="state" style="padding:var(--space-8)"><div class="state-title">没有符合条件的店铺</div><p>调整筛选条件后再试。</p></div></td></tr>';
+    var on = shops.filter(function (s) { return s.on; }).length;
+    document.getElementById('count').textContent = '共 ' + channels.length + ' 个渠道 · ' + shops.length + ' 个店铺（启用 ' + on + '，停用 ' + (shops.length - on) + '）';
+    document.querySelectorAll('[data-edit]').forEach(function (b) { b.addEventListener('click', function () { openDrawer(+b.dataset.edit); }); });
+    document.querySelectorAll('[data-chmark]').forEach(function (b) { b.addEventListener('click', function () { openChMark(b.dataset.chmark); }); });
+  }
+
+  var curCh = null;
+  function openChMark(n) {
+    curCh = channels.filter(function (c) { return c.n === n; })[0];
+    document.getElementById('cn-title').textContent = '新渠道标记 · ' + n;
+    document.getElementById('cn-on').checked = !!curCh.start;
+    document.getElementById('cn-wrap').hidden = !curCh.start;
+    document.getElementById('cn-start').value = curCh.start || '';
+    document.getElementById('e-cnstart').hidden = true;
+    document.getElementById('cn-modal').hidden = false; document.getElementById('cn-on').focus();
+  }
+  document.getElementById('cn-on').addEventListener('change', function () { document.getElementById('cn-wrap').hidden = !this.checked; });
+  document.getElementById('cn-cancel').addEventListener('click', function () { document.getElementById('cn-modal').hidden = true; });
+  document.getElementById('cn-ok').addEventListener('click', function () {
+    var on = document.getElementById('cn-on').checked, st = document.getElementById('cn-start').value;
+    if (on && !st) { document.getElementById('e-cnstart').hidden = false; document.getElementById('cn-start').setAttribute('aria-invalid', 'true'); return; }
+    curCh.start = on ? st : undefined;
+    document.getElementById('cn-modal').hidden = true; render();
+    toast(on ? curCh.n + ' 已标记为新渠道，' + st + ' 起 12 个月' : '已取消 ' + curCh.n + ' 的新渠道标记');
+  });
+
+  function fillChannels() {
+    var opts = channels.map(function (c) { return '<option>' + c.n + '</option>'; }).join('');
+    document.getElementById('f-ch').innerHTML = '<option value="">全部渠道</option>' + opts;
+    document.getElementById('s-ch').innerHTML = '<option value="">请选择</option>' + opts;
+  }
+
+  function clearErr() { document.querySelectorAll('#drawer .field-error').forEach(function (e) { e.hidden = true; }); document.querySelectorAll('#drawer [aria-invalid]').forEach(function (e) { e.removeAttribute('aria-invalid'); }); }
+
+  function openDrawer(i) {
+    cur = i; clearErr();
+    var s = i == null ? { ch: '', n: '', site: '', cur: '', on: true } : shops[i];
+    document.getElementById('d-title').textContent = i == null ? '新增店铺' : (role === 'fin' ? '新渠道标记 · ' : '编辑店铺 · ') + s.n;
+    document.getElementById('s-ch').value = s.ch; document.getElementById('s-name').value = s.n;
+    document.getElementById('s-site').value = s.site; document.getElementById('s-cur').value = s.cur;
+    document.querySelector('input[name="s-st"][value="' + (s.on ? 'on' : 'off') + '"]').checked = true;
+    var lock = role === 'fin';
+    ['s-ch', 's-site', 's-cur'].forEach(function (id) { document.getElementById(id).disabled = lock; });
+    document.getElementById('s-name').readOnly = lock;
+    if (!lock && i != null && s.used) document.getElementById('s-cur').disabled = true;
+    document.getElementById('h-cur').hidden = lock || i == null || !s.used;
+    document.querySelectorAll('input[name="s-st"]').forEach(function (r) { r.disabled = lock; });
+    var start = i == null ? null : shopStart(s), ni = newInfo(start);
+    var chStart = i != null && !s.start && start;
+    document.getElementById('new-ro').textContent = ni ? ('新渠道：' + ni.start + ' 起至 ' + ni.end + (chStart ? '（随渠道 ' + s.ch + ' 标记）' : '') + (role === 'bp' ? '。由财务负责人设置' : '')) : (role === 'bp' ? '未标记。新渠道由财务负责人设置' : '');
+    document.getElementById('new-edit').hidden = role !== 'fin' || !!chStart;
+    document.getElementById('s-new').checked = !!s.start;
+    document.getElementById('start-wrap').hidden = !s.start;
+    document.getElementById('s-start').value = s.start || '';
+    syncCur();
+    document.getElementById('drawer').hidden = false;
+    (lock ? document.getElementById('s-new') : document.getElementById('s-ch')).focus();
+  }
+  function closeDrawer() { document.getElementById('drawer').hidden = true; }
+
+  function syncCur() {
+    var v = document.getElementById('s-cur').value;
+    document.getElementById('w-cur').hidden = !v || RATES.indexOf(v) >= 0;
+  }
+  document.getElementById('s-cur').addEventListener('change', syncCur);
+  document.getElementById('s-new').addEventListener('change', function () { document.getElementById('start-wrap').hidden = !this.checked; });
+  document.getElementById('s-start').addEventListener('input', function () {
+    document.getElementById('start-hint').textContent = this.value ? ('将于 ' + this.value + ' 至 ' + addMonths(this.value, 11) + ' 按新渠道处理，' + addMonths(this.value, 12) + ' 起自动转为常规渠道') : '起始月起 12 个月内按新渠道处理，满 12 个月自动转为常规渠道';
+  });
+
+  function bad(id, err, msg) { var e = document.getElementById(err); if (msg) e.textContent = msg; e.hidden = false; document.getElementById(id).setAttribute('aria-invalid', 'true'); }
+
+  var pendingSave = null, pendingRename = null;
+  document.getElementById('d-save').addEventListener('click', function () {
+    clearErr();
+    if (role === 'fin') {
+      var s = shops[cur], on = document.getElementById('s-new').checked, st = document.getElementById('s-start').value;
+      if (on && !st) { bad('s-start', 'e-start'); return; }
+      s.start = on ? st : undefined;
+      closeDrawer(); render(); toast(on ? s.n + ' 已标记为新渠道，' + st + ' 起 12 个月' : '已取消 ' + s.n + ' 的新渠道标记');
+      return;
+    }
+    var v = { ch: document.getElementById('s-ch').value, n: document.getElementById('s-name').value.trim(), site: document.getElementById('s-site').value, cur: document.getElementById('s-cur').value, on: document.querySelector('input[name="s-st"]:checked').value === 'on' };
+    var ok = true;
+    if (!v.ch) { bad('s-ch', 'e-ch'); ok = false; }
+    if (!v.n) { bad('s-name', 'e-name', '请填写店铺名称'); ok = false; }
+    else if (shops.some(function (x, k) { return k !== cur && x.n.toLowerCase() === v.n.toLowerCase(); })) { bad('s-name', 'e-name', '店铺名称已存在'); ok = false; }
+    if (!v.site) { bad('s-site', 'e-site'); ok = false; }
+    if (!v.cur) { bad('s-cur', 'e-cur'); ok = false; }
+    if (!ok) return;
+    var wasOn = cur != null && shops[cur].on;
+    var commit = function () {
+      if (cur == null) shops.push(v); else { v.start = shops[cur].start; v.used = shops[cur].used; shops[cur] = v; }
+      closeDrawer(); render();
+      toast(cur == null ? '已新增店铺 ' + v.n + '，填报与导入中可选用' : '已保存 ' + v.n);
+    };
+    var renamed = cur != null && shops[cur].used && shops[cur].n !== v.n;
+    var oldName = cur != null ? shops[cur].n : '';
+    var stepOff = function () {
+      if (wasOn && !v.on) {
+        pendingSave = commit;
+        document.getElementById('off-body').textContent = '停用后，' + v.n + ' 不再出现在新预算填报中；历史实际导入仍接受该店铺的数据。';
+        document.getElementById('off-modal').hidden = false; document.getElementById('off-cancel').focus();
+        return;
+      }
+      commit();
+    };
+    if (renamed) {
+      pendingRename = stepOff;
+      document.getElementById('rn-body').textContent = '将「' + oldName + '」改名为「' + v.n + '」？该店铺已被填报或导入使用，新名称须与金蝶辅助核算、BI 中的店铺名称一致，否则之后的导入无法匹配该店铺。';
+      document.getElementById('rn-modal').hidden = false; document.getElementById('rn-cancel').focus();
+      return;
+    }
+    if (wasOn && !v.on) {
+      pendingSave = commit;
+      document.getElementById('off-body').textContent = '停用后，' + v.n + ' 不再出现在新预算填报中；历史实际导入仍接受该店铺的数据。';
+      document.getElementById('off-modal').hidden = false; document.getElementById('off-cancel').focus();
+      return;
+    }
+    commit();
+  });
+  document.getElementById('rn-cancel').addEventListener('click', function () { document.getElementById('rn-modal').hidden = true; });
+  document.getElementById('rn-ok').addEventListener('click', function () { document.getElementById('rn-modal').hidden = true; pendingRename && pendingRename(); });
+  document.getElementById('off-cancel').addEventListener('click', function () { document.getElementById('off-modal').hidden = true; });
+  document.getElementById('off-ok').addEventListener('click', function () { document.getElementById('off-modal').hidden = true; pendingSave && pendingSave(); });
+
+  document.getElementById('add-shop').addEventListener('click', function () { openDrawer(null); });
+  function openCh() { document.getElementById('c-name').value = ''; document.getElementById('e-cname').hidden = true; document.getElementById('c-name').removeAttribute('aria-invalid'); document.getElementById('ch-modal').hidden = false; document.getElementById('c-name').focus(); }
+  document.getElementById('add-ch').addEventListener('click', openCh);
+  document.querySelectorAll('[data-open="ch"]').forEach(function (b) { b.addEventListener('click', function () { show('normal'); openCh(); }); });
+  document.getElementById('c-cancel').addEventListener('click', function () { document.getElementById('ch-modal').hidden = true; });
+  document.getElementById('c-ok').addEventListener('click', function () {
+    var n = document.getElementById('c-name').value.trim();
+    if (!n) { bad('c-name', 'e-cname', '请填写渠道名称'); return; }
+    if (channels.some(function (c) { return c.n.toLowerCase() === n.toLowerCase(); })) { bad('c-name', 'e-cname', '渠道名称已存在'); return; }
+    channels.push({ n: n }); fillChannels(); render();
+    document.getElementById('ch-modal').hidden = true; toast('已新增渠道 ' + n + '，请在其下新增店铺');
+  });
+
+  document.querySelectorAll('[data-close]').forEach(function (b) { b.addEventListener('click', closeDrawer); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeDrawer(); ['ch-modal', 'off-modal', 'cn-modal', 'rn-modal'].forEach(function (id) { document.getElementById(id).hidden = true; }); } });
+  ['f-ch', 'f-st', 'f-new'].forEach(function (id) { document.getElementById(id).addEventListener('change', render); });
+
+  function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function () { t.hidden = true; }, 3000); }
+
+  function setRole(r) {
+    role = r;
+    document.getElementById('cur-user').textContent = r === 'fin' ? '林晓（财务负责人）' : r === 'ceo' ? '周明远（CEO）' : '陈思雨（财务BP）';
+    document.getElementById('bp-actions').hidden = r !== 'bp';
+    document.querySelectorAll('[data-role]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.role === r); });
+    render();
+  }
+  function show(state) {
+    document.querySelectorAll('[data-view]').forEach(function (v) { v.hidden = v.dataset.view !== state; });
+    document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.protoState === state); });
+    document.getElementById('bp-actions').style.visibility = (state === 'normal' && role === 'bp') ? 'visible' : 'hidden';
+  }
+  document.querySelectorAll('[data-role]').forEach(function (b) { b.addEventListener('click', function () { setRole(b.dataset.role); }); });
+  document.querySelectorAll('[data-proto-state]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.protoState); }); });
+  document.querySelectorAll('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.goto); }); });
+
+  fillChannels(); setRole('bp');
+</script>
+</body>
+</html>
