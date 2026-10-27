@@ -32,10 +32,16 @@ export function addMonths(ym: string, n: number): string {
   return `${yy}-${String(mm).padStart(2, '0')}`
 }
 
-/** ISO 时间 → 'YYYY-MM-DD HH:mm'（本地显示） */
+/** ISO 时间 → 'YYYY-MM-DD HH:mm'，固定按北京时间显示（PRD §3.2.1），不受浏览器时区影响 */
 export function fmtTime(iso: string | null | undefined): string {
   if (!iso) return '—'
   const d = new Date(iso)
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`
+  if (Number.isNaN(d.getTime())) return iso
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('zh-CN', {
+      timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    }).formatToParts(d).map((x) => [x.type, x.value]),
+  )
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}`
 }

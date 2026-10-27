@@ -11,6 +11,7 @@ import { api, ApiError } from '@/api/client'
 import AchievementBar from '@/components/AchievementBar.vue'
 import PageState from '@/components/PageState.vue'
 import { money, pct } from '@/components/g4/format'
+import { fmtTime } from '@/components/g2/util'
 import { useUserStore } from '@/stores/user'
 
 interface TodoBlock<T> { count: number; items: T[] }
@@ -73,7 +74,7 @@ const todos = computed(() => {
       title: '待审批', all: '/approvals', block: d.todo.approvals, empty: '当前没有待你审批的事项',
       items: d.todo.approvals.items.map((it) => ({
         key: `a${it.type}${it.id}`, link: it.link || `/approvals/${it.type}/${it.id}`, t1: it.title,
-        t2: [it.kind_label, it.prev_step ? `上一环节：${it.prev_step}` : '', it.submitted_at ? `提交于 ${it.submitted_at.slice(0, 16).replace('T', ' ')}` : ''].filter(Boolean).join(' · '),
+        t2: [it.kind_label, it.prev_step ? `上一环节：${it.prev_step}` : '', it.submitted_at ? `提交于 ${fmtTime(it.submitted_at)}` : ''].filter(Boolean).join(' · '),
       })),
     },
     {

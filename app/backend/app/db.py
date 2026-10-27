@@ -13,7 +13,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 @lru_cache
 def get_engine(url: str) -> Engine:
-    return create_engine(url, pool_pre_ping=True)
+    # 会话时区固定为北京时间：timestamptz 读出即带 +08:00（PRD §3.2.1 通用约定）
+    return create_engine(url, pool_pre_ping=True, connect_args={"options": "-c timezone=Asia/Shanghai"})
 
 
 def session_factory(url: str) -> sessionmaker[Session]:
