@@ -75,6 +75,8 @@ await run('SMOKE-03', 'smoke03', async (env) => {
     const key = await rowKey(page, pred)
     const resp = await editCell(page, key, prop, value)
     check(resp && resp.status() === 200, `${name}：${filler} 编辑单元 ${prop} 保存 200`)
+    // 保存后重新打开，读取服务端回显值（编辑后表格数据源要等保存响应回写，立即读取会读到输入原文）
+    await openMyUnit(page, filler)
     filled[name] = { key, prop, shown: await cellValue(page, key, prop), url: page.url() }
     b = await boardStatus(page, taskId)
     states[name].push(b[name])
