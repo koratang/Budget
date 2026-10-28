@@ -193,7 +193,7 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
         <table class="table link-table" data-testid="link-table">
           <!-- 固定布局：传导逻辑为自适应主列，量化影响固定 200px 换行显示，其余列收紧，1280 宽下整表放得下不出现裁切 -->
           <colgroup>
-            <col style="width: 124px"><col style="width: 136px"><col style="width: 56px"><col style="width: 100px">
+            <col style="width: 124px"><col style="width: 150px"><col style="width: 72px"><col style="width: 108px">
             <col><col style="width: 104px"><col style="width: 200px">
           </colgroup>
           <thead>
@@ -206,7 +206,7 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
             <tr v-for="(l, i) in links" :key="i">
               <td class="wrap"><span class="badge badge-info">{{ l.biz }}</span> {{ l.bizName }}</td>
               <td class="wrap"><span class="badge badge-good">{{ l.fin }}</span> {{ l.finName }}</td>
-              <td><span class="badge" :class="l.dir === '正向' ? 'badge-bad' : 'badge-good'">{{ l.dir }}</span></td>
+              <td><span class="badge dir" :class="l.dir === '正向' ? 'badge-bad' : 'badge-good'">{{ l.dir }}</span></td>
               <td>
                 <div class="mini-prog">
                   <div class="bar"><i :class="barCls(l.strength)" :style="{ width: Math.round(l.strength * 100) + '%' }"></i></div>
@@ -261,6 +261,10 @@ text.t-blank { fill: var(--muted); }
 .stack-item .c b { color: var(--fg); }
 .link-table { table-layout: fixed; min-width: 900px; }
 .link-table td { white-space: normal; overflow-wrap: anywhere; }
+/* 编码徽标可能较长（如 F4.3+F4.4+F4.5 → F4）：允许换行且底色随内容撑开；方向徽标单行 */
+.link-table .badge { height: auto; min-height: 22px; line-height: 1.4; padding: 2px 6px; white-space: normal; }
+.link-table .badge.dir { white-space: nowrap; }
+.link-table .mini-prog { padding-right: var(--space-2); }
 .link-table td.wrap { white-space: normal; line-height: 1.65; padding-top: var(--space-1); padding-bottom: var(--space-1); }
 /* 量化影响同一格里正负并存，无法整体按涨红跌绿着色，统一用正文色加粗（原工具为财务主题绿，会与「跌绿」冲突） */
 .impact { color: var(--fg); font-weight: 600; }
