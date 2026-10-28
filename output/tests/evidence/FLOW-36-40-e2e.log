@@ -1,32 +1,25 @@
-PASS FLOW-38 PAGE-F15-01 无 NaN / undefined
-PASS FLOW-40 首次进入 PAGE-F15-01 显示「示例数据」标记
-PASS DESIGN PAGE-F15-01 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-02 无 NaN / undefined
 PASS FLOW-40 首次进入 PAGE-F15-02 显示「示例数据」标记
 PASS DESIGN PAGE-F15-02 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-03 无 NaN / undefined
 PASS FLOW-40 首次进入 PAGE-F15-03 显示「示例数据」标记
 PASS DESIGN PAGE-F15-03 1280 宽无页面级横向滚动
-PASS FLOW-38 PAGE-F15-04 无 NaN / undefined
-PASS FLOW-40 首次进入 PAGE-F15-04 显示「示例数据」标记
-PASS DESIGN PAGE-F15-04 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-05 无 NaN / undefined
 PASS FLOW-40 首次进入 PAGE-F15-05 显示「示例数据」标记
 PASS DESIGN PAGE-F15-05 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-06 无 NaN / undefined
 PASS FLOW-40 首次进入 PAGE-F15-06 显示「示例数据」标记
 PASS DESIGN PAGE-F15-06 1280 宽无页面级横向滚动
-PASS FLOW-38 PAGE-F15-07 无 NaN / undefined
-PASS FLOW-40 首次进入 PAGE-F15-07 显示「示例数据」标记
-PASS DESIGN PAGE-F15-07 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-08 无 NaN / undefined
 PASS FLOW-40 首次进入 PAGE-F15-08 显示「示例数据」标记
 PASS DESIGN PAGE-F15-08 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-09 无 NaN / undefined
 PASS FLOW-40 首次进入 PAGE-F15-09 显示「示例数据」标记
 PASS DESIGN PAGE-F15-09 1280 宽无页面级横向滚动
-PASS FLOW-36 林晓侧栏业财分析 9 项
-PASS FLOW-38 驾驶舱净销售额 9,840
+PASS FLOW-36 林晓侧栏业财分析 6 项、无已删除模块
+PASS FLOW-36 旧链接 /bizfin/dashboard 回到首页
+PASS FLOW-36 旧链接 /bizfin/linkage 回到首页
+PASS FLOW-36 旧链接 /bizfin/advice 回到首页
 PASS FLOW-38 F1 = 渠道Σ = 市场Σ = 9840 — 9840 9840 9840
 PASS FLOW-38 F2 = 3092.6 — 3092.6
 PASS FLOW-38 F3 = 31.4 — 31.4
@@ -48,13 +41,10 @@ PASS FLOW-38 切回年度恢复 9840
 PASS FLOW-38 林晓全程无前端错误
 PASS FLOW-36 王浩侧栏无业财分析
 PASS FLOW-36 王浩接口 403
-PASS FLOW-36 周明远 PAGE-F15-01 无编辑控件 — inputs=0 btns=0
 PASS FLOW-36 周明远 PAGE-F15-02 无编辑控件 — inputs=0 btns=0
 PASS FLOW-36 周明远 PAGE-F15-03 无编辑控件 — inputs=0 btns=0
-PASS FLOW-36 周明远 PAGE-F15-04 无编辑控件 — inputs=0 btns=0
 PASS FLOW-36 周明远 PAGE-F15-05 无编辑控件 — inputs=0 btns=0
 PASS FLOW-36 周明远 PAGE-F15-06 无编辑控件 — inputs=0 btns=0
-PASS FLOW-36 周明远 PAGE-F15-07 无编辑控件 — inputs=0 btns=0
 PASS FLOW-36 周明远 PAGE-F15-08 无编辑控件 — inputs=0 btns=0
 PASS FLOW-36 周明远 PAGE-F15-09 无编辑控件 — inputs=0 btns=0
 PASS FLOW-36 周明远保存 403
@@ -62,7 +52,6 @@ PASS FLOW-37 F1.1 = 5200 已保存到服务器 — 5200
 PASS FLOW-39 新增政策事件刷新后仍在
 PASS FLOW-39 删除需二次确认
 PASS FLOW-39 确认后删除并保存
-PASS FLOW-39 新增经营建议保存
 PASS FLOW-39 重点工作进度限制为 100 并保存 — 100
 PASS FLOW-39 重点工作统计刷新
 PASS FLOW-37 旧版本保存 409 并提示更新人 — 「政策环境事件」已被陈思雨更新，请刷新后再改
@@ -79,4 +68,4 @@ PASS FLOW-37/39/40 陈思雨全程无前端错误
 PASS FLOW-40 恢复前二次确认说明会清空服务器数据
 PASS FLOW-40 恢复后服务器无已保存部分
 PASS FLOW-40 恢复后重新显示示例数据
-passed=80; failed=0
+passed=69; failed=0

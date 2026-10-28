@@ -573,12 +573,10 @@ export function gauge(value: number, o?: GaugeOpts): string {
 
 /* 导航图标（<svg viewBox="0 0 24 24"> 的内部图形，键与 NAV / ANA_NAV 的 icon 字段对应；常量，无用户输入） */
 export const ICONS: Record<string, string> = {
-  dashboard: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
   finance: '<path d="M4 20V10M9.5 20V4M15 20v-7M20.5 20V7"/>',
   business: '<path d="M3 20h18"/><rect x="5" y="11" width="3.4" height="6" rx="1"/><rect x="10.3" y="7" width="3.4" height="10" rx="1"/><rect x="15.6" y="13" width="3.4" height="4" rx="1"/>',
   linkage: '<circle cx="6" cy="6" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="12" cy="18" r="2.6"/><path d="M8.4 7.4 11 15.4M15.6 7.4 13 15.4M8.6 6h6.8"/>',
   analysis: '<circle cx="12" cy="12" r="9"/><path d="M12 3v9l7 4"/>',
-  advice: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1.1 2h5c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/>',
   keywork: '<rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 7h6M9 11h6M9 15h4"/><path d="M9.5 18.2 11 19.6l3-3.2"/>',
   data: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>',
   policy: '<path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h7M9 16h7"/>',

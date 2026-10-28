@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  ADMIN_TYPES, ADVICE_SEED, BIZ_DIM_ORDER, BIZ_DIMS, DIM_HEADER, IND_HEADER, KW_CATEGORIES, KW_STATUS, LINKAGE, POLICY_SEGS,
+  ADMIN_TYPES, BIZ_DIM_ORDER, BIZ_DIMS, DIM_HEADER, IND_HEADER, KW_CATEGORIES, KW_STATUS, LINKAGE, POLICY_SEGS,
   S, SEED_BIZ, SEED_FIN,
-  adminAnnualPool, adminMatrix, adminPoolByM, applyRows, bizDimFilled, bizHealth, buildReverse, byKind, channelModel,
-  children, deptScores, dimRowsOf, dimTag, editCell, editDimCell, find, finHealth, hasData, hydrate, importMessage, importTable,
+  adminAnnualPool, adminMatrix, adminPoolByM, applyRows, bizDimFilled, bizHealth, byKind, channelModel,
+  children, dimRowsOf, dimTag, editCell, editDimCell, find, finHealth, hasData, hydrate, importMessage, importTable,
   isBlankBiz, isSumUnit, kwStat, l1, l2, mapHeader, momYoyOf, monthIndex, monthlyRowsOf, orderModel, overallHealth, parseTable,
   rate, rateText, recompute, rowsOf, seed, setBizDimOf, setToday, snapshot, stamp, toCSV, validations,
   type Indicator,
@@ -120,7 +120,6 @@ describe('持久化：snapshot / hydrate 往返', () => {
     S.dim = 'year'
     recompute()
     S.POLICY_EVENTS.push({ time: '2026-09-30', seg: '财务板块', desc: '美元兑人民币中间价走弱，海外回款结汇收益收窄', impact: '财务费用 -12 万元' })
-    S.ADVICE_EVENTS.splice(0, 1)
     S.KW_TASKS[0].progress = 70
 
     const snap = snapshot()
@@ -141,7 +140,6 @@ describe('持久化：snapshot / hydrate 往返', () => {
     expect(act('F7.3')).toBe(f73)
     expect(act('S1.1')).toBe(s11)
     expect(S.POLICY_EVENTS).toHaveLength(5)
-    expect(S.ADVICE_EVENTS).toHaveLength(ADVICE_SEED.length - 1)
     expect(S.KW_TASKS[0].progress).toBe(70)
   })
 
@@ -267,11 +265,9 @@ describe('verify2 · H 编码完整性 / 台账', () => {
     expect(BIZ_DIM_ORDER).toEqual(['channel', 'category', 'lane', 'provider'])
   })
 
-  it('政策 / 建议 / 重点工作台账', () => {
+  it('政策 / 重点工作台账', () => {
     expect(S.POLICY_EVENTS).toHaveLength(4)
     expect(S.POLICY_EVENTS.every((e) => POLICY_SEGS.includes(e.seg))).toBe(true)
-    expect(S.ADVICE_EVENTS).toHaveLength(4)
-    expect(S.ADVICE_EVENTS.every((e) => POLICY_SEGS.includes(e.seg))).toBe(true)
     expect(S.KW_TASKS).toHaveLength(15)
     expect(KW_CATEGORIES).toEqual(['核算', '资金', '合规', '降本增收', '财务BP', '信息化'])
     expect(KW_STATUS).toEqual(['进行中', '已完成', '延误', '阻滞'])
@@ -292,12 +288,6 @@ describe('verify2 · I 分析模块派生量有限性', () => {
     const cm = channelModel(null)
     expect(cm.rows.every((r) => fin(r.uv) && fin(r.cvr) && fin(r.cpc) && fin(r.organic))).toBe(true)
     expect(Math.abs(cm.uv * cm.cvr / 100 - cm.orders)).toBeLessThanOrEqual(1e-6 * cm.orders + 1)
-  })
-
-  it('反向归因 / 部门得分无脏值', () => {
-    expect(buildReverse().every((r) => r.fin && r.biz && r.gap)).toBe(true)
-    expect(buildReverse()[0].biz).toContain('降本率（待填报）')
-    expect(deptScores().every((d) => d.score === null || Number.isFinite(d.score))).toBe(true)
   })
 })
 

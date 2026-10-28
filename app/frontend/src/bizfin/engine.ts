@@ -4,7 +4,7 @@
  * 移植原则：
  * - 标识符名与参数签名与原代码保持一致，便于页面作者对照原 view* 函数逐行改写；
  * - 数值计算、舍入、容差、「未填报为 null 不当 0」等口径与原代码逐行一致，不做「改进」；
- * - 原全局可变状态（IND / CUR / BIZ_DIM / POLICY_EVENTS / ADVICE_EVENTS / KW_TASKS / TREND / dim / curM）
+ * - 原全局可变状态（IND / CUR / BIZ_DIM / POLICY_EVENTS / KW_TASKS / TREND / dim / curM）
  *   集中在响应式对象 S 中，Vue 页面的 computed 读 S 即可随状态自动刷新；
  * - 不含登录 / 权限 / localStorage / toast / DOM 渲染逻辑；持久化由 seed / snapshot / hydrate 接口承担。
  */
@@ -84,13 +84,6 @@ export interface PolicyEvent {
   time: string
   seg: string
   desc: string
-  impact: string
-}
-export interface AdviceEvent {
-  time: string
-  seg: string
-  desc: string
-  advice: string
   impact: string
 }
 export interface KwTask {
@@ -886,20 +879,6 @@ export const KW_SEED: KwTask[] = [
 
 /* ------------------------- 经营建议：管理建议台账 -------------------------
    行字段：时间 / 业务板块 / 背景描述 / 管理建议 / 影响评估；业务板块下拉复用 POLICY_SEGS */
-export const ADVICE_SEED: AdviceEvent[] = [
-  { time: '2026-01', seg: '营销板块', desc: '渠道品效（销售额 ÷ 投放费用）低于目标，营销费用率超标，投放费用为期间费用首要增量来源',
-    advice: '① 按 ASIN 分级管理，单位广告成本高于渠道均值 1.5 倍的广告组限期降预算或淘汰；② 高转化词迁移至精确匹配，收缩无效流量；③ 强化 Listing 自然排名，提升非付费流量占比；④ 建立周度品效预警看板，分渠道设定阈值',
-    impact: '品效提升至目标水平，可释放投放费用并压降营销费用率，直接增厚净利润' },
-  { time: '2026-02', seg: '供应链板块', desc: '采购降本率低于目标，营业成本约占收入 67%，采购端每 1pt 降幅即为可观的毛利增量',
-    advice: '① 对框镜、灯镜、镜柜 Top20 物料做成本拆解，锁定可议价空间；② 合并分散订单，提升单批次采购量换取阶梯价；③ 引入 2~3 家备用供应商形成常态比价机制；④ 与研发协同推进结构优化 / 材料替代降本',
-    impact: '采购成本率补足缺口，直接转化为毛利额与净利润增量' },
-  { time: '2026-03', seg: '仓配履约板块', desc: '存货周转天数超标，海外仓备货周期偏长，占用资金与仓租成本上升',
-    advice: '① 建立 ABC 分级补货模型，A 类保安全库存、C 类按需补货；② 清理 180 天以上长库龄 SKU，通过站内促销 / 清仓渠道变现；③ 优化头程节奏，压缩海外仓备货周期；④ 打通 ERP 与平台销量数据，实现周度补货决策',
-    impact: '周转天数降至目标，可释放占用现金并改善经营性现金流' },
-  { time: '2026-04', seg: '产品板块', desc: '上架 SPU 数量（老品迭代与新品）低于目标，货架覆盖不足限制增量收入',
-    advice: '① 按「销量 × 毛利率」四象限盘点全量 SKU，淘汰双低 SKU 释放开发与视觉资源；② 资源集中到高毛利品类（灯镜、镜柜）的迭代与新品排期；③ 新品立项增加市场验证环节；④ 建立 90 天上市复盘机制，未达标即决策加投或退出',
-    impact: '补足上架款数缺口，按单款年贡献毛利估算可增厚毛利额' },
-]
 
 /* =========================================================================
    全局状态（原代码中的 let/var 全局变量），集中为响应式对象
@@ -913,7 +892,6 @@ export const S = reactive({
   CUR: [] as Indicator[],
   BIZ_DIM: {} as BizDimStore,
   POLICY_EVENTS: POLICY_SEED.map(function (o) { return Object.assign({}, o) }) as PolicyEvent[],
-  ADVICE_EVENTS: ADVICE_SEED.map(function (o) { return Object.assign({}, o) }) as AdviceEvent[],
   KW_TASKS: KW_SEED.map(function (o) { return Object.assign({}, o) }) as KwTask[],
   TREND: {
     months: ['04月', '05月', '06月', '07月', '08月', '09月'],
@@ -978,21 +956,15 @@ export function anaSubName(id: string): string {
 
 /* 一级导航（icon 对应 charts.ts 中的 ICONS 键） */
 export const NAV: NavItem[] = [
-  { id: 'dashboard', name: '经营总览驾驶舱', group: '经营视图', icon: 'dashboard',
-    sub: '财务与业务指标全景视图 · 业财联动穿透' },
   { id: 'finance', name: '财务指标', group: '指标体系', icon: 'finance',
     sub: '一级 / 二级财务指标体系 · 目标达成与责任部门' },
   { id: 'business', name: '业务指标', group: '指标体系', icon: 'business',
     sub: '一级 / 二级业务指标体系 · 驱动因子与达成追踪' },
-  { id: 'linkage', name: '业财联动关系', group: '指标体系', icon: 'linkage',
-    sub: '业务指标 → 财务指标 传导路径与量化影响' },
   { id: 'policy', name: '政策环境', group: '外部环境', icon: 'policy',
     sub: '外部政策 → 业务指标 → 财务指标 的影响识别与影响量化' },
   { id: 'analysis', name: '数据分析', group: '决策支持', icon: 'analysis',
     sub: '渠道效益 / 产品效益 / 流量 / 用户 / 订单 / 品类 / 物流 / 仓储 / 管理费用 多维度分析',
     children: ANA_NAV },
-  { id: 'advice', name: '经营建议', group: '决策支持', icon: 'advice',
-    sub: '基于指标偏差自动生成的改善动作与财务影响测算' },
   { id: 'keywork', name: '重点工作进度', group: '决策支持', icon: 'keywork',
     sub: '年度重点项目立项 / 进度 / 责任部门 / 财务影响归因' },
   { id: 'data', name: '数据管理', group: '系统', icon: 'data',
@@ -1000,13 +972,12 @@ export const NAV: NavItem[] = [
 ]
 
 /* ------------------------- 持久化接口（替代原 save / load / seed） ------------------------- */
-export type SectionKey = 'indicators' | 'biz_dim' | 'policy' | 'advice' | 'keywork'
+export type SectionKey = 'indicators' | 'biz_dim' | 'policy' | 'keywork'
 /** 每个持久化部分对应的状态字段 */
 export const SECTION_OF = {
   indicators: 'IND',
   biz_dim: 'BIZ_DIM',
   policy: 'POLICY_EVENTS',
-  advice: 'ADVICE_EVENTS',
   keywork: 'KW_TASKS',
 } as const satisfies Record<SectionKey, keyof typeof S>
 
@@ -1020,7 +991,6 @@ export function seed(): void {
   S.IND = seedIND()
   S.BIZ_DIM = {}
   S.POLICY_EVENTS = POLICY_SEED.map(function (o) { return Object.assign({}, o) })
-  S.ADVICE_EVENTS = ADVICE_SEED.map(function (o) { return Object.assign({}, o) })
   S.KW_TASKS = KW_SEED.map(function (o) { return Object.assign({}, o) })
   recompute()
 }
@@ -1039,7 +1009,6 @@ export function snapshot(): Record<SectionKey, unknown> {
     indicators: json(clean),
     biz_dim: json(S.BIZ_DIM),
     policy: json(S.POLICY_EVENTS),
-    advice: json(S.ADVICE_EVENTS),
     keywork: json(S.KW_TASKS),
   }
 }
@@ -1052,9 +1021,6 @@ function isIndicator(x: unknown): x is Indicator {
 }
 function isPolicyEvent(x: unknown): x is PolicyEvent {
   return isRecord(x) && ['time', 'seg', 'desc', 'impact'].every(function (k) { return typeof x[k] === 'string' })
-}
-function isAdviceEvent(x: unknown): x is AdviceEvent {
-  return isRecord(x) && ['time', 'seg', 'desc', 'advice', 'impact'].every(function (k) { return typeof x[k] === 'string' })
 }
 function isKwTask(x: unknown): x is KwTask {
   return isRecord(x) && ['time', 'cat', 'goal', 'breakdown', 'eta', 'status'].every(function (k) { return typeof x[k] === 'string' }) &&
@@ -1096,7 +1062,6 @@ export function hydrate(input: Partial<Record<SectionKey, unknown>>): void {
   S.IND = ind.length ? ind : seedIND()
   S.BIZ_DIM = sec.biz_dim !== undefined ? toBizDimStore(sec.biz_dim) : {}
   S.POLICY_EVENTS = Array.isArray(sec.policy) ? sec.policy.filter(isPolicyEvent) : POLICY_SEED.map(function (o) { return Object.assign({}, o) })
-  S.ADVICE_EVENTS = Array.isArray(sec.advice) ? sec.advice.filter(isAdviceEvent) : ADVICE_SEED.map(function (o) { return Object.assign({}, o) })
   S.KW_TASKS = Array.isArray(sec.keywork) ? sec.keywork.filter(isKwTask) : KW_SEED.map(function (o) { return Object.assign({}, o) })
   recompute()
 }
@@ -1771,18 +1736,6 @@ export function validations(): ValidationItem[] {
 }
 
 /* ------------------------- 部门绩效 ------------------------- */
-export interface DeptScore { dept: string; score: number | null; items: Indicator[]; finItems: Indicator[]; bizItems: Indicator[] }
-export function deptScores(): DeptScore[] {
-  return DEPTS.map(function (d) {
-    const items = S.IND.filter(i => i.level === 2 && i.depts && i.depts.indexOf(d) >= 0)
-    const score = items.length ? weightedRate(items) : null
-    return {
-      dept: d, score: score, items: items,
-      finItems: items.filter(i => i.kind === 'fin'),
-      bizItems: items.filter(i => i.kind === 'biz'),
-    }
-  })
-}
 
 /* =========================================================================
    以下为原视图区中的纯计算辅助
@@ -1846,49 +1799,6 @@ export function memberRate(codes: string[], dimKey: string, member: string): num
     sw += it.weight; sum += r * it.weight
   })
   return sw ? sum / sw : null
-}
-
-/* 反向归因：从财务缺口出发定位业务动因。
-   bizState(code) 输出「指标名（实际 / 目标）」或「指标名（待填报）」 */
-export function bizState(code: string): string {
-  const i = find(code)
-  if (!i) return '—'
-  const sep = /[%）]$/.test(i.name) ? ' ' : ''
-  if (!hasData(i)) return i.name + '（待填报）'
-  return i.name + '（' + fmt(i.actual) + i.unit + sep + ' / 目标 ' + fmt(i.target) + i.unit + '）'
-}
-export interface ReverseItem { fin: string; biz: string; dept: string; gap: string }
-export function buildReverse(): ReverseItem[] {
-  const rev = jsNum((find('F1') || { actual: 0 }).actual) || 0
-  const g = function (c: string): { actual: number | null; target: number | null; name: string; unit: string } { return find(c) || { actual: 0, target: 0, name: c, unit: '' } }
-  const A = function (c: string): number { return jsNum(g(c).actual) }
-  const T = function (c: string): number { return jsNum(g(c).target) }
-  const gapOf = function (c: string): number { return Math.max(0, T(c) - A(c)) }
-  const items: ReverseItem[] = [
-    { fin: '毛利率缺口 ' + fmt(gapOf('F3'), 1) + 'pt（损失约 ' + fmt(rev * gapOf('F3') / 100, 0) + ' 万元）',
-      biz: bizState('S3.3') + ' ＋ ' + bizState('S1.4') + ' ＋ 平台渠道毛利率偏低（' + pct((A('F3.1') + A('F3.2') + A('F3.3') + A('F3.4')) / 4) + '）',
-      dept: '供应中心 / 运营部 / 产品作战部',
-      gap: '采购端每补足 1pt 降本率 ≈ 毛利 +' + fmt(rev * 0.67 / 100, 0) + ' 万元；营业成本占收入 ' + fmt(100 - A('F3'), 1) + '%' },
-    /* 修正原工具：原代码用 gapOf('F4')（净利润万元的目标 − 实际）当期间费用率偏差，得出「超标 766.1pt」类错误数字；
-       期间费用率是 F4.9（逆向指标，超标 = 实际 − 目标） */
-    { fin: '期间费用率超标 ' + fmt(Math.max(0, A('F4.9') - T('F4.9')), 1) + 'pt（多支出约 ' + fmt(rev * Math.max(0, A('F4.9') - T('F4.9')) / 100, 0) + ' 万元）',
-      biz: bizState('S1.5') + ' ＋ ' + bizState('S1.10') + ' ＋ ' + bizState('S4.3') + ' ＋ ' + bizState('S4.4'),
-      dept: '运营部 / 市场部 / 物流物控部',
-      gap: '营销费用率超标 ' + fmt(A('F4.1') - T('F4.1'), 1) + 'pt、物流费用合计超标 ' + fmt((A('F4.3') - T('F4.3')) + (A('F4.4') - T('F4.4')) + (A('F4.5') - T('F4.5')), 1) + 'pt 为主因' },
-    { fin: '经营净现金流缺口 ' + fmt(gapOf('F7'), 0) + ' 万元',
-      biz: '存货周转天数超目标 ' + fmt(Math.max(0, A('F7.6') - T('F7.6')), 0) + ' 天 ＋ ' + bizState('S4.6') + ' ＋ ' + bizState('S4.9'),
-      dept: '物流物控部 / 供应中心 / 产品作战部',
-      gap: '周转天数降至目标可释放现金约 ' + fmt(Math.max(0, A('F7.6') - T('F7.6')) * rev * 0.67 / 365, 0) + ' 万元' },
-    { fin: '净利润达成率仅 ' + fmt(rate(find('F4')), 0) + '%（缺口 ' + fmt(gapOf('F4'), 0) + ' 万元）',
-      biz: bizState('S4.8') + ' ＋ ' + bizState('S3.5') + ' ＋ ' + bizState('S1.7'),
-      dept: '产品作战部 / 物流物控部 / 市场部',
-      gap: '有货率每 +1pt ≈ 收入 ' + fmt(rev / 100 * 0.5, 0) + ' 万元；质检合格率每 +1pt ≈ 减少返工与退货损失 30 万元' },
-    { fin: '应收账款周转天数超目标 ' + fmt(A('F7.4') - T('F7.4'), 0) + ' 天',
-      biz: '应收账期偏长（' + fmt(A('F7.4'), 0) + ' 天）＋ ' + bizState('S4.6'),
-      dept: '财务部 / 运营部',
-      gap: '账期降至目标可释放资金约 ' + fmt(Math.max(0, A('F7.4') - T('F7.4')) * rev / 365, 0) + ' 万元' },
-  ]
-  return items
 }
 
 /* ---------- 数据分析小工具 ---------- */

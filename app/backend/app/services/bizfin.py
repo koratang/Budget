@@ -11,8 +11,7 @@ from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.models import BizfinSection
 from app.models.bizfin import SECTION_KEYS
 
-LABELS = {"indicators": "财务与业务指标", "biz_dim": "业务指标维度填报", "policy": "政策环境事件",
-          "advice": "经营建议", "keywork": "重点工作"}
+LABELS = {"indicators": "财务与业务指标", "biz_dim": "业务指标维度填报", "policy": "政策环境事件", "keywork": "重点工作"}
 
 
 def _view(row: BizfinSection) -> dict:

@@ -1,5 +1,5 @@
 /**
- * 路由注册表（开发约定「前端路由」：39 个页面，菜单 key = 路由 name）
+ * 路由注册表（开发约定「前端路由」：36 个页面，菜单 key = 路由 name）
  * group / parent 用于顶栏面包屑：分组 / [上级页链接] / 本页标题
  */
 export interface PageRouteDef {
@@ -41,13 +41,10 @@ export const PAGE_ROUTES: PageRouteDef[] = [
   { pageId: 'PAGE-F10-02', path: '/reports/channel', alias: '/reports/channel-site', name: 'report-channel', title: '渠道×站点偏差', group: '报表' },
   { pageId: 'PAGE-F10-03', path: '/reports/category', name: 'report-category', title: '品类×新老品偏差', group: '报表' },
   { pageId: 'PAGE-F10-04', path: '/reports/dept', name: 'report-dept', title: '部门费用报告', group: '报表' },
-  { pageId: 'PAGE-F15-01', path: '/bizfin/dashboard', name: 'bizfin-dashboard', title: '经营总览驾驶舱', group: '业财分析' },
   { pageId: 'PAGE-F15-02', path: '/bizfin/finance', name: 'bizfin-finance', title: '财务指标', group: '业财分析' },
   { pageId: 'PAGE-F15-03', path: '/bizfin/business', name: 'bizfin-business', title: '业务指标', group: '业财分析' },
-  { pageId: 'PAGE-F15-04', path: '/bizfin/linkage', name: 'bizfin-linkage', title: '业财联动关系', group: '业财分析' },
   { pageId: 'PAGE-F15-05', path: '/bizfin/analysis/:sub?', name: 'bizfin-analysis', title: '数据分析', group: '业财分析' },
   { pageId: 'PAGE-F15-06', path: '/bizfin/policy', name: 'bizfin-policy', title: '政策环境', group: '业财分析' },
-  { pageId: 'PAGE-F15-07', path: '/bizfin/advice', name: 'bizfin-advice', title: '经营建议', group: '业财分析' },
   { pageId: 'PAGE-F15-08', path: '/bizfin/keywork', name: 'bizfin-keywork', title: '重点工作进度', group: '业财分析' },
   { pageId: 'PAGE-F15-09', path: '/bizfin/data', name: 'bizfin-data', title: '业财数据管理', group: '业财分析' },
   { pageId: 'PAGE-F11-01', path: '/alerts', name: 'alerts', title: '预警中心', group: '预警与规则' },
@@ -94,13 +91,10 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: '业财分析',
     items: [
-      { name: 'bizfin-dashboard', label: '经营总览驾驶舱' },
       { name: 'bizfin-finance', label: '财务指标' },
       { name: 'bizfin-business', label: '业务指标' },
-      { name: 'bizfin-linkage', label: '业财联动关系' },
       { name: 'bizfin-analysis', label: '数据分析' },
       { name: 'bizfin-policy', label: '政策环境' },
-      { name: 'bizfin-advice', label: '经营建议' },
       { name: 'bizfin-keywork', label: '重点工作进度' },
       { name: 'bizfin-data', label: '业财数据管理' },
     ],

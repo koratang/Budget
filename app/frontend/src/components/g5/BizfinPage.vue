@@ -37,7 +37,7 @@ const errorTitle = computed(() => (store.error instanceof ApiError && store.erro
 const demoTip = computed(() =>
   props.synthetic
     ? '本页部分数据为按结构基准推算的示例数据（平台暂无流量、新老客、订单、服务商单价、库存等数据源），仅供演示口径与分析方法。'
-    : props.sections.every((k) => k === 'policy' || k === 'advice' || k === 'keywork')
+    : props.sections.every((k) => k === 'policy' || k === 'keywork')
       ? '台账内容为原工具自带的示例条目；修改、新增或删除并保存后即视为正式台账，此标记消失。'
       : '尚有部分内容为原工具自带的示例数据；在「业财数据管理」导入正式数据后，此标记消失。',
 )

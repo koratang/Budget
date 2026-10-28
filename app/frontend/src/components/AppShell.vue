@@ -6,8 +6,8 @@
 import { computed, watch, type Component } from 'vue'
 import {
   Bell, Box, Calendar, Coin, Collection, Connection, DataAnalysis, DataBoard, DataLine, Document, DocumentChecked, EditPen,
-  Files, Flag, Goods, Guide, HomeFilled, Histogram, Link, List, Lock, Monitor, Money, Notebook, OfficeBuilding, Odometer,
-  Opportunity, PieChart, Promotion, Setting, ShoppingBag, Share, TrendCharts, Upload, Wallet, Warning,
+  Files, Flag, Goods, Guide, HomeFilled, Histogram, Link, List, Lock, Money, Notebook, OfficeBuilding, Odometer, PieChart,
+  Promotion, Setting, ShoppingBag, TrendCharts, Upload, Wallet, Warning,
 } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
@@ -29,8 +29,8 @@ const ITEM_ICONS: Record<string, Component> = {
   versions: Collection, import: Upload, reconcile: Connection, 'report-company': Odometer, 'report-channel': DataBoard,
   'report-category': PieChart, 'report-dept': DataLine, alerts: Warning, rules: Document, stores: ShoppingBag, sku: Goods,
   customers: OfficeBuilding, accounts: Link, fx: Money, roles: Lock,
-  'bizfin-dashboard': Monitor, 'bizfin-finance': Histogram, 'bizfin-business': Promotion, 'bizfin-linkage': Share,
-  'bizfin-analysis': DataAnalysis, 'bizfin-policy': Guide, 'bizfin-advice': Opportunity, 'bizfin-keywork': Flag,
+  'bizfin-finance': Histogram, 'bizfin-business': Promotion, 'bizfin-analysis': DataAnalysis, 'bizfin-policy': Guide,
+  'bizfin-keywork': Flag,
   'bizfin-data': List,
 }
 

@@ -14,7 +14,7 @@ POLICY = [{"id": "p1", "date": "2027-03-05", "seg": "关税", "title": "美国�
 def test_permissions_and_menus(client, seeded):
     db = seeded
     for role in (Role.CEO, Role.FINANCE_HEAD, Role.FINANCE_BP):
-        assert "bizfin-dashboard" in menus_for({role}) and "bizfin-data" in menus_for({role})
+        assert "bizfin-finance" in menus_for({role}) and "bizfin-data" in menus_for({role})
     for role in (Role.OPERATIONS, Role.B2B, Role.LOGISTICS, Role.DEPT_HEAD, Role.DEPT_BUDGET):
         assert not [m for m in menus_for({role}) if m.startswith("bizfin-")]
 
@@ -49,8 +49,11 @@ def test_save_revision_conflict_and_audit(client, seeded):
 
     assert client.put("/api/bizfin/sections/salary", json={"data": [], "revision": None,
                                                          "is_demo": True}).status_code == 404
-    assert client.put("/api/bizfin/sections/advice", json={"data": "文本", "revision": None,
-                                                         "is_demo": True}).status_code == 422
+    assert client.put("/api/bizfin/sections/keywork", json={"data": "文本", "revision": None,
+                                                          "is_demo": True}).status_code == 422
+    # 经营建议模块已删除（revision 7）：不再接受该部分
+    assert client.put("/api/bizfin/sections/advice", json={"data": [], "revision": None,
+                                                         "is_demo": True}).status_code == 404
     logs = db.scalars(select(AuditLog).where(AuditLog.action == "bizfin.save")).all()
     assert [(a.object_id, a.after["revision"]) for a in logs] == [("policy", 1), ("policy", 2)]
 

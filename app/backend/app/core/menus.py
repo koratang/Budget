@@ -28,13 +28,10 @@ MENU_ROLES: dict[str, frozenset[str]] = {
     "report-category": MANAGEMENT | {Role.OPERATIONS},
     "report-dept": MANAGEMENT | {Role.DEPT_HEAD, Role.DEPT_BUDGET},
     # 业财分析（REQ-F15-01）
-    "bizfin-dashboard": MANAGEMENT,
     "bizfin-finance": MANAGEMENT,
     "bizfin-business": MANAGEMENT,
-    "bizfin-linkage": MANAGEMENT,
     "bizfin-analysis": MANAGEMENT,
     "bizfin-policy": MANAGEMENT,
-    "bizfin-advice": MANAGEMENT,
     "bizfin-keywork": MANAGEMENT,
     "bizfin-data": MANAGEMENT,
     # 预警与规则

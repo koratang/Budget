@@ -175,7 +175,7 @@ function clearOverrides(): void {
 const resetting = ref(false)
 async function onReset(): Promise<void> {
   const ok = await ElMessageBox.confirm(
-    '确认恢复为示例数据？这会清空服务器上已保存的全部业财数据（财务与业务指标、维度填报、政策环境事件、经营建议、重点工作），所有同事看到的都将回到原工具自带的示例数据，此操作不可撤销。建议先导出备份。',
+    '确认恢复为示例数据？这会清空服务器上已保存的全部业财数据（财务与业务指标、维度填报、政策环境事件、重点工作），所有同事看到的都将回到原工具自带的示例数据，此操作不可撤销。建议先导出备份。',
     '恢复示例数据',
     { type: 'warning', confirmButtonText: '确认恢复', cancelButtonText: '取消' },
   ).then(() => true, () => false)

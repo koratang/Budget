@@ -21,12 +21,12 @@ interface SectionsResp {
   can_reset: boolean
 }
 
-export const SECTION_KEYS: SectionKey[] = ['indicators', 'biz_dim', 'policy', 'advice', 'keywork']
+export const SECTION_KEYS: SectionKey[] = ['indicators', 'biz_dim', 'policy', 'keywork']
 export const SECTION_LABELS: Record<SectionKey, string> = {
-  indicators: '财务与业务指标', biz_dim: '业务指标维度填报', policy: '政策环境事件', advice: '经营建议', keywork: '重点工作',
+  indicators: '财务与业务指标', biz_dim: '业务指标维度填报', policy: '政策环境事件', keywork: '重点工作',
 }
 
-const LEDGERS = new Set<SectionKey>(['policy', 'advice', 'keywork'])
+const LEDGERS = new Set<SectionKey>(['policy', 'keywork'])
 
 const blankMeta = (): SectionMeta => ({ revision: null, is_demo: true, updated_by: null, updated_at: null })
 
@@ -82,7 +82,7 @@ const pendingOfficial = new Set<SectionKey>()
 
 async function put(key: SectionKey): Promise<void> {
   const meta = store.meta[key]
-  // 台账类（政策、建议、重点工作）没有导入入口：用户保存过即视为正式台账
+  // 台账类（政策、重点工作）没有导入入口：用户保存过即视为正式台账
   const isDemo = pendingOfficial.has(key) || LEDGERS.has(key) ? false : meta.is_demo
   pendingOfficial.delete(key)
   store.saving++

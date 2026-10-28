@@ -30,11 +30,11 @@ async function shot(page, file) {
   await page.setViewportSize({ width: 1280, height: 900 })
 }
 const PAGES = [
-  ['PAGE-F15-01', '/bizfin/dashboard'], ['PAGE-F15-02', '/bizfin/finance'], ['PAGE-F15-03', '/bizfin/business'],
-  ['PAGE-F15-04', '/bizfin/linkage'], ['PAGE-F15-05', '/bizfin/analysis/anaChannel'], ['PAGE-F15-06', '/bizfin/policy'],
-  ['PAGE-F15-07', '/bizfin/advice'], ['PAGE-F15-08', '/bizfin/keywork'], ['PAGE-F15-09', '/bizfin/data'],
+  ['PAGE-F15-02', '/bizfin/finance'], ['PAGE-F15-03', '/bizfin/business'], ['PAGE-F15-05', '/bizfin/analysis/anaChannel'],
+  ['PAGE-F15-06', '/bizfin/policy'], ['PAGE-F15-08', '/bizfin/keywork'], ['PAGE-F15-09', '/bizfin/data'],
 ]
-const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财联动关系', '数据分析', '政策环境', '经营建议', '重点工作进度', '业财数据管理']
+const NAV6 = ['财务指标', '业务指标', '数据分析', '政策环境', '重点工作进度', '业财数据管理']
+const REMOVED = ['经营总览驾驶舱', '业财联动关系', '经营建议']
 
 // ---------- FLOW-38 口径 + DESIGN 截图（林晓，示例数据）----------
 {
@@ -48,11 +48,15 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
     check(R, `DESIGN ${pid} 1280 宽无页面级横向滚动`, sw)
     if (OUT) await shot(page, `${OUT}/${pid}.png`)
   }
-  await open(page, '/bizfin/dashboard')
+  await open(page, '/bizfin/finance')
   const nav = await page.locator('aside').innerText()
-  check(R, 'FLOW-36 林晓侧栏业财分析 9 项', nav.includes('业财分析') && NAV9.every((n) => nav.includes(n)))
-  let t = await text(page)
-  check(R, 'FLOW-38 驾驶舱净销售额 9,840', t.includes('9,840'))
+  check(R, 'FLOW-36 林晓侧栏业财分析 6 项、无已删除模块', nav.includes('业财分析') && NAV6.every((n) => nav.includes(n)) && !REMOVED.some((n) => nav.includes(n)))
+  for (const old of ['/bizfin/dashboard', '/bizfin/linkage', '/bizfin/advice']) {
+    await page.goto(BASE + old)
+    await page.waitForTimeout(800)
+    check(R, `FLOW-36 旧链接 ${old} 回到首页`, new URL(page.url()).pathname === '/')
+  }
+  let t = ''
   await open(page, '/bizfin/finance')
   t = await text(page)
   // 可编辑项读输入框；派生项（如 F4.9）为只读文本
@@ -70,9 +74,9 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
     const got = Number((await val(c)).replace(/,/g, ''))
     check(R, `FLOW-38 ${c} = ${v}`, Math.abs(got - v) < 0.051, String(got))
   }
-  await open(page, '/bizfin/dashboard')
-  t = await text(page)
-  const okN = await page.locator('.chk.ok').count(); const allN = await page.locator('.chk').count()
+  await open(page, '/bizfin/data')
+  const chk = page.locator('[data-checks]')
+  const okN = await chk.locator('.chk.ok').count(); const allN = await chk.locator('.chk').count()
   check(R, 'FLOW-38 勾稽校验 10 项全部通过', okN === 10 && allN === 10, `ok=${okN} all=${allN}`)
   await open(page, '/bizfin/analysis/anaChannel')
   t = await text(page)
@@ -153,15 +157,6 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
   await page.waitForTimeout(1500)
   await open(page, '/bizfin/policy')
   check(R, 'FLOW-39 确认后删除并保存', (await page.locator('tbody tr').count()) === n0 && !(await page.locator('[aria-label="事件描述"]').evaluateAll((els) => els.map((e) => e.value))).includes('美国对进口浴室柜加征 10% 关税'))
-
-  await open(page, '/bizfin/advice')
-  const a0 = await page.locator('tbody tr').count()
-  await page.getByRole('button', { name: '＋ 新增建议' }).click()
-  await page.locator('tbody tr').last().getByLabel('管理建议').fill('Wayfair 美西仓备货周期由 45 天压到 30 天')
-  await page.locator('tbody tr').last().getByLabel('管理建议').blur()
-  await page.waitForTimeout(1500)
-  await open(page, '/bizfin/advice')
-  check(R, 'FLOW-39 新增经营建议保存', (await page.locator('tbody tr').count()) === a0 + 1)
 
   await open(page, '/bizfin/keywork')
   const total0 = await page.locator('[data-testid="count"]').innerText()
