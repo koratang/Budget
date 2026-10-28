@@ -121,7 +121,7 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
           <table class="table ledger">
             <!-- 固定布局：工作分解为自适应主列；分类 / 状态列按下拉完整文字定宽，进度列收紧 -->
             <colgroup>
-              <col class="w-time"><col class="w-cat"><col class="w-goal"><col><col class="w-eta"><col class="w-prog"><col class="w-st"><col v-if="store.canEdit" class="w-op">
+              <col class="w-time"><col class="w-cat"><col><col><col class="w-eta"><col class="w-prog"><col class="w-st"><col v-if="store.canEdit" class="w-op">
             </colgroup>
             <thead>
               <tr>
@@ -224,13 +224,12 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
 .kw-bar { position: relative; display: inline-block; width: 100%; max-width: 120px; height: 16px; border-radius: var(--radius-sm); background: var(--border-soft); overflow: hidden; vertical-align: middle; }
 .kw-bar i { position: absolute; inset: 0 auto 0 0; }
 .kw-bar span { position: relative; display: block; text-align: center; font-size: var(--text-xs); line-height: 16px; color: var(--fg); }
-.w-time { width: 104px; }
-.w-cat { width: 124px; }
-.w-goal { width: 24%; }
-.w-eta { width: 112px; }
-.w-prog { width: 104px; }
-.w-st { width: 100px; }
-.w-op { width: 96px; }
+.w-time { width: 100px; }
+.w-cat { width: 116px; }
+.w-eta { width: 96px; }
+.w-prog { width: 92px; }
+.w-st { width: 108px; }
+.w-op { width: 84px; }
 .op { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; align-items: center; }
 .op .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
 .foot { margin: var(--space-3) 0 0; line-height: 1.7; }

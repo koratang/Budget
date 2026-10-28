@@ -277,7 +277,7 @@ function onActual(e: Event, i: Indicator): void {
             <tr v-for="{ l, now } in links" :key="l.biz + l.fin">
               <td><span class="code-tag">{{ l.biz }}</span> {{ l.bizName }}</td>
               <td><span class="code-tag">{{ l.fin }}</span> {{ l.finName }}</td>
-              <td class="strong" :class="l.dir === '正向' ? 'down' : 'up'">{{ l.dir }}</td>
+              <td class="strong" :class="l.dir === '正向' ? 'up' : 'down'">{{ l.dir }}</td>
               <td>
                 <span class="mini-prog"><span class="bar"><i :class="strengthCls(l.strength)" :style="{ width: Math.round(l.strength * 100) + '%' }" /></span>{{ (l.strength * 100).toFixed(0) }}%</span>
               </td>

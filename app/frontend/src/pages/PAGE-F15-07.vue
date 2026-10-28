@@ -68,7 +68,7 @@ function avSet(i: number, f: Field, e: Event): void {
       <div v-else class="table-wrap">
         <table class="table ledger">
           <colgroup>
-            <col class="w-time"><col class="w-seg"><col class="w-desc"><col class="w-adv"><col><col v-if="store.canEdit" class="w-op">
+            <col class="w-time"><col class="w-seg"><col><col><col><col v-if="store.canEdit" class="w-op">
           </colgroup>
           <thead>
             <tr><th>时间</th><th>业务板块</th><th>背景描述</th><th>管理建议</th><th>影响评估</th><th v-if="store.canEdit" /></tr>
@@ -129,8 +129,6 @@ function avSet(i: number, f: Field, e: Event): void {
 .op { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; align-items: center; }
 .w-time { width: 116px; }
 .w-seg { width: 150px; }
-.w-desc { width: 27%; }
-.w-adv { width: 32%; }
 .w-op { width: 96px; }
 .op .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
 .note { margin: var(--space-3) 0 0; }

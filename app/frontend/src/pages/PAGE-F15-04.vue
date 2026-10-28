@@ -191,10 +191,10 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
       </div>
       <div v-if="links.length" class="table-wrap">
         <table class="table link-table" data-testid="link-table">
-          <!-- 固定布局：传导逻辑为自适应主列，量化影响固定 220px，其余列按内容收紧；超宽只在 .table-wrap 内横向滚动 -->
+          <!-- 固定布局：传导逻辑为自适应主列，量化影响固定 200px 换行显示，其余列收紧，1280 宽下整表放得下不出现裁切 -->
           <colgroup>
-            <col style="width: 150px"><col style="width: 180px"><col style="width: 64px"><col style="width: 112px">
-            <col><col style="width: 120px"><col style="width: 220px">
+            <col style="width: 124px"><col style="width: 136px"><col style="width: 56px"><col style="width: 100px">
+            <col><col style="width: 104px"><col style="width: 200px">
           </colgroup>
           <thead>
             <tr>
@@ -206,7 +206,7 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
             <tr v-for="(l, i) in links" :key="i">
               <td class="wrap"><span class="badge badge-info">{{ l.biz }}</span> {{ l.bizName }}</td>
               <td class="wrap"><span class="badge badge-good">{{ l.fin }}</span> {{ l.finName }}</td>
-              <td><span class="badge" :class="l.dir === '正向' ? 'badge-good' : 'badge-bad'">{{ l.dir }}</span></td>
+              <td><span class="badge" :class="l.dir === '正向' ? 'badge-bad' : 'badge-good'">{{ l.dir }}</span></td>
               <td>
                 <div class="mini-prog">
                   <div class="bar"><i :class="barCls(l.strength)" :style="{ width: Math.round(l.strength * 100) + '%' }"></i></div>
@@ -259,7 +259,8 @@ text.t-blank { fill: var(--muted); }
 .stack-item .n { width: 20px; height: 20px; border-radius: var(--radius-md); background: color-mix(in oklab, var(--accent), white 88%); color: var(--accent); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; flex: 0 0 20px; }
 .stack-item .c { font-size: var(--text-sm); color: var(--fg-2); line-height: 1.75; }
 .stack-item .c b { color: var(--fg); }
-.link-table { table-layout: fixed; min-width: 1060px; }
+.link-table { table-layout: fixed; min-width: 900px; }
+.link-table td { white-space: normal; overflow-wrap: anywhere; }
 .link-table td.wrap { white-space: normal; line-height: 1.65; padding-top: var(--space-1); padding-bottom: var(--space-1); }
 /* 量化影响同一格里正负并存，无法整体按涨红跌绿着色，统一用正文色加粗（原工具为财务主题绿，会与「跌绿」冲突） */
 .impact { color: var(--fg); font-weight: 600; }

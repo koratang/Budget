@@ -68,7 +68,7 @@ function peSet(i: number, f: Field, e: Event): void {
       <div v-else class="table-wrap">
         <table class="table ledger">
           <colgroup>
-            <col class="w-time"><col class="w-seg"><col class="w-desc"><col><col v-if="store.canEdit" class="w-op">
+            <col class="w-time"><col class="w-seg"><col><col><col v-if="store.canEdit" class="w-op">
           </colgroup>
           <thead>
             <tr><th>时间</th><th>业务板块</th><th>事件描述</th><th>事件影响</th><th v-if="store.canEdit" /></tr>
@@ -128,7 +128,6 @@ function peSet(i: number, f: Field, e: Event): void {
 .op { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; align-items: center; }
 .w-time { width: 132px; }
 .w-seg { width: 150px; }
-.w-desc { width: 42%; }
 .w-op { width: 96px; }
 .op .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
 .note { margin: var(--space-3) 0 0; }
