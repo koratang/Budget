@@ -1,0 +1,60 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
+import { POLICY_SEED, S, seed } from '@/bizfin/engine'
+import { commit, store } from '@/bizfin/persist'
+import Page from '../PAGE-F15-06.vue'
+
+vi.mock('@/bizfin/persist', async (orig) => ({ ...(await orig<typeof import('@/bizfin/persist')>()), commit: vi.fn() }))
+
+async function mountPage() {
+  const w = mount(Page, { global: { stubs: { RouterLink: RouterLinkStub } } })
+  await flushPromises()
+  return w
+}
+
+describe('PAGE-F15-06 政策环境', () => {
+  beforeEach(() => {
+    seed()
+    store.loaded = true
+    store.canEdit = true
+    vi.mocked(commit).mockClear()
+  })
+
+  it('台账显示示例事件，不显示年度 / 月度切换', async () => {
+    const w = await mountPage()
+    expect(w.get('[data-testid="count"]').text()).toBe(`${POLICY_SEED.length} 条`)
+    expect(w.findAll('tbody tr')).toHaveLength(POLICY_SEED.length)
+    expect(w.find('[aria-label="维度"]').exists()).toBe(false)
+    expect((w.get('tbody tr select').element as HTMLSelectElement).value).toBe(POLICY_SEED[0].seg)
+  })
+
+  it('新增、编辑、二次确认删除后保存政策部分', async () => {
+    const w = await mountPage()
+    const n = S.POLICY_EVENTS.length
+    await w.get('button.btn-primary').trigger('click')
+    expect(S.POLICY_EVENTS).toHaveLength(n + 1)
+    expect(commit).toHaveBeenLastCalledWith('policy')
+    expect(w.get('[role="status"]').text()).toBe('已新增事件行，请填写时间 / 业务板块 / 事件描述 / 事件影响')
+
+    const last = w.findAll('tbody tr')[n]
+    await last.get('input[aria-label="时间"]').setValue('2026-10-01')
+    await last.get('select').setValue('仓配履约板块')
+    await last.get('input[aria-label="事件描述"]').setValue('美国港口罢工导致美东线路头程延误')
+    expect(S.POLICY_EVENTS[n]).toEqual({ time: '2026-10-01', seg: '仓配履约板块', desc: '美国港口罢工导致美东线路头程延误', impact: '' })
+    expect(commit).toHaveBeenCalledTimes(4)
+
+    await last.get('button.btn-danger').trigger('click')
+    expect(S.POLICY_EVENTS).toHaveLength(n + 1) /* 第一次点击只进入确认 */
+    await w.findAll('tbody tr')[n].get('button.btn-danger').trigger('click')
+    expect(S.POLICY_EVENTS).toHaveLength(n)
+    expect(w.get('[role="status"]').text()).toBe(`已删除第 ${n + 1} 行政策事件`)
+    expect(commit).toHaveBeenCalledTimes(5)
+  })
+
+  it('CEO（只读）看不到编辑控件', async () => {
+    store.canEdit = false
+    const w = await mountPage()
+    expect(w.findAll('input, select, button.btn-primary, button.btn-danger')).toHaveLength(0)
+    expect(w.text()).toContain(POLICY_SEED[0].desc)
+  })
+})
