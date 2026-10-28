@@ -15,8 +15,8 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, JSONResponse
 
-from app.api import (alerts, approvals, auth, dept_expense, exports, filling, health, imports, masterdata, me,
-                     reports, roles, rules, tasks, versions, workbench)
+from app.api import (alerts, approvals, auth, bizfin, dept_expense, exports, filling, health, imports, masterdata,
+                     me, reports, roles, rules, tasks, versions, workbench)
 from app.config import Settings, get_settings
 from app.core.auth import bootstrap_finance_head, purge_dev_sessions
 from app.core.errors import NotFound, install_error_handlers
@@ -27,7 +27,7 @@ from app.dingtalk.scheduler import create_scheduler
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
 FEATURE_ROUTERS = [masterdata, roles, tasks, filling, dept_expense, approvals, versions, imports, reports, alerts,
-                   rules, exports, workbench]
+                   rules, exports, workbench, bizfin]
 
 _WRITE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 

@@ -4,7 +4,7 @@
 
 - work_type: feature
 - workflow_mode: standard
-- revision: 5
+- revision: 6
 - scope: 本期
 - source_prd: PRD详细版.md
 - status: active
@@ -1724,6 +1724,140 @@ THE SYSTEM SHALL 在该单元格标注「超出新渠道放量规则」，并在
 ```text
 WHEN 用户在预算表或任一偏差报告页面点击导出
 THE SYSTEM SHALL 生成 .xlsx 文件，列与页面当前显示一致，且只包含该用户数据范围内的行
+```
+
+## Feature F15 · 业财分析（并入「业财一体化工作台」）
+
+### US-F15-01 · 在预算平台里看业财指标、做经营分析
+
+- Role: 财务负责人、财务BP、CEO
+- Goal: 不再单独打开业财一体化工作台，在预算平台里查看财务与业务指标、业财联动、九项数据分析、政策环境、经营建议和重点工作进度
+- Value: 指标、分析和预算在同一个平台，同一套账号与权限，数据集中保存可追溯
+- Stage: 本期
+- Status: active
+- Source: 用户 2026-10-28（上传业财一体化工作台，要求把全部模块合并进预算平台，按平台重写；缺数据源的指标保留模拟数据当演示）
+
+### REQ-F15-01 · 数据集中保存与权限
+
+- Story: US-F15-01
+- Stage: 本期
+- Revision: 1
+- Status: active
+
+### AC-F15-01 · 可见与可编辑角色
+
+- Parent: REQ-F15-01
+- Priority: P0
+- EARS:
+
+```text
+WHEN 用户登录平台
+THE SYSTEM SHALL 仅向 CEO、财务负责人、财务BP 显示侧栏「业财分析」分组；CEO 只读，财务负责人与财务BP 可编辑；其他角色访问业财分析接口返回 403「无权限」
+```
+
+### AC-F15-02 · 服务器保存与并发保护
+
+- Parent: REQ-F15-01
+- Priority: P0
+- EARS:
+
+```text
+WHEN 有编辑权限的用户修改指标、维度填报、政策事件、经营建议或重点工作
+THE SYSTEM SHALL 自动保存到服务器（不再存浏览器本地），每次保存写审计日志；若其他人已先保存同一部分，提示「已被某某更新，请刷新后再改」且不覆盖对方数据
+```
+
+### AC-F15-03 · 示例数据标记
+
+- Parent: REQ-F15-01
+- Priority: P0
+- EARS:
+
+```text
+WHEN 某部分尚未通过业财数据管理导入正式数据，或页面含平台暂无数据源的推算数据（流量、新老客、订单、服务商单价、库存等）
+THE SYSTEM SHALL 在页面标题旁显示「示例数据」标记并说明来源；财务负责人可一键恢复示例数据（需二次确认、写审计）
+```
+
+### REQ-F15-02 · 指标体系、勾稽与驾驶舱
+
+- Story: US-F15-01
+- Stage: 本期
+- Revision: 1
+- Status: active
+
+### AC-F15-04 · 财务与业务指标口径不变
+
+- Parent: REQ-F15-02
+- Priority: P0
+- EARS:
+
+```text
+WHEN 查看或编辑财务指标（F1–F7）与业务指标（S1–S4 四板块及维度填报）
+THE SYSTEM SHALL 按原工作台口径计算派生值与勾稽校验（渠道Σ=市场Σ=一级、F4.9=七项费用率之和、未填报显示「—」不当 0、涨红跌绿），年度 / 月度维度切换后全部模块同步刷新
+```
+
+### AC-F15-05 · 驾驶舱与业财联动
+
+- Parent: REQ-F15-02
+- Priority: P0
+- EARS:
+
+```text
+WHEN 打开经营总览驾驶舱或业财联动关系
+THE SYSTEM SHALL 显示与原工作台一致的核心 KPI、健康度、勾稽校验结果和 S→F 传导关系，数值随指标编辑即时更新
+```
+
+### REQ-F15-03 · 数据分析九个子模块
+
+- Story: US-F15-01
+- Stage: 本期
+- Revision: 1
+- Status: active
+
+### AC-F15-06 · 分析口径
+
+- Parent: REQ-F15-03
+- Priority: P0
+- EARS:
+
+```text
+WHEN 打开数据分析的渠道效益、流量、用户、订单、品类、头程物流、尾程物流、仓储、管理费用任一子模块
+THE SYSTEM SHALL 按原工作台模型计算并显示图表与明细表（如渠道贡献毛利合计 = 净利润），业务指标已填报时优先用填报值，未填报时回落结构基准
+```
+
+### REQ-F15-04 · 政策环境、经营建议、重点工作
+
+- Story: US-F15-01
+- Stage: 本期
+- Revision: 1
+- Status: active
+
+### AC-F15-07 · 事件维护
+
+- Parent: REQ-F15-04
+- Priority: P0
+- EARS:
+
+```text
+WHEN 有编辑权限的用户新增、修改或删除政策事件、经营建议或重点工作任务
+THE SYSTEM SHALL 保存到服务器并刷新相关统计（重点工作按分类 / 状态统计完成进度）；CEO 只能查看
+```
+
+### REQ-F15-05 · 业财数据导入导出
+
+- Story: US-F15-01
+- Stage: 本期
+- Revision: 1
+- Status: active
+
+### AC-F15-08 · 导入导出
+
+- Parent: REQ-F15-05
+- Priority: P0
+- EARS:
+
+```text
+WHEN 有编辑权限的用户在业财数据管理导入指标、维度或月度 CSV / 粘贴表格
+THE SYSTEM SHALL 按原工作台表头识别规则写入并重新勾稽，显示写入条数与未识别行，导入部分去掉「示例数据」标记；任何可查看用户都可导出指标、维度、月度数据为 CSV
 ```
 
 ## Non-functional requirements

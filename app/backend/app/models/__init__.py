@@ -2,6 +2,7 @@
 from app.models.actuals import BiActualAgg, BiActualSku, ImportBatch, ImportStaging, KingdeeActual, VarianceNote
 from app.models.auth import Role, User, UserRole, UserScope, UserSession
 from app.models.base import Base
+from app.models.bizfin import BizfinSection
 from app.models.budget import (ApprovalRecord, B2bUnit, BudgetTask, BudgetVersion, ChannelCategoryRatio,
                                ChannelSiteRatio, CompanyOtherPl, DeptExpense, FillingUnit, PlatformUnit, Reserve,
                                ReserveUsage, SnapshotMonth, TargetAdjustment)
@@ -19,4 +20,5 @@ __all__ = [
     "ApprovalRecord",
     "ImportBatch", "ImportStaging", "KingdeeActual", "BiActualSku", "BiActualAgg", "VarianceNote",
     "Rule", "RuleVersion", "Alert", "NotificationOutbox", "AuditLog",
+    "BizfinSection",
 ]
