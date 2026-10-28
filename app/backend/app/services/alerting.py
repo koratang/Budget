@@ -112,7 +112,7 @@ class Receivers:
 # ---------------------------------------------------------------------------
 def _effective_kingdee_ids(db: Session, months: list[date]) -> list[int]:
     return list(db.scalars(select(ImportBatch.id).where(
-        ImportBatch.source.in_((ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY)),
+        ImportBatch.source.in_((ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY, ImportSource.OPS_HISTORY)),
         ImportBatch.status == ImportStatus.EFFECTIVE, ImportBatch.period.in_(months))))
 
 

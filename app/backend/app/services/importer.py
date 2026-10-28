@@ -30,14 +30,17 @@ from app.core.money import MoneyError, dec_str, fmt_cny, fmt_foreign, to_decimal
 from app.models import (BCustomer, BudgetAccount, Department, ImportBatch, ImportStaging,
                         KingdeeAccountMap, Site, Sku, Spu, Store, User)
 from app.models.enums import ImportSource, ImportStatus
-from app.services import alerting, masterdata
+from app.services import alerting, masterdata, ops_history
 from app.services.versions import CHANNEL_ITEMS, Actor, audit, fmt_dt
 
 SOURCE_LABELS = {ImportSource.KINGDEE: "金蝶月度", ImportSource.KINGDEE_HISTORY: "历史金蝶",
-                 ImportSource.BI: "BI 双月"}
-FAMILY = {ImportSource.KINGDEE: (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY),
-          ImportSource.KINGDEE_HISTORY: (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY),
-          ImportSource.BI: (ImportSource.BI,)}
+                 ImportSource.OPS_HISTORY: "经营历史表", ImportSource.BI: "BI 双月"}
+# 金蝶月度 / 历史金蝶 / 经营历史表写同一张实际表，同期间互相覆盖
+_KINGDEE_FAMILY = (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY, ImportSource.OPS_HISTORY)
+FAMILY = {ImportSource.KINGDEE: _KINGDEE_FAMILY, ImportSource.KINGDEE_HISTORY: _KINGDEE_FAMILY,
+          ImportSource.OPS_HISTORY: _KINGDEE_FAMILY, ImportSource.BI: (ImportSource.BI,)}
+# 缺主数据导致的问题：经营历史表可一键补建
+MISSING_MASTER_TYPES = {"store_not_found", "customer_not_found", "mgmt_account_not_found"}
 API_STATUS = {ImportStatus.VALIDATING: "validating", ImportStatus.VALIDATION_FAILED: "failed",
               ImportStatus.PENDING_CONFIRM: "passed", ImportStatus.EFFECTIVE: "imported"}
 HISTORY_MAX_PERIODS = 24
@@ -64,6 +67,16 @@ ISSUE_TYPES = {
     "too_many_periods": ("期间数超过上限", f"历史文件最多 {HISTORY_MAX_PERIODS} 个期间", None),
     "empty_file": ("文件没有数据行", "按模板填写后重新上传", None),
     "unreadable": ("文件无法读取", "确认为 .xlsx / .xls 后重新上传", None),
+    # 经营历史表
+    "customer_not_found": ("B端客户不在主数据中", "点上方「补建…并重新校验」，或到 B端客户与部门 维护", "/master/customers"),
+    "mgmt_account_not_found": ("管理费用项目不在预算科目中", "点上方「补建…并重新校验」，或到 科目映射 维护",
+                               "/master/accounts"),
+    "ops_year_missing": ("未选择年度", "选择表格所属年度后重新上传", None),
+    "ops_no_sheets": ("没有可识别的工作表", "需包含「<渠道>-RMB」或「管理费用RMB」工作表", None),
+    "ops_header": ("表头不符", "保留「1月…12月」（管理费用为「1月实际…」）表头后重新上传", None),
+    "ops_error_cell": ("公式错误单元格，已跳过", "仅提示；如需导入请在原表修正后重新上传", None),
+    "ops_gp_mismatch": ("表内毛利额与平台口径重算不一致", "仅提示；入库按各项明细，毛利按平台口径计算", None),
+    "ops_dept_public": ("负责部门不在主数据中，计入公司公共", "仅提示；如需按部门统计，请先在主数据中维护该部门", None),
 }
 _MONTH_RE = re.compile(r"^(\d{4})-(0[1-9]|1[0-2])$")
 
@@ -317,15 +330,18 @@ def upload_dir(data_dir: Path, now: datetime) -> Path:
 
 
 def create_batch(db: Session, actor: Actor, *, source: str, file_name: str, content: bytes, data_dir: Path,
-                 request=None) -> ImportBatch:
-    if source not in VALIDATORS:
-        raise ValidationFailed("导入类型只能是 kingdee / kingdee-history / bi", code="invalid_source")
+                 request=None, year: int | None = None) -> ImportBatch:
+    if source not in VALIDATORS and source != ImportSource.OPS_HISTORY:
+        raise ValidationFailed("导入类型只能是 kingdee / kingdee-history / ops-history / bi", code="invalid_source")
     if not file_name.lower().endswith((".xlsx", ".xls")):
         raise ValidationFailed("只支持 .xlsx / .xls 文件", code="invalid_file_type")
+    if source == ImportSource.OPS_HISTORY and (year is None or not 2000 <= year <= 2100):
+        raise ValidationFailed("请选择表格所属年度", code="year_required", details={"field": "year"})
     now = clock.now()
     batch = ImportBatch(source=source, file_name=file_name[:256], file_size=len(content),
                         sha256=hashlib.sha256(content).hexdigest(), status=ImportStatus.VALIDATING,
-                        uploaded_by=actor.id, uploaded_at=now)
+                        uploaded_by=actor.id, uploaded_at=now,
+                        data_year=year if source == ImportSource.OPS_HISTORY else None)
     db.add(batch)
     db.flush()
     ext = Path(file_name).suffix.lower()
@@ -352,24 +368,30 @@ def validate_batch(db: Session, batch_id: int) -> ImportBatch:
     batch = db.get(ImportBatch, batch_id)
     if batch is None or batch.status != ImportStatus.VALIDATING:
         return batch
-    try:
-        rows = read_rows(Path(batch.file_path))
-        if not rows:
-            raise ImportFileError("empty_file")
-        errors, staged = VALIDATORS[batch.source](db, rows, batch.source)
-    except ImportFileError as e:
-        errors, staged = [], []
-        _err(errors, 1, e.code, e.value)
-        rows = []
-    batch.row_count = len(staged) if not errors else max(len(rows) - 1, 0)
+    if batch.source == ImportSource.OPS_HISTORY:
+        errors, staged = ops_history.validate(db, Path(batch.file_path), batch.data_year)
+        rows = staged
+    else:
+        try:
+            rows = read_rows(Path(batch.file_path))
+            if not rows:
+                raise ImportFileError("empty_file")
+            errors, staged = VALIDATORS[batch.source](db, rows, batch.source)
+        except ImportFileError as e:
+            errors, staged = [], []
+            _err(errors, 1, e.code, e.value)
+            rows = []
+    # 带 warning 的问题只提示（经营历史表：公式错误单元格、毛利核对差异、部门计入公司公共），不阻断入库
+    blocking = [e for e in errors if not e.get("warning")]
+    batch.row_count = len(staged) if not blocking else max(len(rows) - 1, 0)
     batch.validated_at = clock.now()
-    if errors:
+    if blocking:
         batch.status = ImportStatus.VALIDATION_FAILED
         batch.errors = errors
     else:
         _copy_staging(db, batch.id, staged)
         batch.status = ImportStatus.PENDING_CONFIRM
-        batch.errors = []
+        batch.errors = errors
     db.commit()
     return batch
 
@@ -399,8 +421,13 @@ def issues_view(errors: list[dict] | None) -> list[dict]:
         row = e["row"]
         if e.get("type") == "sku_unmapped":
             row = f"第 {row:,} 行起 · 共 {e.get('count', 1)} 行"
-        out.append({"row": row, "type": label, "code": e.get("type"), "name": e.get("value") or None,
-                    "action": action, "link": link})
+        item = {"row": row, "type": label, "code": e.get("type"), "name": e.get("value") or None,
+                "action": action, "link": link, "warning": bool(e.get("warning"))}
+        if e.get("type") == "ops_gp_mismatch":
+            item["name"] = f"{e['value']}：重算 {fmt_cny(Decimal(e['recalc']))}，表内 {fmt_cny(Decimal(e['sheet']))}"
+        if e.get("sheet") and e.get("type") == "store_not_found":
+            item["name"] = f"{e['value']}（{e['sheet']}）"
+        out.append(item)
     return out
 
 
@@ -448,6 +475,36 @@ def kingdee_summary(db: Session, batch_id: int) -> dict:
             "unassigned_total": dec_str(un_total), "unassigned_total_display": fmt_cny(un_total)}
 
 
+def ops_summary(db: Session, batch_id: int) -> dict:
+    rows = [d for (d,) in db.execute(select(ImportStaging.data).where(ImportStaging.batch_id == batch_id))]
+    out = ops_history.summary(db, rows)
+    for sh in out["sheets"]:
+        sh["revenue_display"] = fmt_cny(Decimal(sh["revenue"]))
+        sh["gross_profit_display"] = fmt_cny(Decimal(sh["gross_profit"]))
+    out["mgmt_total_display"] = fmt_cny(Decimal(out["mgmt_total"]))
+    return out
+
+
+def create_missing_master(db: Session, actor: Actor, batch_id: int, request=None) -> dict:
+    """经营历史表校验失败且只缺主数据时，按推断补建店铺 / B 端客户 / 管理费用科目，然后重新校验（调用方提交）。"""
+    batch = db.scalar(select(ImportBatch).where(ImportBatch.id == batch_id).with_for_update())
+    if batch is None or batch.parent_batch_id is not None:
+        raise NotFound("导入批次不存在")
+    blocking = [e for e in (batch.errors or []) if not e.get("warning")]
+    if (batch.source != ImportSource.OPS_HISTORY or batch.status != ImportStatus.VALIDATION_FAILED or not blocking
+            or not all(e.get("type") in MISSING_MASTER_TYPES for e in blocking)):
+        raise Conflict("该批次没有可补建的主数据", code="nothing_to_create")
+    plan = ops_history.missing_plan(db, blocking)
+    created = ops_history.create_missing(db, plan)
+    audit(db, actor, action="import_master_created", object_type="import_batch", object_id=batch.id,
+          request=request, after={"plan": plan, "created": created})
+    batch.status = ImportStatus.VALIDATING
+    batch.errors = None
+    db.flush()
+    validate_batch(db, batch.id)
+    return {**batch_view(db, db.get(ImportBatch, batch.id)), "created": created}
+
+
 def bi_summary(db: Session, batch_id: int, limit: int = 200) -> dict:
     sku_count = db.scalar(text("SELECT count(DISTINCT data->>'sku_id') FROM import_staging WHERE batch_id = :b"),
                           {"b": batch_id})
@@ -480,20 +537,31 @@ def batch_view(db: Session, batch: ImportBatch) -> dict:
         "uploaded_at": fmt_dt(batch.uploaded_at), "validated_at": fmt_dt(batch.validated_at),
         "validation_seconds": str(round((batch.validated_at - batch.uploaded_at).total_seconds(), 1))
         if batch.validated_at and batch.uploaded_at else None,
-        "issues": issues_view(batch.errors) if batch.status == ImportStatus.VALIDATION_FAILED else [],
+        "issues": issues_view(batch.errors) if batch.status in (ImportStatus.VALIDATION_FAILED,
+                                                                 ImportStatus.PENDING_CONFIRM) else [],
+        "data_year": batch.data_year,
         "needs_overwrite": False, "overwrite": [], "periods": [], "summary": None,
     }
     if batch.status == ImportStatus.VALIDATION_FAILED:
         errs = batch.errors or []
-        data["issue_counts"] = _issue_counts(errs)
+        data["issue_counts"] = _issue_counts([e for e in errs if not e.get("warning")])
         data["unmapped_skus"] = [e["value"] for e in errs if e.get("type") == "sku_unmapped"]
+        blocking = [e for e in errs if not e.get("warning")]
+        if batch.source == ImportSource.OPS_HISTORY and blocking and \
+                all(e.get("type") in MISSING_MASTER_TYPES for e in blocking):
+            data["missing_master"] = ops_history.missing_plan(db, blocking)
     if batch.status == ImportStatus.PENDING_CONFIRM:
         periods = staged_periods(db, batch.id)
         data["periods"] = [fmt_month(p) for p in periods]
         info = overwrite_info(db, batch.source, periods)
         data["overwrite"] = info
         data["needs_overwrite"] = bool(info)
-        data["summary"] = bi_summary(db, batch.id) if batch.source == ImportSource.BI else kingdee_summary(db, batch.id)
+        if batch.source == ImportSource.BI:
+            data["summary"] = bi_summary(db, batch.id)
+        elif batch.source == ImportSource.OPS_HISTORY:
+            data["summary"] = ops_summary(db, batch.id)
+        else:
+            data["summary"] = kingdee_summary(db, batch.id)
     if batch.status in (ImportStatus.EFFECTIVE, ImportStatus.REPLACED):
         children = db.scalars(select(ImportBatch).where(ImportBatch.parent_batch_id == batch.id)
                               .order_by(ImportBatch.period)).all()

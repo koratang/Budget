@@ -26,8 +26,8 @@ export interface GridRow {
   /** 单元键：保存时原样回传 */
   key: string
   values: Record<string, string | null>
-  /** input 输入行 / calc 派生行（只读）/ total 合计行（固定在底部，只读） */
-  kind?: 'input' | 'calc' | 'total'
+  /** input 输入行 / calc 派生行（只读）/ total 合计行（固定在底部，只读）/ ref 上年实际参考行（只读） */
+  kind?: 'input' | 'calc' | 'total' | 'ref'
   /** 本行只读的字段（如已提交月份） */
   readonly_fields?: string[]
   /** 单元格下方的次级灰字（如部门费用「上年 x」「无历史数据」）：key = 字段 */
@@ -66,7 +66,10 @@ export function toModels(rows: GridRow[]): GridModel[] {
     ...r.values,
     [ROW_KEY]: r.key,
     [ROW_KIND]: r.kind ?? 'input',
-    [ROW_CLASS]: [r.kind === 'calc' ? 'row-calc' : r.kind === 'total' ? 'row-total' : '', r.sub ? 'row-sub' : '']
+    [ROW_CLASS]: [
+      r.kind === 'calc' ? 'row-calc' : r.kind === 'total' ? 'row-total' : r.kind === 'ref' ? 'row-ref' : '',
+      r.sub ? 'row-sub' : '',
+    ]
       .filter(Boolean)
       .join(' '),
     ...(r.sub ? { [ROW_SUB]: r.sub, [ROW_SUB_KEY]: r.sub_key ?? r.key } : {}),
@@ -76,7 +79,7 @@ export function toModels(rows: GridRow[]): GridModel[] {
 export function isCellEditable(col: GridColumnDef | undefined, row: GridRow | undefined, locked: boolean): boolean {
   if (locked || !col || !row) return false
   if (col.kind === 'dim' || !col.editable) return false
-  if (row.kind === 'calc' || row.kind === 'total') return false
+  if (row.kind === 'calc' || row.kind === 'total' || row.kind === 'ref') return false
   return !(row.readonly_fields ?? []).includes(col.key)
 }
 

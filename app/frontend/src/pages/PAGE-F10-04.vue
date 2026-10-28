@@ -11,7 +11,7 @@ import PageState from '@/components/PageState.vue'
 import { achievementLevel } from '@/components/achievement'
 import NoteCell from '@/components/g4/NoteCell.vue'
 import NoteDialog from '@/components/g4/NoteDialog.vue'
-import { money, pct } from '@/components/g4/format'
+import { money, pct, pctSigned, tone } from '@/components/g4/format'
 import type { NoteKey, NoteTarget, VarianceNote } from '@/components/g4/types'
 import { useUserStore } from '@/stores/user'
 import '@/components/g4/report.css'
@@ -22,6 +22,9 @@ interface Line {
   budget: string | null
   actual: string | null
   usage: string | null
+  /** 上年同期实际（上年 1 月至同月）与同比增速（REQ-F10-07）；上年月份不全时为空 */
+  prior: string | null
+  yoy: string | null
   note_key?: NoteKey
   note?: VarianceNote | null
 }
@@ -36,8 +39,10 @@ interface Report {
   imported_months?: number
   time_progress?: string
   baseline_label?: string
-  groups?: { department_id: number; department: string; rows: Line[]; subtotal: Line }[]
+  groups?: { department_id: number | null; department: string; rows: Line[]; subtotal: Line }[]
   total?: Line
+  prior_available?: boolean
+  prior_period?: string
 }
 
 const user = useUserStore()
@@ -45,7 +50,9 @@ const data = ref<Report | null>(null)
 const loading = ref(true)
 const error = ref<unknown>(null)
 const dept = ref<string>('')
-const collapsed = ref<Record<number, boolean>>({})
+const collapsed = ref<Record<string, boolean>>({})
+/** 分组键：公司公共（未分部门）的 department_id 为空 */
+const gkey = (id: number | null): string => (id === null ? 'public' : String(id))
 const noteTarget = ref<NoteTarget | null>(null)
 const isBP = computed(() => user.me?.roles.includes('finance_bp') ?? false)
 const isForbidden = computed(() => error.value instanceof ApiError && error.value.isForbidden)
@@ -106,6 +113,12 @@ function onSaved(note: VarianceNote): void {
         <div class="card fade-in"><div class="kpi-label">累计实际（{{ data.year }}-01 至 {{ data.through }}）</div><div class="kpi-value">{{ money(data.total.actual) }}</div></div>
         <div class="card fade-in"><div class="kpi-label">额度使用率</div><div class="kpi-value" :class="level(data.total.usage)">{{ pct(data.total.usage) }}</div></div>
         <div class="card fade-in"><div class="kpi-label">时间进度（{{ data.imported_months }} ÷ 12）</div><div class="kpi-value">{{ pct(data.time_progress) }}</div></div>
+        <div class="card fade-in" data-yoy-kpi>
+          <div class="kpi-label">同比（对比 {{ data.prior_period }}）</div>
+          <div v-if="data.prior_available" class="kpi-value" :class="tone(data.total.yoy, false)">{{ pctSigned(data.total.yoy) }}</div>
+          <div v-else class="kpi-value muted" style="font-size: var(--text-sm)">上年同期实际未导入完整</div>
+          <div v-if="data.prior_available" class="small muted">上年同期 {{ money(data.total.prior) }}</div>
+        </div>
       </section>
 
       <div class="filters">
@@ -128,14 +141,15 @@ function onSaved(note: VarianceNote): void {
           <thead>
             <tr>
               <th class="dim-h">部门</th><th>预算科目</th><th class="num sep">全年预算</th><th class="num">累计实际</th>
-              <th class="num">额度使用率</th><th class="num">时间进度</th><th>达成条</th><th class="sep">偏差说明</th>
+              <th class="num">额度使用率</th><th class="num">时间进度</th><th>达成条</th>
+              <th class="num sep">上年同期实际</th><th class="num">同比</th><th class="sep">偏差说明</th>
             </tr>
           </thead>
           <tbody>
-            <template v-for="g in data.groups" :key="g.department_id">
+            <template v-for="g in data.groups" :key="gkey(g.department_id)">
               <tr class="dept-row">
                 <td class="dim">
-                  <button type="button" class="xbtn" :aria-expanded="!collapsed[g.department_id]" :aria-label="`展开或收起 ${g.department}`" @click="collapsed = { ...collapsed, [g.department_id]: !collapsed[g.department_id] }">
+                  <button type="button" class="xbtn" :aria-expanded="!collapsed[gkey(g.department_id)]" :aria-label="`展开或收起 ${g.department}`" @click="collapsed = { ...collapsed, [gkey(g.department_id)]: !collapsed[gkey(g.department_id)] }">
                     <svg width="12" height="12" viewBox="0 0 256 256" fill="currentColor" aria-hidden="true"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z" /></svg>
                   </button>{{ g.department }}
                 </td>
@@ -145,9 +159,11 @@ function onSaved(note: VarianceNote): void {
                 <td class="num" :class="level(g.subtotal.usage)">{{ pct(g.subtotal.usage) }}</td>
                 <td class="num">{{ pct(data.time_progress) }}</td>
                 <td><AchievementBar :rate="g.subtotal.usage" :progress="data.time_progress" kind="expense" /></td>
+                <td class="num sep">{{ money(g.subtotal.prior) }}</td>
+                <td class="num" :class="tone(g.subtotal.yoy, false)">{{ pctSigned(g.subtotal.yoy) }}</td>
                 <td class="sep"></td>
               </tr>
-              <template v-if="!collapsed[g.department_id]">
+              <template v-if="!collapsed[gkey(g.department_id)]">
                 <tr v-for="r in g.rows" :key="r.account">
                   <td class="dim"></td>
                   <td>{{ r.account }}</td>
@@ -156,6 +172,8 @@ function onSaved(note: VarianceNote): void {
                   <td class="num" :class="level(r.usage)">{{ pct(r.usage) }}</td>
                   <td class="num">{{ pct(data.time_progress) }}</td>
                   <td><AchievementBar :rate="r.usage" :progress="data.time_progress" kind="expense" /></td>
+                  <td class="num sep">{{ money(r.prior) }}</td>
+                  <td class="num" :class="tone(r.yoy, false)">{{ pctSigned(r.yoy) }}</td>
                   <td class="sep"><NoteCell :note="r.note" :can-edit="data.can_edit_note" @open="openNote(r)" /></td>
                 </tr>
               </template>
@@ -167,12 +185,14 @@ function onSaved(note: VarianceNote): void {
               <td class="num" :class="level(data.total.usage)">{{ pct(data.total.usage) }}</td>
               <td class="num">{{ pct(data.time_progress) }}</td>
               <td><AchievementBar :rate="data.total.usage" :progress="data.time_progress" kind="expense" /></td>
+              <td class="num sep">{{ money(data.total.prior) }}</td>
+              <td class="num" :class="tone(data.total.yoy, false)">{{ pctSigned(data.total.yoy) }}</td>
               <td class="sep"></td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p class="foot">额度使用率 = 累计实际 ÷ 全年预算；时间进度 = 最近导入月份数 ÷ 12。累计实际来自金蝶，按科目映射归集到预算科目。专项预留额度已计入所属科目的全年预算，不另列行。偏差说明按「部门 × 预算科目」填写。</p>
+      <p class="foot">额度使用率 = 累计实际 ÷ 全年预算；时间进度 = 最近导入月份数 ÷ 12。累计实际来自金蝶，按科目映射归集到预算科目。专项预留额度已计入所属科目的全年预算，不另列行。偏差说明按「部门 × 预算科目」填写。同比 =（累计实际 − 上年同期实际）÷ |上年同期实际|，上年同期为上年 1 月至同月，须已全部导入（金蝶或经营历史表）；费用增长为不利（红色）。负责部门不在主数据中的历史管理费用列在「公司公共（未分部门）」。</p>
     </template>
 
     <NoteDialog :target="noteTarget" :can-edit="data?.can_edit_note ?? false" @close="noteTarget = null" @saved="onSaved" />
@@ -180,7 +200,7 @@ function onSaved(note: VarianceNote): void {
 </template>
 
 <style scoped>
-.grid-kpi { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
+.grid-kpi { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-4); margin-bottom: var(--space-4); }
 .kpi-value.warn { color: var(--warn); }
 .legend { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; font-size: var(--text-xs); color: var(--muted); padding-bottom: 8px; }
 .legend > span { display: inline-flex; align-items: center; gap: var(--space-2); }

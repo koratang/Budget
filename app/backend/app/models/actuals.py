@@ -10,8 +10,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Amount, Base, Price
 from app.models.enums import ImportSource, ImportStatus, check_in
 
-_SOURCES = (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY, ImportSource.BI, ImportSource.SKU,
-            ImportSource.TEMPLATE)
+_SOURCES = (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY, ImportSource.OPS_HISTORY, ImportSource.BI,
+            ImportSource.SKU, ImportSource.TEMPLATE)
 
 
 class ImportBatch(Base):
@@ -27,6 +27,7 @@ class ImportBatch(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     source: Mapped[str] = mapped_column(String(16), nullable=False)
     period: Mapped[date | None] = mapped_column(Date)  # 逻辑批次的期间（月初）
+    data_year: Mapped[int | None] = mapped_column(Integer)  # 经营历史表所属年度（表内只有 1–12 月）
     parent_batch_id: Mapped[int | None] = mapped_column(ForeignKey("import_batch.id"))
     file_path: Mapped[str | None] = mapped_column(String(512))
     file_name: Mapped[str] = mapped_column(String(256), nullable=False)

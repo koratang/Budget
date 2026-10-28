@@ -20,8 +20,10 @@ interface PlatformGrid extends GridResponse {
   ramp_rule: { name: string; version_no: number } | null
   fx: { currency: string; year: number; rate: string | null; missing: boolean }
   kpis: Record<string, string>
+  prior: PriorKpi | null
   refs: { categories: Record<string, string>[]; site: Record<string, string> }
 }
+interface PriorKpi { year: number; months: number; span: string; revenue_display: string; gross_profit_display: string; gross_margin_display: string }
 
 const route = useRoute()
 const router = useRouter()
@@ -120,6 +122,10 @@ const REF_LABELS: [string, string][] = [
           <div class="card fade-in"><div class="kpi-label">全年毛利（人民币）</div><div class="kpi-value sm tnum">{{ g.kpis.gross_profit_display }}</div></div>
           <div class="card fade-in"><div class="kpi-label">全年毛利率</div><div class="kpi-value sm tnum">{{ g.kpis.gross_margin_display }}</div></div>
         </div>
+        <p v-if="g" class="sub prior-line" data-prior>
+          <template v-if="g.prior">上年参考：{{ g.prior.year }} 年 {{ g.prior.span }} 实际收入 <b class="tnum">{{ g.prior.revenue_display }}</b>、毛利 <b class="tnum">{{ g.prior.gross_profit_display }}</b>、毛利率 <b class="tnum">{{ g.prior.gross_margin_display }}</b>。表格最上方灰底行是 {{ g.prior.year }} 年同月实际，可对照填写。</template>
+          <template v-else>该店铺还没有上年实际，财务BP 在「实际数导入 → 经营历史表」导入后，这里会显示上年同月实际作参考。</template>
+        </p>
       </template>
       <template #after>
         <div v-if="g && g.over_limit.length" class="card over-limit-form" data-over-limit>

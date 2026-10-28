@@ -10,6 +10,7 @@ interface B2bGrid extends GridResponse {
   customers: { id: number; name: string; currency: string }[]
   fx: { currency: string; year: number; rate: string | null; missing: boolean }[]
   kpis: Record<string, string>
+  prior: { year: number; span: string; revenue_display: string; gross_profit_display: string; gross_margin_display: string } | null
   refs: Record<string, string>[]
 }
 
@@ -53,6 +54,9 @@ const REF_LABELS: [string, string][] = [
           <div class="card fade-in"><div class="kpi-label">全年毛利（人民币）</div><div class="kpi-value sm tnum">{{ g.kpis.gross_profit_display }}</div></div>
           <div class="card fade-in"><div class="kpi-label">全年毛利率</div><div class="kpi-value sm tnum">{{ g.kpis.gross_margin_display }}</div></div>
         </div>
+        <p v-if="g && g.prior" class="sub prior-line" data-prior>
+          上年参考：{{ g.prior.year }} 年 {{ g.prior.span }} 本部门 B 端客户实际收入 <b class="tnum">{{ g.prior.revenue_display }}</b>、毛利 <b class="tnum">{{ g.prior.gross_profit_display }}</b>、毛利率 <b class="tnum">{{ g.prior.gross_margin_display }}</b>。表格最上方灰底行（项目名以「{{ g.prior.year }} 实际 ·」开头）是各客户 {{ g.prior.year }} 年同月实际。
+        </p>
       </template>
       <template #after>
         <details v-if="g" class="card" style="margin-top: var(--space-4)">

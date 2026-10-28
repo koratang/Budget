@@ -127,6 +127,7 @@ class OutboxStatus:
 class ImportSource:
     KINGDEE = "kingdee"
     KINGDEE_HISTORY = "kingdee-history"
+    OPS_HISTORY = "ops-history"             # 经营历史表：渠道店铺月度毛利 + 管理费用明细
     BI = "bi"
     SKU = "sku"
     TEMPLATE = "template"

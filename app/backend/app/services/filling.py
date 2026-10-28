@@ -41,6 +41,7 @@ from app.models import (B2bUnit, BCustomer, BudgetAccount, BudgetTask, BudgetVer
                         TargetAdjustment)
 from app.models.enums import (AdjustmentStatus, ImportSource, ImportStatus, OtherPlItem, Role, RuleVersionStatus,
                               UnitStatus, UnitType, VersionType)
+from app.services import prior_actuals as PA
 from app.services import tasking as T
 
 ZERO = Decimal(0)
@@ -344,6 +345,10 @@ def platform_grid(db: Session, ctx: ScopeContext, unit: FillingUnit) -> dict:
         rows.append({"key": f"total|{item}", "kind": "total",
                      "values": {"category": "店铺合计", "is_new": "", "item": label.format(cur=cur), **values,
                                 "year_total": fmt_calc(item, year_tot[item])}})
+    # 上年同月实际放在表格最上方，先看去年再填今年（REQ-F04-06）
+    prior = PA.by_month(db, version.year - 1, store_ids=[store.id])
+    rows[:0] = PA.ref_rows(prior, version.year, key_prefix="ref", label_key="item",
+                           dims={"category": f"{version.year - 1} 实际", "is_new": "参考"})
     over = over_limit_months(db, version.id, store)
     flags = {f"total|revenue_cny::{o['month']}":
              f"{OVER_LIMIT_LABEL}（起始后第 {o['k']} 个月上限 {o['limit_display']}）" for o in over}
@@ -370,6 +375,7 @@ def platform_grid(db: Session, ctx: ScopeContext, unit: FillingUnit) -> dict:
             "gross_profit_display": fmt_cny(year_tot["gross_profit"] or ZERO),
             "gross_margin_display": fmt_percent(year_tot["gross_margin"], 1),
         },
+        "prior": PA.kpi(prior, version.year - 1),
         "refs": _platform_refs(db, version.id, store, cats),
     }
 
@@ -461,6 +467,14 @@ def b2b_grid(db: Session, ctx: ScopeContext, unit: FillingUnit) -> dict:
         yt = {"revenue_cny": rev_y, "gross_profit": gp_y, "gross_margin": margin_of(gp_y, rev_y)}[item]
         rows.append({"key": f"total|{item}", "kind": "total",
                      "values": {"customer": "合计", "item": label, **values, "year_total": fmt_calc(item, yt)}})
+    prior_all = PA.by_month(db, version.year - 1, customer_ids=cust_ids)
+    ref: list[dict] = []
+    for c in customers:
+        prior = PA.by_month(db, version.year - 1, customer_ids=[c.id])
+        if prior:
+            ref += PA.ref_rows(prior, version.year, key_prefix=f"ref:{c.id}", label_key="item",
+                               dims={"customer": c.name}, label_prefix=f"{version.year - 1} 实际 · ")
+    rows[:0] = ref
     refs = []
     for c in customers:
         members = list(db.scalars(select(B2bUnit).where(B2bUnit.version_id == version.id,
@@ -481,6 +495,7 @@ def b2b_grid(db: Session, ctx: ScopeContext, unit: FillingUnit) -> dict:
             "gross_profit_display": fmt_cny(gp_y or ZERO),
             "gross_margin_display": fmt_percent(margin_of(gp_y, rev_y), 1),
         },
+        "prior": PA.kpi(prior_all, version.year - 1),
         "refs": refs,
     }
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * PAGE-F09-01 实际数导入：金蝶月度 / BI 双月 / 历史金蝶；校验未通过逐行列出问题（整份不写入）；
+ * PAGE-F09-01 实际数导入：金蝶月度 / BI 双月 / 历史金蝶 / 经营历史表（REQ-F09-03）；校验未通过逐行列出问题（整份不写入）；
  * 校验通过显示摘要、覆盖提示与二次确认；导入记录保留被替换文件（API-F09-01~04，DEC-008）。
  * 批次结构的 overwrite 为列表（BI 一份文件可覆盖多个月份），因此本页不复用 ImportResultPanel。
  */
@@ -11,18 +11,29 @@ import G3Modal from '@/components/g3/G3Modal.vue'
 import { errorText, useToast } from '@/components/g3/useG3'
 import '@/components/g3/g3.css'
 
-type Tab = 'kingdee' | 'bi' | 'kingdee-history'
-interface Issue { row: number | string; type: string; code: string; name: string | null; action: string | null; link: string | null }
+type Tab = 'kingdee' | 'bi' | 'kingdee-history' | 'ops-history'
+interface Issue { row: number | string; type: string; code: string; name: string | null; action: string | null; link: string | null; warning?: boolean }
+interface MissingPlan {
+  stores: { name: string; channel: string; new_channel: boolean; site: string | null; currency: string }[]
+  customers: { name: string; department: string | null; currency: string }[]
+  accounts: { name: string }[]
+  count: number
+}
+interface OpsSummary {
+  months: string[]; mgmt_total_display: string; mgmt_rows: number
+  sheets: { sheet: string; stores: number; revenue_display: string; gross_profit_display: string }[]
+}
 interface Overwrite { periods: string[]; file_name: string; imported_by: string; imported_at: string | null }
 interface Batch {
   id: number; source: string; status: string; status_label: string; file_name: string; row_count: number | null
   issues: Issue[]; issue_counts?: { type: string; count: number }[]; unmapped_skus?: string[]
+  missing_master?: MissingPlan; data_year?: number | null; created?: Record<string, number>
   needs_overwrite: boolean; overwrite: Overwrite[]; periods: string[]; validation_seconds: string | null
   summary: null | {
     revenue_total_display?: string; cost_total_display?: string; unassigned?: { code: string; name: string; rows: number; amount_display: string }[]
     unassigned_total_display?: string; sku_count?: number; rule?: string
     preview?: { month: string; store: string; site: string; category: string; is_new_label: string; qty: string; sales_local_display: string }[]
-  }
+  } & Partial<OpsSummary>
   alerts?: { created: number; updated: number }
 }
 interface RecordRow {
@@ -39,7 +50,14 @@ const TABS: { key: Tab; label: string; title: string; cols: string }[] = [
   { key: 'kingdee', label: '金蝶月度', title: '上传金蝶月度实际', cols: '必需列：期间（YYYY-MM）、金蝶科目、部门、平台/店铺、站点、发生额；可选列：科目名称、客户、摘要。科目余额表或利润表导出均可。' },
   { key: 'bi', label: 'BI 双月', title: '上传 BI 双月销售数据', cols: '必需列：月份（YYYY-MM）、店铺、站点、SKU、销量、本币销售额、币种、广告费、平台费用。一份文件可含多个月份。' },
   { key: 'kingdee-history', label: '历史金蝶（最多 24 个月）', title: '上传历史金蝶数据', cols: '与金蝶月度同一模板，单个文件最多包含 24 个期间，按期间逐月入库。' },
+  { key: 'ops-history', label: '经营历史表', title: '上传经营历史表（渠道店铺毛利 + 管理费用）', cols: '财务部经营分析表：各「渠道-RMB」工作表按店铺分块、表头「1月…12月」；「管理费用RMB」工作表取「N月实际」列。表内没有年份，请选择所属年度。用于编制下一年预算的上年同月参考和同比。' },
 ]
+const thisYear = new Date().getFullYear()
+const YEARS = [thisYear, thisYear - 1, thisYear - 2]
+const opsYear = ref<number>(thisYear)
+const creating = ref(false)
+const blockingIssues = computed(() => (batch.value?.issues ?? []).filter((i) => !i.warning))
+const warnIssues = computed(() => (batch.value?.issues ?? []).filter((i) => i.warning))
 const tab = ref<Tab>('kingdee')
 const overview = ref<Overview | null>(null)
 const loading = ref(true)
@@ -129,6 +147,7 @@ async function check(): Promise<void> {
   const form = new FormData()
   form.append('file', file.value)
   form.append('source', tab.value)
+  if (tab.value === 'ops-history') form.append('year', String(opsYear.value))
   try {
     const created = await upload<{ id: number }>('/api/imports', form)
     batch.value = { id: created.id } as Batch
@@ -137,6 +156,21 @@ async function check(): Promise<void> {
   } catch (e) {
     phase.value = 'idle'
     actionError.value = errorText(e)
+  }
+}
+async function createMissing(): Promise<void> {
+  if (!batch.value) return
+  creating.value = true
+  actionError.value = ''
+  try {
+    const b = await api.post<Batch>(`/api/imports/${batch.value.id}/create-missing`)
+    const c = b.created ?? {}
+    show(`已补建店铺 ${c.stores ?? 0} 个、渠道 ${c.channels ?? 0} 个、B端客户 ${c.customers ?? 0} 个、科目 ${c.accounts ?? 0} 个，已重新校验`)
+    apply(b)
+  } catch (e) {
+    actionError.value = errorText(e)
+  } finally {
+    creating.value = false
   }
 }
 async function discard(): Promise<void> {
@@ -183,7 +217,7 @@ function rowText(row: number | string): string {
         <a v-for="t in TABS" :key="t.key" class="tab" href="#" role="tab" :aria-selected="tab === t.key" @click.prevent="switchTab(t.key)">{{ t.label }}</a>
       </div>
 
-      <div v-if="!overview.has_records && phase === 'idle' && tab !== 'kingdee-history'" class="notice section">
+      <div v-if="!overview.has_records && phase === 'idle' && tab !== 'kingdee-history' && tab !== 'ops-history'" class="notice section">
         还没有导入过实际数。建议先导入最多 24 个月的历史金蝶数据，用于历史参考和同比；之后每月关账后导入金蝶月度实际，每两个月导入 BI 数据。
         <button class="link" type="button" @click="switchTab('kingdee-history')">导入历史金蝶数据</button>
       </div>
@@ -202,6 +236,12 @@ function rowText(row: number | string): string {
               <input ref="fileInput" type="file" accept=".xlsx,.xls" aria-label="选择 Excel 文件" :disabled="phase === 'checking' || phase === 'uploading'" @change="onPick">
             </label>
             <div class="cols">{{ current.cols }}</div>
+            <label v-if="tab === 'ops-history'" class="year-pick">
+              表格所属年度
+              <select v-model.number="opsYear" class="select" aria-label="表格所属年度" :disabled="phase === 'checking' || phase === 'uploading'">
+                <option v-for="y in YEARS" :key="y" :value="y">{{ y }} 年</option>
+              </select>
+            </label>
           </div>
           <button class="btn btn-primary" type="button" :disabled="phase === 'checking' || phase === 'uploading' || phase === 'confirming'" @click="check">
             {{ phase === 'checking' || phase === 'uploading' ? '正在校验…' : '上传并校验' }}
@@ -219,7 +259,34 @@ function rowText(row: number | string): string {
       <section v-if="phase === 'failed' && batch" class="section" aria-labelledby="fail-t">
         <div class="notice bad" role="alert">
           <strong id="fail-t">校验未通过，本文件没有写入任何数据。</strong>
-          共 {{ batch.issues.length }} 个问题行<template v-if="batch.unmapped_skus?.length">、{{ batch.unmapped_skus.length }} 个 SKU 不在 SKU 对照表中</template>。修正后请重新上传整份文件。
+          共 {{ blockingIssues.length }} 个问题行<template v-if="batch.unmapped_skus?.length">、{{ batch.unmapped_skus.length }} 个 SKU 不在 SKU 对照表中</template>。<template v-if="batch.missing_master">都是表中有、平台主数据里还没有的店铺、客户或科目，可按下方计划一键补建后自动重新校验。</template><template v-else>修正后请重新上传整份文件。</template>
+        </div>
+        <div v-if="batch.missing_master" class="card" style="margin-top: var(--space-4)" data-missing-master>
+          <div class="row" style="margin-bottom: var(--space-3)">
+            <h3 class="section-title" style="margin: 0">补建计划（共 {{ batch.missing_master.count }} 项）</h3>
+            <span class="spacer"></span>
+            <span class="small muted">渠道、站点、币种按工作表名和店铺名推断，建好后可在主数据页修改</span>
+          </div>
+          <div class="table-wrap" style="max-height: 320px">
+            <table class="table">
+              <thead><tr><th>类型</th><th>名称</th><th>渠道 / 所属部门</th><th>站点</th><th>结算币种</th></tr></thead>
+              <tbody>
+                <tr v-for="x in batch.missing_master.stores" :key="'s' + x.name">
+                  <td>店铺</td><td>{{ x.name }}</td><td>{{ x.channel }}<span v-if="x.new_channel" class="badge" style="margin-left: var(--space-2)">新建渠道</span></td><td>{{ x.site ?? '—' }}</td><td>{{ x.currency }}</td>
+                </tr>
+                <tr v-for="x in batch.missing_master.customers" :key="'c' + x.name">
+                  <td>B端客户</td><td>{{ x.name }}</td><td>{{ x.department ?? '—' }}</td><td>—</td><td>{{ x.currency }}</td>
+                </tr>
+                <tr v-for="x in batch.missing_master.accounts" :key="'a' + x.name">
+                  <td>部门费用科目</td><td>{{ x.name }}</td><td>—</td><td>—</td><td>人民币</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div v-if="overview.can_upload" class="row" style="margin-top: var(--space-3)">
+            <span class="spacer"></span>
+            <button class="btn btn-primary" type="button" :disabled="creating" data-create-missing @click="createMissing">{{ creating ? '正在补建…' : `补建这 ${batch.missing_master.count} 项并重新校验` }}</button>
+          </div>
         </div>
         <div class="type-sum">
           <span v-for="c in batch.issue_counts ?? []" :key="c.type" class="badge badge-bad">{{ c.type }} {{ c.count }}</span>
@@ -228,7 +295,7 @@ function rowText(row: number | string): string {
           <table class="table">
             <thead><tr><th>行号</th><th>问题类型</th><th>{{ tab === 'bi' ? '涉及名称或 SKU' : '涉及编码或名称' }}</th><th>处理方式</th></tr></thead>
             <tbody>
-              <tr v-for="(it, i) in batch.issues" :key="i">
+              <tr v-for="(it, i) in blockingIssues" :key="i">
                 <td class="num">{{ rowText(it.row) }}</td>
                 <td>{{ it.type }}</td>
                 <td class="mono">{{ it.name ?? '—' }}</td>
@@ -248,7 +315,11 @@ function rowText(row: number | string): string {
               <dt>期间</dt><dd class="num">{{ batch.periods.length > 2 ? `${batch.periods[0]} 至 ${batch.periods[batch.periods.length - 1]}（${batch.periods.length} 个期间）` : batch.periods.join('、') }}</dd>
               <dt>文件</dt><dd>{{ batch.file_name }}</dd>
               <dt>行数</dt><dd class="num">{{ batch.row_count?.toLocaleString('en-US') }}</dd>
-              <template v-if="batch.source !== 'bi'">
+              <template v-if="batch.source === 'ops-history'">
+                <dt>所属年度</dt><dd class="num">{{ batch.data_year }} 年</dd>
+                <dt>管理费用合计</dt><dd class="num">{{ batch.summary?.mgmt_total_display }}</dd>
+              </template>
+              <template v-else-if="batch.source !== 'bi'">
                 <dt>收入合计</dt><dd class="num">{{ batch.summary?.revenue_total_display }}</dd>
                 <dt>成本费用合计</dt><dd class="num">{{ batch.summary?.cost_total_display }}</dd>
               </template>
@@ -260,7 +331,17 @@ function rowText(row: number | string): string {
             </dl>
           </div>
           <div class="card">
-            <template v-if="batch.source !== 'bi'">
+            <template v-if="batch.source === 'ops-history'">
+              <h3 class="section-title">各渠道汇总（人民币）</h3>
+              <table class="table">
+                <thead><tr><th>工作表</th><th class="num">店铺/客户数</th><th class="num">收入</th><th class="num">毛利（平台口径）</th></tr></thead>
+                <tbody>
+                  <tr v-for="x in batch.summary?.sheets ?? []" :key="x.sheet"><td>{{ x.sheet }}</td><td class="num">{{ x.stores }}</td><td class="num">{{ x.revenue_display }}</td><td class="num">{{ x.gross_profit_display }}</td></tr>
+                </tbody>
+              </table>
+              <p class="small muted" style="margin-bottom: 0">毛利 = 收入 − 退款 − 采购成本 − 佣金 − 推广 − 头程 − 尾程 − 关税 − 仓储 + 库存索赔 − 其他运营费用。某店铺某月各项都为 0 视为当月没有数据，不导入。</p>
+            </template>
+            <template v-else-if="batch.source !== 'bi'">
               <h3 class="section-title">未归属渠道</h3>
               <p class="small muted" style="margin-top: 0">没有平台/店铺辅助核算、且不属于部门费用科目的成本费用行，计入该月「未归属渠道」，在渠道×站点偏差报告中单列。</p>
               <table v-if="batch.summary?.unassigned?.length" class="table">
@@ -286,6 +367,17 @@ function rowText(row: number | string): string {
                 </table>
               </div>
             </template>
+          </div>
+        </div>
+        <div v-if="warnIssues.length" class="card" style="margin-top: var(--space-4)" data-warnings>
+          <h3 class="section-title">提示（不影响导入，共 {{ warnIssues.length }} 条）</h3>
+          <div class="table-wrap" style="max-height: 240px">
+            <table class="table">
+              <thead><tr><th>行号</th><th>提示</th><th>涉及内容</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr v-for="(it, i) in warnIssues" :key="i"><td class="num">{{ rowText(it.row) }}</td><td>{{ it.type }}</td><td>{{ it.name ?? '—' }}</td><td>{{ it.action ?? '—' }}</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
         <div v-if="batch.needs_overwrite" class="notice warn" style="margin-top: var(--space-4)">{{ overwriteText }}。确认后用新文件替换{{ batch.source === 'bi' ? '这些月份的全部 BI 实际数' : '该期间的全部金蝶实际数' }}，原导入记录保留并标记「已被替换」。</div>
@@ -354,4 +446,5 @@ function rowText(row: number | string): string {
 .months div { border: 1px solid var(--border-soft); border-radius: var(--radius-sm); padding: var(--space-1); text-align: center; font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
 .months div.ok { background: color-mix(in oklab, var(--success), white 92%); color: var(--success); }
 .type-sum { display: flex; gap: var(--space-2); flex-wrap: wrap; margin: var(--space-3) 0; }
+.year-pick { display: inline-flex; align-items: center; gap: var(--space-2); margin-top: var(--space-3); font-size: var(--text-sm); }
 </style>

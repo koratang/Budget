@@ -14,7 +14,7 @@ import ExportButton from '@/components/ExportButton.vue'
 import PageState from '@/components/PageState.vue'
 import NoteCell from '@/components/g4/NoteCell.vue'
 import NoteDialog from '@/components/g4/NoteDialog.vue'
-import { money, moneySigned, pct, pp, tone } from '@/components/g4/format'
+import { money, moneySigned, pct, pctSigned, pp, tone } from '@/components/g4/format'
 import type { NoteKey, NoteTarget, VarianceNote } from '@/components/g4/types'
 import { useUserStore } from '@/stores/user'
 import '@/components/g4/report.css'
@@ -51,7 +51,15 @@ interface Row {
   gross_profit: Metric
   gross_margin: { budget: string | null; actual: string | null; diff_pp: string | null }
   lines: Line[]
+  yoy: Yoy | null
   note: VarianceNote | null
+}
+/** 同比（REQ-F10-07）：上年同月实际与增速 */
+interface Yoy {
+  available: boolean
+  revenue: { prior: string | null; growth: string | null }
+  gross_profit: { prior: string | null; growth: string | null }
+  gross_margin: { prior: string | null; diff_pp: string | null }
 }
 interface Report {
   empty: boolean
@@ -71,7 +79,9 @@ interface Report {
   rows?: Row[]
   b2b_rows?: Row[]
   unassigned?: Row | null
-  total?: { label: string; revenue: Metric; split: Split | null; gross_profit: Metric; gross_margin: Row['gross_margin'] }
+  total?: { label: string; revenue: Metric; split: Split | null; gross_profit: Metric; gross_margin: Row['gross_margin']; yoy: Yoy }
+  prior_month?: string
+  prior_available?: boolean
 }
 
 const SYM: Record<string, string> = { USD: '$', CAD: 'C$', EUR: '€', GBP: '£', CNY: '¥' }
@@ -92,7 +102,7 @@ const channel = ref<string>(q('channel') ?? 'all')
 
 const isBP = computed(() => user.me?.roles.includes('finance_bp') ?? false)
 const bi = computed(() => data.value?.bi_available ?? false)
-const colCount = computed(() => (bi.value ? 21 : 17))
+const colCount = computed(() => (bi.value ? 25 : 21))
 const exportFilters = computed(() => ({ month: data.value?.month, baseline: baseline.value, channel: channel.value }))
 const ready = computed(() => !loading.value && !error.value && !!data.value && !data.value.empty)
 
@@ -204,6 +214,7 @@ const isForbidden = computed(() => error.value instanceof ApiError && error.valu
         <span>BI 数据截至：<b>{{ data.bi_latest ?? '—' }}</b></span>
         <span>预算汇率：{{ fxText.budget }}</span>
         <span>{{ data.month }} 当月平均汇率：{{ fxText.actual }}</span>
+        <span data-prior-strip>同比：<b>{{ data.prior_available ? `对比 ${data.prior_month} 实际` : `${data.prior_month} 没有实际，同比暂不可用` }}</b></span>
       </div>
       <div v-if="!bi" class="bi-banner" role="status">
         {{ data.bi_notice }}。本月只显示金额差异，拆分区域（含费率差）隐藏。
@@ -220,6 +231,7 @@ const isForbidden = computed(() => error.value instanceof ApiError && error.valu
               <th v-if="bi" class="grp" colspan="4">收入差额拆分</th>
               <th class="grp" colspan="4">毛利</th>
               <th class="grp" colspan="3">毛利率</th>
+              <th class="grp" colspan="4" data-yoy-head>同比（对比 {{ data.prior_month }}）</th>
               <th class="grp" rowspan="2">偏差说明</th>
             </tr>
             <tr>
@@ -227,6 +239,7 @@ const isForbidden = computed(() => error.value instanceof ApiError && error.valu
               <template v-if="bi"><th class="num sep">量差</th><th class="num">价差</th><th class="num">汇率差</th><th class="num">口径差</th></template>
               <th class="num sep">预算</th><th class="num">实际</th><th class="num">差额</th><th class="num">达成率</th>
               <th class="num sep">预算</th><th class="num">实际</th><th class="num">差（百分点）</th>
+              <th class="num sep">上年收入</th><th class="num">收入同比</th><th class="num">上年毛利</th><th class="num">毛利同比</th>
             </tr>
           </thead>
           <tbody>
@@ -278,6 +291,13 @@ const isForbidden = computed(() => error.value instanceof ApiError && error.valu
                   <td class="num">{{ pct(row.gross_margin.actual) }}</td>
                   <td class="num" :class="tone(row.gross_margin.diff_pp)">{{ pp(row.gross_margin.diff_pp) }}</td>
                 </template>
+                <template v-if="row.yoy?.available">
+                  <td class="num sep">{{ money(row.yoy.revenue.prior) }}</td>
+                  <td class="num" :class="tone(row.yoy.revenue.growth)">{{ pctSigned(row.yoy.revenue.growth) }}</td>
+                  <td class="num">{{ money(row.yoy.gross_profit.prior) }}</td>
+                  <td class="num" :class="tone(row.yoy.gross_profit.growth)">{{ pctSigned(row.yoy.gross_profit.growth) }}</td>
+                </template>
+                <template v-else><td class="num sep muted">—</td><td class="num muted">—</td><td class="num muted">—</td><td class="num muted">—</td></template>
                 <td class="sep"><NoteCell :note="row.note" :can-edit="data.can_edit_note" @open="openNote(row)" /></td>
               </tr>
               <tr v-if="open[row.key]" class="detail">
@@ -400,12 +420,19 @@ const isForbidden = computed(() => error.value instanceof ApiError && error.valu
               <td class="num sep">{{ pct(data.total.gross_margin.budget) }}</td>
               <td class="num">{{ pct(data.total.gross_margin.actual) }}</td>
               <td class="num" :class="tone(data.total.gross_margin.diff_pp)">{{ pp(data.total.gross_margin.diff_pp) }}</td>
+              <template v-if="data.total.yoy?.available">
+                <td class="num sep">{{ money(data.total.yoy.revenue.prior) }}</td>
+                <td class="num" :class="tone(data.total.yoy.revenue.growth)">{{ pctSigned(data.total.yoy.revenue.growth) }}</td>
+                <td class="num">{{ money(data.total.yoy.gross_profit.prior) }}</td>
+                <td class="num" :class="tone(data.total.yoy.gross_profit.growth)">{{ pctSigned(data.total.yoy.gross_profit.growth) }}</td>
+              </template>
+              <template v-else><td class="num sep muted">—</td><td class="num muted">—</td><td class="num muted">—</td><td class="num muted">—</td></template>
               <td class="sep"></td>
             </tr>
           </tbody>
         </table>
       </div>
-      <p class="foot">点击店铺或客户左侧箭头展开退款与各项费用明细、费率差和收入拆分计算。收入差额 = 量差 + 价差 + 汇率差 + 口径差；口径差 = 金蝶实际收入 − BI 本币收入 × 当月平均汇率。B 端客户无 BI 销量数据，不做量价拆分。达成条刻度线 = 100%（当月对当月）。收入、毛利、库存索赔高于预算为有利；退款与费用高于预算为不利。</p>
+      <p class="foot">点击店铺或客户左侧箭头展开退款与各项费用明细、费率差和收入拆分计算。收入差额 = 量差 + 价差 + 汇率差 + 口径差；口径差 = 金蝶实际收入 − BI 本币收入 × 当月平均汇率。B 端客户无 BI 销量数据，不做量价拆分。达成条刻度线 = 100%（当月对当月）。同比 =（本月实际 − 上年同月实际）÷ |上年同月实际|，上年同月实际来自金蝶或经营历史表导入。收入、毛利、库存索赔高于预算为有利；退款与费用高于预算为不利。</p>
     </template>
 
     <NoteDialog :target="noteTarget" :can-edit="data?.can_edit_note ?? false" @close="noteTarget = null" @saved="onSaved" />

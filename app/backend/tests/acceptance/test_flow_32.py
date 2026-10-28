@@ -18,10 +18,10 @@ from tests.g4 import builders as B
 from tests.acceptance.e3_scenarios import flow25, flow32
 
 # PAGE-F10-02 §5.2 主表列（达成条列以数据条导出）
-CHANNEL_GROUPS = ["店铺", "渠道", "站点", "收入", "收入差额拆分", "毛利", "毛利率", "偏差说明"]
+CHANNEL_GROUPS = ["店铺", "渠道", "站点", "收入", "收入差额拆分", "毛利", "毛利率", "同比", "偏差说明"]
 CHANNEL_HEADERS = ["店铺", "渠道", "站点", "预算", "实际", "实际（本币）", "差额", "达成率", "达成条",
                    "量差", "价差", "汇率差", "口径差", "预算", "实际", "差额", "达成率", "预算", "实际", "差（百分点）",
-                   "偏差说明"]
+                   "上年收入", "收入同比", "上年毛利", "毛利同比", "偏差说明"]
 SPLIT = {"量差", "价差", "汇率差", "口径差"}
 
 
@@ -130,7 +130,8 @@ def test_dept_and_budget_table_export(client, seeded):
     name, wb = export(client, "report-dept", {"year": 2027})
     assert name == "部门费用报告_截至2027-05.xlsx"
     ws = wb.active
-    assert header_row(ws, 1) == ["部门", "预算科目", "全年预算", "累计实际", "额度使用率", "时间进度", "达成条", "偏差说明"]
+    assert header_row(ws, 1) == ["部门", "预算科目", "全年预算", "累计实际", "额度使用率", "时间进度", "达成条",
+                                  "上年同期实际", "同比", "偏差说明"]
     row = next(r for r in ws.iter_rows(min_row=2) if r[1].value == "培训费")
     assert money_cell(row[2]) == Decimal("1200000.00")
     assert money_cell(row[3]) == Decimal("123456.79")  # ROUND_HALF_UP 2 位，与页面显示一致

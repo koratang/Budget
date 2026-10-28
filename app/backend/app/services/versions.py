@@ -30,7 +30,7 @@ from app.models.enums import ImportSource, ImportStatus, Role, ScopeType, UnitTy
 
 ZERO = Decimal(0)
 TARGET_TYPES = (VersionType.ORIGINAL_TARGET, VersionType.ADJUSTED_TARGET)
-KINGDEE_SOURCES = (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY)
+KINGDEE_SOURCES = (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY, ImportSource.OPS_HISTORY)
 LOCKED_MESSAGE = "版本已锁定，不能修改"
 
 # 预算版本数据表（复制版本时按此清单 INSERT … SELECT，DEC-016）

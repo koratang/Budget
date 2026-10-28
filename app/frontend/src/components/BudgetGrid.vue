@@ -195,6 +195,7 @@ defineExpose({ describe })
 .budget-grid revo-grid .rgCell.bg-error { box-shadow: inset 0 0 0 2px var(--danger); background: color-mix(in oklab, var(--danger), white 94%); color: var(--fg); }
 .budget-grid revo-grid .rgRow.row-calc .rgCell { color: var(--fg-2); background: var(--surface-warm); }
 .budget-grid revo-grid .rgRow.row-total .rgCell { font-weight: 600; background: var(--surface-warm); border-top: 1px solid var(--border); }
+.budget-grid revo-grid .rgRow.row-ref .rgCell { color: var(--fg-2); background: var(--surface-raised); }
 .budget-grid.is-locked revo-grid .rgCell { cursor: default; }
 .budget-grid revo-grid .rgRow.row-sub .rgCell { display: flex; flex-direction: column; justify-content: center; line-height: 1.3; }
 .budget-grid revo-grid .rgRow.row-sub .rgCell.bg-num { align-items: flex-end; }

@@ -27,6 +27,7 @@ from app.core.money import CENT, HUNDRED, fmt_foreign, round_to
 from app.core.scope import ScopeContext
 from app.models import BudgetTask, BudgetVersion, Category, FillingUnit, PlatformUnit, Store, TargetAdjustment
 from app.models.enums import Role, UnitType
+from app.services import prior_actuals as PA
 from app.services import reports as R
 
 AMOUNT_FMT = "#,##0.00"
@@ -212,8 +213,9 @@ def channel_main_columns(bi_available: bool) -> tuple[list[tuple[str, int]], lis
     if bi_available:
         groups.append(("收入差额拆分", 4))
         headers += ["量差", "价差", "汇率差", "口径差"]
-    groups += [("毛利", 4), ("毛利率", 3), ("偏差说明", 1)]
-    headers += ["预算", "实际", "差额", "达成率", "预算", "实际", "差（百分点）", "偏差说明"]
+    groups += [("毛利", 4), ("毛利率", 3), ("同比", 4), ("偏差说明", 1)]
+    headers += ["预算", "实际", "差额", "达成率", "预算", "实际", "差（百分点）", "上年收入", "收入同比", "上年毛利",
+                "毛利同比", "偏差说明"]
     return groups, headers
 
 
@@ -222,6 +224,14 @@ def channel_detail_columns(bi_available: bool) -> list[str]:
     if bi_available:
         headers += ["预算费率", "实际费率", "费率差"]
     return headers
+
+
+def _yoy_cells(yoy: dict | None) -> list[Cell]:
+    """同比四列（REQ-F10-07）：上年同月收入、收入同比、上年同月毛利、毛利同比；无上年实际为「—」。"""
+    if not yoy or not yoy.get("available"):
+        return [text("—")] * 4
+    return [amount(yoy["revenue"]["prior"]), signed_percent(yoy["revenue"]["growth"]),
+            amount(yoy["gross_profit"]["prior"]), signed_percent(yoy["gross_profit"]["growth"])]
 
 
 def _channel_row(row: dict, bi: bool) -> list[Cell]:
@@ -245,7 +255,8 @@ def _channel_row(row: dict, bi: bool) -> list[Cell]:
                       text(sp["missing_fx_text"]) if sp["missing_fx"] else amount(sp["fx"]),
                       text("—") if sp["missing_fx"] else amount(sp["basis"])]
     cells += [amount(gp["budget"]), amount(gp["actual"]), amount(gp["diff"]), percent(gp["rate"]),
-              percent(gm["budget"]), percent(gm["actual"]), number(gm["diff_pp"]), note_text(row.get("note"))]
+              percent(gm["budget"]), percent(gm["actual"]), number(gm["diff_pp"]), *_yoy_cells(row.get("yoy")),
+              note_text(row.get("note"))]
     return cells
 
 
@@ -271,7 +282,7 @@ def channel_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, 
         if bi:
             cells += [text("—")] * 4
         cells += [text("—"), amount(u["gross_profit"]["actual"]), text("—"), text("—"), text("—"), text("—"),
-                  text("—"), note_text(u.get("note"))]
+                  text("—"), *_yoy_cells(None), note_text(u.get("note"))]
         main.rows.append(cells)
     t = data["total"]
     tcells = [text(t["label"]), Cell(None), Cell(None), amount(t["revenue"]["budget"]), amount(t["revenue"]["actual"]),
@@ -287,7 +298,7 @@ def channel_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, 
     tcells += [amount(t["gross_profit"]["budget"]), amount(t["gross_profit"]["actual"]),
                amount(t["gross_profit"]["diff"]), percent(t["gross_profit"]["rate"]),
                percent(t["gross_margin"]["budget"]), percent(t["gross_margin"]["actual"]),
-               number(t["gross_margin"]["diff_pp"]), Cell(None)]
+               number(t["gross_margin"]["diff_pp"]), *_yoy_cells(t.get("yoy")), Cell(None)]
     main.total_rows.add(len(main.rows))
     main.rows.append(tcells)
 
@@ -358,7 +369,8 @@ def category_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str,
 # ---------------------------------------------------------------------------
 # 视图：部门费用报告（PAGE-F10-04 §8）
 # ---------------------------------------------------------------------------
-DEPT_HEADERS = ["部门", "预算科目", "全年预算", "累计实际", "额度使用率", "时间进度", "达成条", "偏差说明"]
+DEPT_HEADERS = ["部门", "预算科目", "全年预算", "累计实际", "额度使用率", "时间进度", "达成条", "上年同期实际", "同比",
+                "偏差说明"]
 
 
 def dept_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, list[Sheet]]:
@@ -370,8 +382,8 @@ def dept_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, lis
 
     def line(r, note: bool):
         return [text(r["department"]), text(r["account"]), amount(r["budget"]), amount(r["actual"]),
-                percent(r["usage"]), percent(progress), bar(r["usage"]),
-                note_text(r.get("note")) if note else Cell(None)]
+                percent(r["usage"]), percent(progress), bar(r["usage"]), amount(r.get("prior")),
+                signed_percent(r.get("yoy")), note_text(r.get("note")) if note else Cell(None)]
 
     for g in data["groups"]:
         sh.total_rows.add(len(sh.rows))
@@ -432,6 +444,13 @@ def budget_platform_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tup
     for u in units:
         by_group.setdefault((u.category_id, u.is_new), {})[fmt_month(u.month)] = u
     keys = sorted(by_group, key=lambda k: (cats[k[0]].sort, cats[k[0]].id, not k[1]))
+    # 上年同月实际参考行：与填报表格一致放在最上方（REQ-F04-06）
+    prior = PA.by_month(db, year - 1, store_ids=[store.id])
+    if prior:
+        for key, label, vals, year_total in PA.ref_values(prior, year):
+            row = [text(f"{year - 1} 实际"), text("参考"), text(label)]
+            row += [_budget_cell("amount", v) if PA.is_amount(key) else percent_margin(v) for v in [*vals, year_total]]
+            sh.rows.append(row)
     totals: dict[str, dict[str, Decimal]] = {m: {"sales_qty": Decimal(0), "revenue_local": Decimal(0),
                                                  "revenue_cny": Decimal(0), "gross_profit": Decimal(0)}
                                              for m in months}

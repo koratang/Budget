@@ -45,6 +45,10 @@ if not exist "%ROOT%\data\seeded.flag" (
   "%PY%" -m scripts.seed
   if errorlevel 1 goto :err_migrate
   echo ok>"%ROOT%\data\seeded.flag"
+  if exist "%ROOT%\ops-history-2026.xlsx" (
+    echo 导入 2026 年经营历史表...
+    "%PY%" -m scripts.import_ops_history "%ROOT%\ops-history-2026.xlsx" --year 2026 --create-missing
+  )
 )
 
 echo [4/4] 启动系统：浏览器将打开 http://localhost:8000

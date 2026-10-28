@@ -32,7 +32,7 @@ from app.services import tasking as T
 ZERO = Decimal(0)
 NO_HISTORY = "无历史数据"
 NOT_IMPORTED = "未导入"
-KINGDEE_SOURCES = (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY)
+KINGDEE_SOURCES = (ImportSource.KINGDEE, ImportSource.KINGDEE_HISTORY, ImportSource.OPS_HISTORY)
 
 
 # ---------------------------------------------------------------------------

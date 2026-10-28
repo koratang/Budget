@@ -38,11 +38,12 @@ def _session_factory(request: Request):
 
 @router.post("/imports")
 async def upload(request: Request, background: BackgroundTasks, file: UploadFile = File(...),
-                 source: str = Form(...), current: CurrentUser = Depends(require_roles(*UPLOADERS)),
-                 db: Session = Depends(get_db)):
+                 source: str = Form(...), year: int | None = Form(None),
+                 current: CurrentUser = Depends(require_roles(*UPLOADERS)), db: Session = Depends(get_db)):
     content = await file.read()
     batch = importer.create_batch(db, _actor(current), source=source, file_name=file.filename or "未命名.xlsx",
-                                  content=content, data_dir=request.app.state.settings.DATA_DIR, request=request)
+                                  content=content, data_dir=request.app.state.settings.DATA_DIR, request=request,
+                                  year=year)
     db.commit()
     background.add_task(importer.run_validation, _session_factory(request), batch.id)
     return {"id": batch.id, "status": "validating", "file_name": batch.file_name, "source": batch.source}
@@ -81,6 +82,15 @@ def confirm(batch_id: int, body: ConfirmIn, request: Request,
     except Exception:
         db.rollback()  # 整次确认回滚：原批次仍生效、新批次未生效、无预警与通知（RULE-05）
         raise
+    return view
+
+
+@router.post("/imports/{batch_id}/create-missing")
+def create_missing(batch_id: int, request: Request, current: CurrentUser = Depends(require_roles(*UPLOADERS)),
+                   db: Session = Depends(get_db)):
+    """经营历史表：补建缺少的店铺 / B 端客户 / 管理费用科目后重新校验。"""
+    view = importer.create_missing_master(db, _actor(current), batch_id, request=request)
+    db.commit()
     return view
 
 

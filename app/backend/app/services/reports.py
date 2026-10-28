@@ -28,6 +28,7 @@ from app.models import (B2bUnit, BCustomer, BiActualAgg, BudgetAccount, BudgetVe
                         CompanyOtherPl, Department, DeptExpense, FxActual, FxBudget, ImportBatch, KingdeeActual,
                         PlatformUnit, Reserve, Site, SnapshotMonth, Store, User, VarianceNote)
 from app.models.enums import ImportStatus, Role, VersionType
+from app.services import prior_actuals as PA
 from app.services.masterdata import is_new_channel_month
 
 ZERO = Decimal(0)
@@ -45,6 +46,7 @@ POSITIVE_ITEMS = frozenset({"revenue", "inventory_claim"})
 OTHER_PL_ITEMS = ("finance_cost", "fx_gain_loss", "non_operating", "income_tax")
 
 BASELINES = {"orig": "年初原始目标", "adj": "最新调整后目标", "roll": "最新滚动预测"}
+PUBLIC_DEPT_LABEL = "公司公共（未分部门）"
 NOTE_EMPTY_MESSAGE = "请填写说明内容"
 REPORT_TYPES = {"channel-site": ("store", "customer", "unassigned"), "category": ("category",),
                 "dept-expense": ("dept-account",)}
@@ -490,6 +492,19 @@ def _metric(b: Decimal | None, a: Decimal | None) -> dict:
     return {"budget": s(b), "actual": s(a), "diff": s(diff(a, b)), "rate": pct(ratio(a, b))}
 
 
+def _yoy(cur_rev, cur_gp, prior_rev, prior_gp, has_prior: bool) -> dict:
+    """同比（REQ-F10-07）：上年同月实际与增速；上年同月无实际时各值为空。"""
+    if not has_prior:
+        return {"available": False, "revenue": {"prior": None, "growth": None},
+                "gross_profit": {"prior": None, "growth": None}, "gross_margin": {"prior": None, "diff_pp": None}}
+    pm, cm = ratio(prior_gp, prior_rev), ratio(cur_gp, cur_rev)
+    return {"available": True,
+            "revenue": {"prior": s(prior_rev), "growth": pct(PA.growth(cur_rev, prior_rev))},
+            "gross_profit": {"prior": s(prior_gp), "growth": pct(PA.growth(cur_gp, prior_gp))},
+            "gross_margin": {"prior": pct(pm), "diff_pp": s((cm - pm) * HUNDRED) if pm is not None and cm is not None
+                             else None}}
+
+
 def _margin(b_gp, b_rev, a_gp, a_rev) -> dict:
     bm, am = ratio(b_gp, b_rev), ratio(a_gp, a_rev)
     d = (am - bm) * HUNDRED if bm is not None and am is not None else None
@@ -555,6 +570,11 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
     p_budget = _platform_budget(db, ctx, vid, m)
     kd_store = _kingdee_by(db, m, KingdeeActual.store_id, and_(KingdeeActual.store_id.is_not(None),
                                                                KingdeeActual.store_id.in_(list(stores) or [0])))
+    pm = date(m.year - 1, m.month, 1)
+    prior_available = pm in kd_months
+    kd_store_prior = _kingdee_by(db, pm, KingdeeActual.store_id, and_(
+        KingdeeActual.store_id.is_not(None), KingdeeActual.store_id.in_(list(stores) or [0]))) \
+        if prior_available else {}
     bi = {}
     if bi_available:
         q = (select(BiActualAgg.store_id, func.sum(BiActualAgg.qty), func.sum(BiActualAgg.revenue_local))
@@ -566,7 +586,8 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
 
     rows: list[dict] = []
     total = {"b_rev": ZERO, "a_rev": ZERO, "b_gp": ZERO, "a_gp": ZERO, "vol": ZERO, "price": ZERO, "fx": ZERO,
-             "basis": ZERO, "fx_missing": False, "split": False, "lines": defaultdict(lambda: [ZERO, ZERO])}
+             "basis": ZERO, "fx_missing": False, "split": False, "lines": defaultdict(lambda: [ZERO, ZERO]),
+             "p_rev": ZERO, "p_gp": ZERO}
 
     def add_lines(raw):
         for k, (b, a) in raw.items():
@@ -579,7 +600,8 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
                 continue
             b = p_budget.get(sid)
             a = kd_store.get(sid)
-            if b is None and a is None and sid not in bi:
+            p = kd_store_prior.get(sid)
+            if b is None and a is None and p is None and sid not in bi:
                 continue
             b = b or {"qty": ZERO, "local": ZERO, "revenue": ZERO, "gross_profit": ZERO,
                       **{k: ZERO for k, _ in COST_ITEMS}}
@@ -620,8 +642,13 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
                 "revenue_local_budget": s(b["local"]), "revenue_local_actual": s(local_actual),
                 "split": split, "gross_profit": _metric(b["gross_profit"], a_gp),
                 "gross_margin": _margin(b["gross_profit"], b["revenue"], a_gp, a_rev), "lines": lines,
+                "yoy": _yoy(a_rev, a_gp, p.get("revenue", ZERO) if p else ZERO, gross_profit_of(p) if p else ZERO,
+                            prior_available),
                 "note": notes.get(("store", key)),
             })
+            if p:
+                total["p_rev"] += p.get("revenue", ZERO)
+                total["p_gp"] += gross_profit_of(p)
             total["b_rev"] += b["revenue"]
             total["a_rev"] += a_rev
             total["b_gp"] += b["gross_profit"]
@@ -633,9 +660,11 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
         bb = _b2b_budget(db, ctx, vid, m)
         kd_c = _kingdee_by(db, m, KingdeeActual.customer_id,
                            KingdeeActual.customer_id.in_(list(customers)))
+        kd_c_prior = _kingdee_by(db, pm, KingdeeActual.customer_id,
+                                 KingdeeActual.customer_id.in_(list(customers))) if prior_available else {}
         for cid, (c, d) in customers.items():
-            b, a = bb.get(cid), kd_c.get(cid)
-            if b is None and a is None:
+            b, a, p = bb.get(cid), kd_c.get(cid), kd_c_prior.get(cid)
+            if b is None and a is None and p is None:
                 continue
             b = b or {"local": ZERO, "revenue": ZERO, "gross_profit": ZERO, **{k: ZERO for k, _ in COST_ITEMS}}
             a = dict(a) if a is not None else {}
@@ -649,8 +678,13 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
                 "revenue_local_budget": s(b["local"]), "revenue_local_actual": None, "split": None,
                 "gross_profit": _metric(b["gross_profit"], a_gp),
                 "gross_margin": _margin(b["gross_profit"], b["revenue"], a_gp, a_rev), "lines": lines,
+                "yoy": _yoy(a_rev, a_gp, p.get("revenue", ZERO) if p else ZERO, gross_profit_of(p) if p else ZERO,
+                            prior_available),
                 "note": notes.get(("customer", key)),
             })
+            if p:
+                total["p_rev"] += p.get("revenue", ZERO)
+                total["p_gp"] += gross_profit_of(p)
             total["b_rev"] += b["revenue"]
             total["a_rev"] += a_rev
             total["b_gp"] += b["gross_profit"]
@@ -661,6 +695,10 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
     if ctx.all_company and ch_filter == "all":
         kd_u = _kingdee_by(db, m, KingdeeActual.unassigned, KingdeeActual.unassigned.is_(True))
         a = kd_u.get(True)
+        if prior_available:
+            pu = _kingdee_by(db, pm, KingdeeActual.unassigned, KingdeeActual.unassigned.is_(True)).get(True)
+            if pu:
+                total["p_gp"] += gross_profit_of(pu)
         if a:
             a = dict(a)
             a_gp = gross_profit_of(a)
@@ -676,7 +714,7 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
                           "revenue_local_budget": None, "revenue_local_actual": None, "split": None,
                           "gross_profit": {"budget": None, "actual": s(a_gp), "diff": None, "rate": None},
                           "gross_margin": {"budget": None, "actual": None, "diff_pp": None}, "lines": lines,
-                          "note": notes.get(("unassigned", "unassigned"))}
+                          "yoy": None, "note": notes.get(("unassigned", "unassigned"))}
             total["a_gp"] += a_gp
             for k, _ in COST_ITEMS:
                 total["lines"][k][1] += a.get(k, ZERO)
@@ -699,7 +737,9 @@ def channel_site(db: Session, ctx: ScopeContext, month: str | None = None, basel
         "rows": rows, "b2b_rows": b2b_rows, "unassigned": unassigned,
         "total": {"label": total_label, "revenue": _metric(total["b_rev"], total["a_rev"]), "split": split_total,
                   "gross_profit": _metric(total["b_gp"], total["a_gp"]),
-                  "gross_margin": _margin(total["b_gp"], total["b_rev"], total["a_gp"], total["a_rev"])},
+                  "gross_margin": _margin(total["b_gp"], total["b_rev"], total["a_gp"], total["a_rev"]),
+                  "yoy": _yoy(total["a_rev"], total["a_gp"], total["p_rev"], total["p_gp"], prior_available)},
+        "prior_month": fmt_month(pm), "prior_available": prior_available,
     }
 
 
@@ -837,50 +877,74 @@ def dept_report(db: Session, ctx: ScopeContext, year: int | None = None, departm
              .group_by(Reserve.department_id, Reserve.account_id))
         for d, acc, v in db.execute(q).all():
             budget[(d, acc)] += v or ZERO
-    actual: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)
-    q = (select(KingdeeActual.department_id, KingdeeActual.account_id, func.sum(KingdeeActual.amount))
-         .join(BudgetAccount, BudgetAccount.id == KingdeeActual.account_id)
-         .where(KingdeeActual.batch_id.in_(_effective_batches()), BudgetAccount.is_dept_expense.is_(True),
-                KingdeeActual.month >= date(year, 1, 1), KingdeeActual.month <= last,
-                KingdeeActual.department_id.in_(dept_ids))
-         .group_by(KingdeeActual.department_id, KingdeeActual.account_id))
-    for d, acc, v in db.execute(q).all():
-        actual[(d, acc)] += v or ZERO
+    # 全公司视角另列「公司公共」：部门为空的部门费用科目实际（如经营历史表中负责部门不在主数据的管理费用）
+    with_public = ctx.all_company and department_id is None
+
+    def dept_actual(y: int, through: date) -> dict[tuple[int | None, int], Decimal]:
+        out: dict[tuple[int | None, int], Decimal] = defaultdict(lambda: ZERO)
+        dept_filter = KingdeeActual.department_id.in_(dept_ids)
+        if with_public:
+            dept_filter = dept_filter | KingdeeActual.department_id.is_(None)
+        q = (select(KingdeeActual.department_id, KingdeeActual.account_id, func.sum(KingdeeActual.amount))
+             .join(BudgetAccount, BudgetAccount.id == KingdeeActual.account_id)
+             .where(KingdeeActual.batch_id.in_(_effective_batches()), BudgetAccount.is_dept_expense.is_(True),
+                    KingdeeActual.month >= date(y, 1, 1), KingdeeActual.month <= through, dept_filter)
+             .group_by(KingdeeActual.department_id, KingdeeActual.account_id))
+        for d, acc, v in db.execute(q).all():
+            out[(d, acc)] += v or ZERO
+        return out
+
+    actual = dept_actual(year, last)
+    # 同比（REQ-F10-07）：上年同期 = 上年 1 月至同月；上年这些月份须全部已导入，否则不给同比
+    prior_through = date(year - 1, last.month, 1)
+    imported = set(kingdee_months(db))
+    prior_available = all(date(year - 1, mm, 1) in imported for mm in range(1, last.month + 1))
+    prior = dept_actual(year - 1, prior_through) if prior_available else defaultdict(lambda: ZERO)
     accounts = {a.id: a for a in db.scalars(select(BudgetAccount)).all()}
     progress = F.time_progress(last.month)
     notes = load_notes(db, "dept-expense", last)
 
-    def metric(b, a):
-        return {"budget": s(b), "actual": s(a), "usage": pct(F.quota_usage(a, b))}
+    def metric(b, a, p=None):
+        out = {"budget": s(b), "actual": s(a), "usage": pct(F.quota_usage(a, b))}
+        if prior_available:
+            out.update({"prior": s(p or ZERO), "yoy": pct(PA.growth(a, p or ZERO))})
+        else:
+            out.update({"prior": None, "yoy": None})
+        return out
 
-    groups, tb, ta = [], ZERO, ZERO
-    for d in depts:
-        if d.id not in dept_ids:
-            continue
-        keys = sorted({acc for (dd, acc) in list(budget) + list(actual) if dd == d.id},
+    groups, tb, ta, tp = [], ZERO, ZERO, ZERO
+    dept_list = [(d.id, d.name) for d in depts if d.id in dept_ids]
+    if with_public:
+        dept_list.append((None, PUBLIC_DEPT_LABEL))
+    for dept_id, dept_name in dept_list:
+        keys = sorted({acc for (dd, acc) in list(budget) + list(actual) + list(prior) if dd == dept_id},
                       key=lambda acc: (accounts[acc].sort, acc))
         if not keys:
             continue
-        items, sb, sa = [], ZERO, ZERO
+        items, sb, sa, sp = [], ZERO, ZERO, ZERO
         for acc in keys:
-            b, a = budget[(d.id, acc)], actual[(d.id, acc)]
-            nk = f"{d.id}:{acc}"
-            items.append({"department": d.name, "account": accounts[acc].name, **metric(b, a),
+            b, a, p = budget[(dept_id, acc)], actual[(dept_id, acc)], prior[(dept_id, acc)]
+            nk = f"{dept_id if dept_id is not None else 'public'}:{acc}"
+            items.append({"department": dept_name, "account": accounts[acc].name, **metric(b, a, p),
                           "note_key": {"object_type": "dept-account", "object_key": nk},
                           "note": notes.get(("dept-account", nk))})
             sb += b
             sa += a
-        groups.append({"department_id": d.id, "department": d.name, "rows": items,
-                       "subtotal": {"department": d.name, "account": "部门合计", **metric(sb, sa)}})
+            sp += p
+        groups.append({"department_id": dept_id, "department": dept_name, "rows": items,
+                       "subtotal": {"department": dept_name, "account": "部门合计", **metric(sb, sa, sp)}})
         tb += sb
         ta += sa
+        tp += sp
     total_label = "全公司合计" if ctx.all_company and department_id is None else (
         "合计（我的部门）" if not ctx.all_company else "合计（当前部门）")
     return {**base, "empty": False, "through": fmt_month(last), "imported_months": last.month,
             "time_progress": pct(progress),
             "baseline_label": (f"{version.name}（本年度暂无调整，取年初原始目标）" if fell_back else version.name)
             if version else "尚无年初原始目标",
-            "groups": groups, "total": {"department": total_label, "account": "", **metric(tb, ta)}}
+            "prior_available": prior_available,
+            "prior_period": f"{year - 1}-01 至 {fmt_month(prior_through)}",
+            "groups": groups, "total": {"department": total_label, "account": "", **metric(tb, ta, tp)}}
 
 
 __all__ = ["company_summary", "channel_site", "category_report", "dept_report", "save_note", "achievement",
