@@ -134,7 +134,7 @@ export function jsNum(v: number | null | undefined): number {
 }
 
 /* ------------------------- 基础常量 ------------------------- */
-export const COMPANY = '广州盛航创新科技有限公司'
+export const COMPANY = '示例公司'
 export const DEPTS = ['产品作战部', '研发部', '运营部', '供应中心', '物流物控部', '视觉部', '市场部', '人力资源部', '财务部', '信息数字化部', '项目管理部', '总经办']
 export const CHANNELS = ['Amazon', 'Wayfair', 'Home Depot', "Lowe's", '独立站']
 export const CATEGORIES = ['框镜', '灯镜', '镜柜', '水龙头', '浴室柜', '淋浴门']
