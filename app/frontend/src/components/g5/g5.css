@@ -1,0 +1,34 @@
+/* 业财分析（G5）公用样式：沿用平台令牌，补充页头工具、分段按钮、图表与卡片网格 */
+.g5 .page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--space-4); margin-bottom: var(--space-4); flex-wrap: wrap; }
+.g5 .meta { color: var(--muted); font-size: var(--text-sm); margin-top: var(--space-1); }
+.g5 .head-tools { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.g5 .demo-badge { margin-left: var(--space-2); vertical-align: middle; cursor: help; }
+.g5 .demo-note { margin: 0 0 var(--space-4); padding: var(--space-2) var(--space-3); border-left: 3px solid var(--warn); background: color-mix(in oklab, var(--warn), white 93%); color: var(--fg-2); font-size: var(--text-sm); }
+.g5 .save-error { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-2) var(--space-3); border: 1px solid color-mix(in oklab, var(--danger), white 60%); background: color-mix(in oklab, var(--danger), white 93%); color: var(--danger); border-radius: var(--radius-md); font-size: var(--text-sm); }
+.g5 .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+.g5 .seg button { border: 0; background: var(--surface); color: var(--fg-2); padding: 4px var(--space-3); font: inherit; font-size: var(--text-sm); cursor: pointer; }
+.g5 .seg button + button { border-left: 1px solid var(--border); }
+.g5 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-on); }
+.g5 .seg button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.g5 .small { font-size: var(--text-sm); }
+.g5 .muted { color: var(--muted); }
+.g5 .up { color: var(--danger); }      /* 中国财务惯例：涨红跌绿 */
+.g5 .down { color: var(--success); }
+.g5 .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+.g5 .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); }
+.g5 .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.g5 .section { margin-bottom: var(--space-6); }
+.g5 .section-title { font-size: var(--text-lg); font-weight: 600; margin: 0 0 var(--space-3); }
+.g5 .card-title { font-size: var(--text-base); font-weight: 600; margin: 0 0 var(--space-3); display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); }
+.g5 .chart { width: 100%; overflow-x: auto; }
+.g5 .chart svg { display: block; max-width: 100%; height: auto; }
+.g5 .legend { display: flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--text-xs); color: var(--fg-2); }
+.g5 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+.g5 .code-tag { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--muted); }
+.g5 .num { text-align: right; font-variant-numeric: tabular-nums; }
+@media (max-width: 1200px) {
+  .g5 .grid-3, .g5 .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .g5 .grid-2, .g5 .grid-3, .g5 .grid-4 { grid-template-columns: minmax(0, 1fr); }
+}
