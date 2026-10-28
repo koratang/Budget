@@ -169,7 +169,7 @@ def test_rule_02_role_gated_routes_forbidden(world):
               "channel_id": 1, "customer_id": B.customer(db, "Bauhaus").id, "department_id": B.dept(db, "市场部").id,
               "account_id": 1, "user_id": 1, "batch_id": 1, "version_id": 1, "rule_id": 1, "reserve_id": 1,
               "adjustment_id": 1, "obj_type": "unit", "obj_id": world["mkt"].id, "alert_id": world["alert_de"].id,
-              "unit_key": "platform:1"}
+              "unit_key": "platform:1", "key": "policy"}
     failures, checked = [], 0
     for method, path, r in _routes(world["clients"]["wanghao"].app):
         _auth, roles, _scoped = route_guard(r)
