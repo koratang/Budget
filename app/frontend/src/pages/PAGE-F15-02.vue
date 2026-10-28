@@ -54,11 +54,22 @@ const kpis = computed(() => ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7'].map((c) =
 }))
 
 /* ---------- 明细表（原 indicatorTable('fin') + renderFinRow） ---------- */
+/* recompute 每次都会按公式覆盖的财务派生指标（F4.9 期间费用合计、F7.3 应收、F7.5 存货、F7.7 应付），手工改了也会被重算 */
+const ENGINE_DERIVED = new Set(['F4.9', 'F7.3', 'F7.5', 'F7.7'])
+/** 千分位显示，保留原始小数位（输入框内仍为原始数值便于编辑） */
+function thou(v: number | null | undefined): string {
+  if (v === null || v === undefined || isNaN(v)) return '—'
+  const dec = (String(v).split('.')[1] || '').length
+  return fmt(v, dec)
+}
 interface Row {
   i: Indicator
   blank: boolean
   hasOv: boolean
+  /** 派生值（维度聚合 / 渠道毛利标记 / 引擎公式），同原工具 readonly，不给输入框 */
+  derived: boolean
   value: string
+  shown: string
   mom: Delta
   yoy: Delta
 }
@@ -70,7 +81,9 @@ function finRow(i: Indicator): Row {
   return {
     i, hasOv,
     blank: isBlankBiz(i),
+    derived: !!src._dimAgg || !!src._chanEdited || ENGINE_DERIVED.has(i.code),
     value: i.actual === null || i.actual === undefined ? '' : String(i.actual),
+    shown: thou(i.actual),
     mom: deltaOf(i, my.mom),
     yoy: deltaOf(i, my.yoy),
   }
@@ -115,14 +128,16 @@ function onEdit(e: Event, code: string): void {
 
 /* ---------- 财务视角关键提示 ---------- */
 const hints = computed(() => {
-  const F1 = need('F1'), F3 = need('F3'), F4 = need('F4'), F7 = need('F7')
+  const F1 = need('F1'), F3 = need('F3'), F4 = need('F4'), F7 = need('F7'), F49 = need('F4.9')
   const F41 = need('F4.1'), F74 = need('F7.4'), F76 = need('F7.6')
   const a = (i: Indicator): number => jsNum(i.actual)
   const t = (i: Indicator): number => jsNum(i.target)
   return [
     { st: rate(F3) >= 95 ? 'ok' : 'warn', ic: '!', t: '毛利率缺口 ' + fmt(t(F3) - a(F3), 1) + 'pt',
       d: '对应毛利损失约 ' + fmt(a(F1) * (t(F3) - a(F3)) / 100, 1) + ' 万元，需供应中心与产品作战部联合改善。' },
-    { st: rate(F4) >= 95 ? 'ok' : 'err', ic: '×', t: '期间费用率超标 ' + fmt(a(F4) - t(F4), 1) + 'pt',
+    /* 修正：原工具这里用 F4（净利润，万元）的实际 − 目标当作期间费用率偏差，得出「超标 −766.1pt」这类无意义数字；
+       期间费用率是 F4.9（期间费用率合计，%，逆向指标），超标 = 实际 − 目标，达成率也按 F4.9 判断 */
+    { st: rate(F49) >= 95 ? 'ok' : 'err', ic: '×', t: '期间费用率超标 ' + fmt(a(F49) - t(F49), 1) + 'pt',
       d: '主要来自营销费用率（' + pct(F41.actual) + ' vs 目标 ' + pct(F41.target) + '），核心驱动是广告 ACOS 偏高。' },
     { st: rate(F76) >= 90 ? 'ok' : 'warn', ic: '!', t: '存货周转天数超目标 ' + fmt(a(F76) - t(F76), 0) + ' 天',
       d: '占用资金约 ' + fmt((a(F76) - t(F76)) * (a(F1) * (1 - a(F3) / 100)) / 365, 0) + ' 万元，直接压制经营净现金流。' },
@@ -137,7 +152,7 @@ const hints = computed(() => {
 </script>
 
 <template>
-  <BizfinPage page-id="PAGE-F15-02" title="财务指标" :desc="desc">
+  <BizfinPage page-id="PAGE-F15-02" :sections="['indicators']" title="财务指标" :desc="desc">
     <div class="kpi-grid section">
       <div v-for="k in kpis" :key="k.i.code" class="card kpi" :data-kpi="k.i.code">
         <div class="kpi-label">{{ k.i.name }} <span class="code-tag">{{ k.i.code }}</span></div>
@@ -174,14 +189,14 @@ const hints = computed(() => {
               <td class="name">
                 {{ r.i.name }}
                 <span v-if="r.i.dir === -1" class="badge" title="逆向指标：越低越好">逆向</span>
-                <span v-if="r.i._dimAgg || r.i._chanEdited" class="badge badge-info" title="该值由派生公式自动计算">派生</span>
+                <span v-if="r.derived" class="badge badge-info" data-derived title="该值由派生公式自动计算">派生</span>
                 <span v-if="r.blank" class="badge" title="真实台账填报前不参与达成率计算">待填报</span>
                 <span v-if="S.dim === 'month'" class="badge badge-info" :title="`该值为 ${periodLabel()} 的月度口径`">月度</span>
                 <span v-if="r.hasOv" class="badge badge-bad" title="该月为手工填报值，已参与年度累计反算">手工填报</span>
               </td>
               <td class="num">
                 <input
-                  v-if="store.canEdit"
+                  v-if="store.canEdit && !r.derived"
                   class="cell-input"
                   :value="r.value"
                   placeholder="—"
@@ -191,7 +206,7 @@ const hints = computed(() => {
                   data-f="actual"
                   @change="onEdit($event, r.i.code)"
                 >
-                <span v-else>{{ r.value === '' ? '—' : r.value }}</span>
+                <span v-else class="cell-text" :class="{ derived: r.derived }">{{ r.shown }}</span>
               </td>
               <td class="num"><b :class="r.mom.cls">{{ r.mom.text }}</b></td>
               <td class="num"><b :class="r.yoy.cls">{{ r.yoy.text }}</b></td>
@@ -229,9 +244,12 @@ const hints = computed(() => {
 tr.lv1 td { background: var(--surface-warm); font-weight: 600; }
 td.name { white-space: normal; }
 td.name .badge { margin-left: var(--space-1); height: 18px; }
-.cell-input { width: 100px; height: 26px; border: 1px solid transparent; background: transparent; border-radius: var(--radius-md); padding: 0 6px; font: inherit; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); }
-.cell-input:hover { border-color: var(--border); background: var(--surface); }
+/* 可编辑单元格常显细边框 + 浅底，与派生 / 只读纯文本一眼可分 */
+.cell-input { width: 100px; height: 26px; border: 1px solid var(--border); background: color-mix(in oklab, var(--accent), white 96%); border-radius: var(--radius-md); padding: 0 6px; font: inherit; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); cursor: text; transition: border-color var(--motion-fast) var(--ease-standard), background var(--motion-fast) var(--ease-standard); }
+.cell-input:hover { border-color: var(--muted); background: var(--surface); }
 .cell-input:focus-visible { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: var(--focus-ring); }
+.cell-text { display: inline-block; padding: 0 7px; font-variant-numeric: tabular-nums; }
+.cell-text.derived { color: var(--fg-2); }
 .empty { text-align: center; color: var(--muted); padding: var(--space-6) var(--space-4); }
 .chk-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-2); }
 .chk { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface-warm); border: 1px solid var(--border-soft); }

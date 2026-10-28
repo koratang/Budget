@@ -151,7 +151,7 @@ function onActual(e: Event, i: Indicator): void {
 </script>
 
 <template>
-  <BizfinPage page-id="PAGE-F15-03" title="业务指标" desc="一级 / 二级业务指标体系 · 驱动因子与达成追踪">
+  <BizfinPage page-id="PAGE-F15-03" :sections="['indicators', 'biz_dim']" title="业务指标" desc="一级 / 二级业务指标体系 · 驱动因子与达成追踪">
     <div class="note card" data-testid="biz-note">
       <b>业务指标体系（4 板块）：</b>
       <code>S1</code> 营销板块（<b>分渠道</b>：Amazon / Wayfair / Home Depot / Lowe's / 独立站）｜
@@ -268,7 +268,7 @@ function onActual(e: Event, i: Indicator): void {
         <span>业务指标 → 财务指标 联动摘要</span>
         <span class="small muted">共 {{ LINKAGE.length }} 条，按关联强度排序</span>
       </div>
-      <div class="table-wrap link-wrap">
+      <div class="table-wrap">
         <table class="table">
           <thead>
             <tr><th>业务指标</th><th>传导至财务指标</th><th>方向</th><th>强度</th><th>业务现状</th><th>责任部门</th></tr>
@@ -301,12 +301,13 @@ function onActual(e: Event, i: Indicator): void {
 .badge { margin-left: var(--space-1); }
 .input.cell { width: 110px; height: 28px; text-align: right; }
 .matrix td { vertical-align: top; padding-top: 6px; padding-bottom: 6px; height: auto; }
-.dc-pair { display: flex; flex-direction: column; gap: 4px; }
+/* 维度矩阵列头为右对齐（.num），单元格内输入框 / 只读值 / 达成率同样靠右，与列头对齐 */
+.matrix td.dcell-td { text-align: right; }
+.dc-pair { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
 .input.dcell { width: 96px; height: 26px; text-align: right; font-size: var(--text-xs); }
 .dcell-ro { display: inline-block; min-width: 96px; text-align: right; font-variant-numeric: tabular-nums; }
 .dcr { margin-top: 2px; text-align: right; font-size: var(--text-xs); }
 .chart-note { margin: var(--space-3) 0 0; line-height: 1.7; }
-.link-wrap { max-height: 440px; }
 .mini-prog { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-xs); }
 .mini-prog .bar { display: inline-block; width: 48px; height: 6px; border-radius: var(--radius-pill); background: var(--border-soft); overflow: hidden; }
 .mini-prog i { display: block; height: 100%; }

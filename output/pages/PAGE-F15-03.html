@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="page-id" content="PAGE-F15-03">
+  <title>业务指标</title>
+  <link rel="stylesheet" href="../tokens.css">
+  <link rel="stylesheet" href="../app.css">
+  <style>
+    body { margin: 0; }
+    .app > div { min-width: 0; }
+    .toast { z-index: 60; }
+    .modal-backdrop { z-index: 50; }
+    .topbar nav { font-size: var(--text-sm); color: var(--muted); }
+    .topbar div { font-size: var(--text-sm); color: var(--fg-2); }
+    .topbar div a { color: var(--fg-2); }
+    .proto-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4); border: 1px dashed var(--muted); border-radius: var(--radius-md); font-size: var(--text-xs); color: var(--muted); }
+    .proto-bar .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+    .proto-bar .btn[aria-pressed="true"] { background: var(--surface-raised); border-color: var(--fg-2); color: var(--fg); }
+    .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-4); }
+    .page-head .page-title { margin-bottom: var(--space-1); display: flex; align-items: center; gap: var(--space-3); }
+    .meta { font-size: var(--text-sm); color: var(--muted); }
+    .head-tools { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+    .seg button { height: 30px; padding: 0 var(--space-3); border: 0; background: var(--surface); color: var(--fg-2); font: inherit; font-size: var(--text-sm); cursor: pointer; }
+    .seg button + button { border-left: 1px solid var(--border); }
+    .seg button:hover { background: var(--surface-raised); }
+    .seg button:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+    .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-on); }
+    .small { font-size: var(--text-xs); }
+    .muted { color: var(--muted); }
+    .demo-note { margin: 0 0 var(--space-4); padding: var(--space-2) var(--space-3); border-left: 3px solid var(--warn); background: color-mix(in oklab, var(--warn), white 93%); color: var(--fg-2); font-size: var(--text-sm); }
+    .save-error { display: flex; align-items: center; gap: var(--space-3); margin-bottom: var(--space-4); padding: var(--space-2) var(--space-3); border: 1px solid color-mix(in oklab, var(--danger), white 60%); background: color-mix(in oklab, var(--danger), white 93%); color: var(--danger); border-radius: var(--radius-md); font-size: var(--text-sm); }
+    .section { margin-bottom: var(--space-4); }
+    .card-title { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; font-weight: 600; margin-bottom: var(--space-3); }
+    .card-title .sub, .card-title .desc { font-weight: 400; margin-left: var(--space-2); }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: var(--space-4); }
+    .kpi { border-top: 3px solid var(--accent); }
+    .kpi.good { border-top-color: var(--success); } .kpi.warn { border-top-color: var(--warn); } .kpi.bad { border-top-color: var(--danger); }
+    .kpi-val { font-size: var(--text-2xl); font-weight: 700; margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
+    .kpi-val .u { font-size: var(--text-xs); font-weight: 400; color: var(--muted); margin-left: 3px; }
+    .kpi-foot { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-2); font-size: var(--text-xs); color: var(--muted); font-weight: 600; }
+    .kpi.bad .kpi-val { color: var(--danger); }
+    .akpi { border-left: 3px solid var(--fg-2); }
+    .akpi.biz { border-left-color: var(--accent); } .akpi.good { border-left-color: var(--success); } .akpi.bad { border-left-color: var(--danger); } .akpi.fin { border-left-color: #334155; } .akpi.warn { border-left-color: var(--warn); }
+    .akpi .kpi-val.compact { font-size: var(--text-lg); }
+    .akpi .foot { font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-1); }
+    .up { color: var(--danger); } .down { color: var(--success); }
+    .t-good { color: var(--success); } .t-info { color: var(--accent); } .t-warn { color: var(--warn); } .t-bad { color: var(--danger); }
+    .code-tag { font-family: var(--font-mono); font-size: var(--text-xs); color: var(--muted); }
+    code { font-family: var(--font-mono); font-size: var(--text-xs); background: var(--surface-raised); padding: 0 4px; border-radius: var(--radius-sm); }
+    .note { font-size: var(--text-xs); color: var(--muted); line-height: 1.75; margin: var(--space-2) 0 0; }
+    .note b { color: var(--fg); }
+    .anote { margin-top: var(--space-3); padding: var(--space-2) var(--space-3); border-left: 3px solid var(--accent); background: var(--surface-warm); font-size: var(--text-xs); color: var(--fg-2); line-height: 1.75; }
+    .note-card { font-size: var(--text-sm); color: var(--fg-2); line-height: 1.8; }
+    .legend { display: flex; flex-wrap: wrap; gap: var(--space-3); font-size: var(--text-xs); color: var(--muted); margin-top: var(--space-2); }
+    .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+    .chart { width: 100%; height: auto; display: block; }
+    .chk-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--space-2); }
+    .chk { display: flex; align-items: flex-start; gap: var(--space-2); padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--surface-warm); border: 1px solid var(--border-soft); }
+    .chk .ic { width: 17px; height: 17px; border-radius: 50%; flex: 0 0 17px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; color: var(--accent-on); margin-top: 2px; }
+    .chk.ok .ic { background: var(--success); } .chk.warn .ic { background: var(--warn); } .chk.err .ic { background: var(--danger); }
+    .chk .t { font-size: var(--text-sm); font-weight: 600; }
+    .chk .d { font-size: var(--text-xs); color: var(--fg-2); line-height: 1.65; }
+    .table tr.lv1 td { background: var(--surface-warm); font-weight: 600; }
+    .table td.wrap { white-space: normal; line-height: 1.6; padding-top: 6px; padding-bottom: 6px; }
+    .cell-input { width: 100px; height: 26px; border: 1px solid transparent; background: transparent; border-radius: var(--radius-md); padding: 0 6px; font: inherit; text-align: right; font-variant-numeric: tabular-nums; color: var(--fg); }
+    .cell-input:hover { border-color: var(--border); background: var(--surface); }
+    .cell-input:focus-visible { outline: none; border-color: var(--accent); background: var(--surface); box-shadow: var(--focus-ring); }
+    .empty { text-align: center; color: var(--muted); padding: var(--space-6) var(--space-4); }
+    body.ro .edit-only { display: none !important; }
+    body:not(.ro) .ro-only { display: none !important; }
+    body:not(.can-reset) .reset-only { display: none !important; }
+    [hidden] { display: none !important; }
+
+    .input.cell { width: 110px; height: 26px; text-align: right; } .input.dcell { width: 72px; height: 26px; text-align: right; }
+    .mini { display: inline-block; width: 60px; height: 6px; border-radius: 3px; background: var(--border-soft); vertical-align: middle; overflow: hidden; }
+    .mini i { display: block; height: 100%; } .b-strong { background: var(--danger); } .b-mid { background: var(--warn); } .b-weak { background: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" aria-label="主导航">
+    <div style="font-weight:600;padding:8px 12px 12px">预算管理平台</div>
+    <a class="nav-item nav-top" href="PAGE-F00-01.html">工作台</a>
+    <div class="nav-group">预算编制</div>
+    <a class="nav-item" href="PAGE-F03-01.html">编制任务</a>
+    <a class="nav-item" href="PAGE-F07-01.html">待我审批</a>
+    <div class="nav-group">预算版本</div>
+    <a class="nav-item" href="PAGE-F08-01.html">版本管理</a>
+    <div class="nav-group">实际数</div>
+    <a class="nav-item" href="PAGE-F09-01.html">实际数导入</a>
+    <a class="nav-item" href="PAGE-F09-02.html">BI 与金蝶核对</a>
+    <div class="nav-group">报表</div>
+    <a class="nav-item" href="PAGE-F10-01.html">公司汇总</a>
+    <a class="nav-item" href="PAGE-F10-02.html">渠道×站点偏差</a>
+    <a class="nav-item" href="PAGE-F10-03.html">品类×新老品偏差</a>
+    <a class="nav-item" href="PAGE-F10-04.html">部门费用报告</a>
+    <div class="nav-group">业财分析</div>
+    <a class="nav-item" href="PAGE-F15-01.html">经营总览驾驶舱</a>
+    <a class="nav-item" href="PAGE-F15-02.html">财务指标</a>
+    <a class="nav-item" href="PAGE-F15-03.html" aria-current="page">业务指标</a>
+    <a class="nav-item" href="PAGE-F15-04.html">业财联动关系</a>
+    <a class="nav-item" href="PAGE-F15-05.html">数据分析</a>
+    <a class="nav-item" href="PAGE-F15-06.html">政策环境</a>
+    <a class="nav-item" href="PAGE-F15-07.html">经营建议</a>
+    <a class="nav-item" href="PAGE-F15-08.html">重点工作进度</a>
+    <a class="nav-item" href="PAGE-F15-09.html">业财数据管理</a>
+  </aside>
+  <div>
+    <header class="topbar">
+      <nav aria-label="面包屑">业财分析 / 业务指标</nav>
+      <div>当前用户：<span id="who">林晓（财务负责人）</span> · <a href="PAGE-F01-01.html">退出</a></div>
+    </header>
+    <main class="main">
+      <div class="proto-bar" role="group" aria-label="原型说明，非产品功能">
+        <strong>原型说明，非产品功能</strong>
+        <span>页面状态：</span>
+        <button class="btn" data-state="normal" aria-pressed="true">正常</button>
+        <button class="btn" data-state="loading" aria-pressed="false">加载</button>
+        <button class="btn" data-state="error" aria-pressed="false">错误</button>
+        <button class="btn" data-state="denied" aria-pressed="false">无权限</button>
+        <span style="margin-left:12px">视角：</span>
+        <button class="btn" data-view="lead" aria-pressed="true">财务负责人</button>
+        <button class="btn" data-view="bp" aria-pressed="false">财务BP</button>
+        <button class="btn" data-view="ceo" aria-pressed="false">CEO（只读）</button>
+        <span style="margin-left:12px">模拟：</span><button class="btn" type="button" id="btn-conflict" data-msg="「业务指标维度填报」已被陈思雨更新，请刷新后再改">保存冲突（409）</button>
+        <span>维度切换只示意期间标签，数值以示例数据年度口径展示。</span>
+      </div>
+
+      <div class="page-head">
+        <div>
+          <h1 class="page-title"><span>业务指标</span> <span class="badge badge-warn loaded-only" title="尚有部分内容为原工具自带的示例数据；在「数据管理」导入正式数据后，此标记消失。" data-demo-badge>示例数据</span></h1>
+          <div class="meta">一级 / 二级业务指标体系 · 驱动因子与达成追踪</div>
+        </div>
+        <div class="head-tools loaded-only">
+          <span class="small muted" role="status" id="saving" hidden>保存中…</span>
+          <div class="seg" role="group" aria-label="维度" id="dim-seg" data-dim="year">
+            <button type="button" data-dim="year" aria-pressed="true">年度</button>
+            <button type="button" data-dim="month" aria-pressed="false">月度</button>
+          </div>
+          <select class="select" aria-label="月份" id="dim-month" hidden><option value="01">01月</option><option value="02">02月</option><option value="03">03月</option><option value="04">04月</option><option value="05">05月</option><option value="06">06月</option><option value="07">07月</option><option value="08">08月</option><option value="09" selected>09月</option></select>
+          <span class="small muted" id="dim-period">2026年度累计（1-9月）</span>
+        </div>
+      </div>
+
+      <div class="save-error" id="save-error" role="alert" hidden><span id="save-error-text"></span><button type="button" class="btn" id="btn-refresh">刷新数据</button></div>
+
+      <div id="st-normal">
+        <p class="demo-note" id="demo-note">尚有部分内容为原工具自带的示例数据；在「数据管理」导入正式数据后，此标记消失。</p>
+
+        <div class="card note-card section">
+          <b>业务指标体系（4 板块）：</b><code>S1</code> 营销板块（<b>分渠道</b>：Amazon / Wayfair / Home Depot / Lowe's / 独立站）｜ <code>S2</code> 产品板块（<b>分品类</b>：框镜 / 灯镜 / 镜柜 / 其他）｜ <code>S3</code> 供应链板块（采购周期<b>分品类</b>）｜ <code>S4</code> 仓配履约板块（单位头程成本<b>分线路</b>：美东 / 美西 / 英国 / 欧洲；单位仓储费用、单位操作费用<b>分服务商</b>：A / B / C）。<br>
+          <b>数据状态：</b>真实台账就绪前全部指标留空，页面显示「—」，避免以 0 拉低板块健康度。当前已填报 <b>0 / 31</b> 项二级指标。<b>0 / 76</b> 个维度单元格已填报。可在下方矩阵中逐格填报，或在「<a href="PAGE-F15-09.html">数据管理</a>」中按「<code>编码, 维度, 实际值</code>」批量导入。
+        </div>
+
+        <section class="card section" data-board="S1">
+          <div class="card-title"><span>营销板块 <span class="code-tag">S1</span></span><span class="badge badge-bad">待填报 0/13</span></div>
+          <p class="small muted" style="margin:0 0 8px">由二级指标自动汇总（数据待填报）</p>
+          <div class="table-wrap"><table class="table"><thead><tr><th>编码</th><th>指标名称</th><th>单位</th><th class="num">实际值</th><th>责任部门</th></tr></thead><tbody><tr><td class="code-tag">S1.1</td><td>UV</td><td class="small muted">万</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.1" placeholder="—" aria-label="S1.1 UV 实际值"><span class="ro-only">—</span></td><td class="small muted">运营部 / 市场部</td></tr><tr><td class="code-tag">S1.2</td><td>转化率</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.2" placeholder="—" aria-label="S1.2 转化率 实际值"><span class="ro-only">—</span></td><td class="small muted">运营部 / 视觉部</td></tr><tr><td class="code-tag">S1.3</td><td>客单价</td><td class="small muted">元</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.3" placeholder="—" aria-label="S1.3 客单价 实际值"><span class="ro-only">—</span></td><td class="small muted">运营部 / 产品作战部</td></tr><tr><td class="code-tag">S1.4</td><td>折扣率 <span class="badge">逆向</span></td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.4" placeholder="—" aria-label="S1.4 折扣率 实际值"><span class="ro-only">—</span></td><td class="small muted">运营部 / 市场部</td></tr><tr><td class="code-tag">S1.5</td><td>品效</td><td class="small muted">倍</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.5" placeholder="—" aria-label="S1.5 品效 实际值"><span class="ro-only">—</span></td><td class="small muted">市场部 / 运营部</td></tr><tr><td class="code-tag">S1.6</td><td>连带率</td><td class="small muted">件/单</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.6" placeholder="—" aria-label="S1.6 连带率 实际值"><span class="ro-only">—</span></td><td class="small muted">运营部 / 产品作战部</td></tr><tr><td class="code-tag">S1.7</td><td>复购率</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.7" placeholder="—" aria-label="S1.7 复购率 实际值"><span class="ro-only">—</span></td><td class="small muted">市场部 / 运营部</td></tr><tr><td class="code-tag">S1.8</td><td>非付费流量占比</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.8" placeholder="—" aria-label="S1.8 非付费流量占比 实际值"><span class="ro-only">—</span></td><td class="small muted">市场部 / 运营部</td></tr><tr><td class="code-tag">S1.9</td><td>非付费订单占比</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.9" placeholder="—" aria-label="S1.9 非付费订单占比 实际值"><span class="ro-only">—</span></td><td class="small muted">运营部</td></tr><tr><td class="code-tag">S1.10</td><td>单位广告成本 <span class="badge">逆向</span></td><td class="small muted">元</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.10" placeholder="—" aria-label="S1.10 单位广告成本 实际值"><span class="ro-only">—</span></td><td class="small muted">运营部 / 市场部</td></tr><tr><td class="code-tag">S1.11</td><td>社媒产出</td><td class="small muted">人民币</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.11" placeholder="—" aria-label="S1.11 社媒产出 实际值"><span class="ro-only">—</span></td><td class="small muted">市场部</td></tr><tr><td class="code-tag">S1.12</td><td>客服人效</td><td class="small muted">单/人</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.12" placeholder="—" aria-label="S1.12 客服人效 实际值"><span class="ro-only">—</span></td><td class="small muted">运营部</td></tr><tr><td class="code-tag">S1.13</td><td>视觉人效</td><td class="small muted">款/人</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S1.13" placeholder="—" aria-label="S1.13 视觉人效 实际值"><span class="ro-only">—</span></td><td class="small muted">视觉部</td></tr><tr class="total"><td>板块合计</td><td></td><td></td><td class="num">0 / 13 项二级已填报</td><td>运营部 / 市场部</td></tr></tbody></table></div>
+        </section>
+        <section class="card section">
+          <div class="card-title"><span>营销板块 · 分渠道矩阵</span></div>
+          <p class="small muted" style="margin:0 0 8px">行 = 渠道（Amazon / Wayfair / Home Depot / Lowe's / 独立站）｜ 列 = 指标 ｜ 填实际值即可，留空即「待填报」</p>
+          <div class="table-wrap"><table class="table matrix"><thead><tr><th>渠道</th><th class="num">UV<div class="small muted" style="font-weight:400">S1.1 ｜ 万</div></th><th class="num">转化率<div class="small muted" style="font-weight:400">S1.2 ｜ %</div></th><th class="num">客单价<div class="small muted" style="font-weight:400">S1.3 ｜ 元</div></th><th class="num">折扣率<div class="small muted" style="font-weight:400">S1.4 ｜ % ｜ 逆向</div></th><th class="num">品效<div class="small muted" style="font-weight:400">S1.5 ｜ 倍</div></th><th class="num">连带率<div class="small muted" style="font-weight:400">S1.6 ｜ 件/单</div></th><th class="num">复购率<div class="small muted" style="font-weight:400">S1.7 ｜ %</div></th><th class="num">非付费流量占比<div class="small muted" style="font-weight:400">S1.8 ｜ %</div></th><th class="num">非付费订单占比<div class="small muted" style="font-weight:400">S1.9 ｜ %</div></th><th class="num">单位广告成本<div class="small muted" style="font-weight:400">S1.10 ｜ 元 ｜ 逆向</div></th></tr></thead><tbody><tr><td>Amazon</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.1 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.2 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.3 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.4 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.5 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.6 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.7 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.8 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.9 Amazon 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.10 Amazon 实际值"><span class="ro-only">—</span></td></tr><tr><td>Wayfair</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.1 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.2 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.3 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.4 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.5 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.6 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.7 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.8 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.9 Wayfair 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.10 Wayfair 实际值"><span class="ro-only">—</span></td></tr><tr><td>Home Depot</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.1 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.2 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.3 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.4 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.5 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.6 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.7 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.8 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.9 Home Depot 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.10 Home Depot 实际值"><span class="ro-only">—</span></td></tr><tr><td>Lowe&#x27;s</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.1 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.2 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.3 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.4 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.5 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.6 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.7 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.8 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.9 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.10 Lowe&#x27;s 实际值"><span class="ro-only">—</span></td></tr><tr><td>独立站</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.1 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.2 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.3 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.4 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.5 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.6 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.7 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.8 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.9 独立站 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S1.10 独立站 实际值"><span class="ro-only">—</span></td></tr><tr class="total"><td>合计 / 均值</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td></tr></tbody></table></div>
+          <p class="note"><b>聚合口径：</b>加总型指标（UV「万」、社媒产出「万元」、上架 SPU「款」）在维度成员间<b>求和</b>；比率型指标（%、元、天、倍）在维度成员间<b>算术平均</b>。聚合值自动回填为该指标的年度整体值，形成「维度填报 → 指标整体 → 业财联动」的勾稽链路。</p>
+        </section>
+        <section class="card section" data-board="S2">
+          <div class="card-title"><span>产品板块 <span class="code-tag">S2</span></span><span class="badge badge-bad">待填报 0/3</span></div>
+          <p class="small muted" style="margin:0 0 8px">由二级指标自动汇总（数据待填报）</p>
+          <div class="table-wrap"><table class="table"><thead><tr><th>编码</th><th>指标名称</th><th>单位</th><th class="num">实际值</th><th>责任部门</th></tr></thead><tbody><tr><td class="code-tag">S2.1</td><td>新品开发周期 <span class="badge">逆向</span></td><td class="small muted">天</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S2.1" placeholder="—" aria-label="S2.1 新品开发周期 实际值"><span class="ro-only">—</span></td><td class="small muted">研发部 / 项目管理部</td></tr><tr><td class="code-tag">S2.2</td><td>上架SPU数量（老品迭代）</td><td class="small muted">款</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S2.2" placeholder="—" aria-label="S2.2 上架SPU数量（老品迭代） 实际值"><span class="ro-only">—</span></td><td class="small muted">产品作战部</td></tr><tr><td class="code-tag">S2.3</td><td>上架SPU数量（新品）</td><td class="small muted">款</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S2.3" placeholder="—" aria-label="S2.3 上架SPU数量（新品） 实际值"><span class="ro-only">—</span></td><td class="small muted">研发部 / 产品作战部</td></tr><tr class="total"><td>板块合计</td><td></td><td></td><td class="num">0 / 3 项二级已填报</td><td>产品作战部 / 研发部</td></tr></tbody></table></div>
+        </section>
+        <section class="card section">
+          <div class="card-title"><span>产品板块 · 分品类矩阵</span></div>
+          <p class="small muted" style="margin:0 0 8px">行 = 品类（框镜 / 灯镜 / 镜柜 / 其他）｜ 列 = 指标 ｜ 填实际值即可，留空即「待填报」</p>
+          <div class="table-wrap"><table class="table matrix"><thead><tr><th>品类</th><th class="num">新品开发周期<div class="small muted" style="font-weight:400">S2.1 ｜ 天 ｜ 逆向</div></th><th class="num">上架SPU数量（老品迭代）<div class="small muted" style="font-weight:400">S2.2 ｜ 款</div></th><th class="num">上架SPU数量（新品）<div class="small muted" style="font-weight:400">S2.3 ｜ 款</div></th></tr></thead><tbody><tr><td>框镜</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.1 框镜 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.2 框镜 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.3 框镜 实际值"><span class="ro-only">—</span></td></tr><tr><td>灯镜</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.1 灯镜 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.2 灯镜 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.3 灯镜 实际值"><span class="ro-only">—</span></td></tr><tr><td>镜柜</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.1 镜柜 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.2 镜柜 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.3 镜柜 实际值"><span class="ro-only">—</span></td></tr><tr><td>其他</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.1 其他 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.2 其他 实际值"><span class="ro-only">—</span></td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S2.3 其他 实际值"><span class="ro-only">—</span></td></tr><tr class="total"><td>合计 / 均值</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td><td class="num small">未填报 → 整体值待填报</td></tr></tbody></table></div>
+          <p class="note"><b>聚合口径：</b>加总型指标（UV「万」、社媒产出「万元」、上架 SPU「款」）在维度成员间<b>求和</b>；比率型指标（%、元、天、倍）在维度成员间<b>算术平均</b>。聚合值自动回填为该指标的年度整体值，形成「维度填报 → 指标整体 → 业财联动」的勾稽链路。</p>
+        </section>
+        <section class="card section" data-board="S3">
+          <div class="card-title"><span>供应链板块 <span class="code-tag">S3</span></span><span class="badge badge-bad">待填报 0/6</span></div>
+          <p class="small muted" style="margin:0 0 8px">由二级指标自动汇总（数据待填报）</p>
+          <div class="table-wrap"><table class="table"><thead><tr><th>编码</th><th>指标名称</th><th>单位</th><th class="num">实际值</th><th>责任部门</th></tr></thead><tbody><tr><td class="code-tag">S3.1</td><td>交货准时率（新品）</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S3.1" placeholder="—" aria-label="S3.1 交货准时率（新品） 实际值"><span class="ro-only">—</span></td><td class="small muted">供应中心 / 项目管理部</td></tr><tr><td class="code-tag">S3.2</td><td>交货准时率（老品）</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S3.2" placeholder="—" aria-label="S3.2 交货准时率（老品） 实际值"><span class="ro-only">—</span></td><td class="small muted">供应中心</td></tr><tr><td class="code-tag">S3.3</td><td>降本率</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S3.3" placeholder="—" aria-label="S3.3 降本率 实际值"><span class="ro-only">—</span></td><td class="small muted">供应中心</td></tr><tr><td class="code-tag">S3.4</td><td>质检合格率（新品）</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S3.4" placeholder="—" aria-label="S3.4 质检合格率（新品） 实际值"><span class="ro-only">—</span></td><td class="small muted">供应中心 / 研发部</td></tr><tr><td class="code-tag">S3.5</td><td>质检合格率（老品）</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S3.5" placeholder="—" aria-label="S3.5 质检合格率（老品） 实际值"><span class="ro-only">—</span></td><td class="small muted">供应中心</td></tr><tr><td class="code-tag">S3.6</td><td>采购周期 <span class="badge">逆向</span></td><td class="small muted">天</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S3.6" placeholder="—" aria-label="S3.6 采购周期 实际值"><span class="ro-only">—</span></td><td class="small muted">供应中心</td></tr><tr class="total"><td>板块合计</td><td></td><td></td><td class="num">0 / 6 项二级已填报</td><td>供应中心 / 物流物控部</td></tr></tbody></table></div>
+        </section>
+        <section class="card section" data-board="S4">
+          <div class="card-title"><span>仓配履约板块 <span class="code-tag">S4</span></span><span class="badge badge-bad">待填报 0/9</span></div>
+          <p class="small muted" style="margin:0 0 8px">由二级指标自动汇总（数据待填报）</p>
+          <div class="table-wrap"><table class="table"><thead><tr><th>编码</th><th>指标名称</th><th>单位</th><th class="num">实际值</th><th>责任部门</th></tr></thead><tbody><tr><td class="code-tag">S4.1</td><td>整柜装载率</td><td class="small muted">m³</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.1" placeholder="—" aria-label="S4.1 整柜装载率 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部</td></tr><tr><td class="code-tag">S4.2</td><td>单位头程成本 <span class="badge">逆向</span></td><td class="small muted">元/kg</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.2" placeholder="—" aria-label="S4.2 单位头程成本 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部</td></tr><tr><td class="code-tag">S4.3</td><td>单位尾程成本 <span class="badge">逆向</span></td><td class="small muted">元/单</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.3" placeholder="—" aria-label="S4.3 单位尾程成本 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部</td></tr><tr><td class="code-tag">S4.4</td><td>单位仓储费用 <span class="badge">逆向</span></td><td class="small muted">元/件</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.4" placeholder="—" aria-label="S4.4 单位仓储费用 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部</td></tr><tr><td class="code-tag">S4.5</td><td>单位操作费用 <span class="badge">逆向</span></td><td class="small muted">元/件</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.5" placeholder="—" aria-label="S4.5 单位操作费用 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部</td></tr><tr><td class="code-tag">S4.6</td><td>存销比 <span class="badge">逆向</span></td><td class="small muted">倍</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.6" placeholder="—" aria-label="S4.6 存销比 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部 / 供应中心</td></tr><tr><td class="code-tag">S4.7</td><td>有货率（增量）</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.7" placeholder="—" aria-label="S4.7 有货率（增量） 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部</td></tr><tr><td class="code-tag">S4.8</td><td>有货率（存量）</td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.8" placeholder="—" aria-label="S4.8 有货率（存量） 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部</td></tr><tr><td class="code-tag">S4.9</td><td>呆滞库存占比 <span class="badge">逆向</span></td><td class="small muted">%</td>
+          <td class="num"><input class="input cell edit-only" data-save data-code="S4.9" placeholder="—" aria-label="S4.9 呆滞库存占比 实际值"><span class="ro-only">—</span></td><td class="small muted">物流物控部 / 供应中心</td></tr><tr class="total"><td>板块合计</td><td></td><td></td><td class="num">0 / 9 项二级已填报</td><td>物流物控部 / 供应中心</td></tr></tbody></table></div>
+        </section>
+        <section class="card section">
+          <div class="card-title"><span>仓配履约板块 · 分线路区域矩阵</span></div>
+          <p class="small muted" style="margin:0 0 8px">行 = 线路区域（美东 / 美西 / 英国 / 欧洲）｜ 列 = 指标 ｜ 填实际值即可，留空即「待填报」</p>
+          <div class="table-wrap"><table class="table matrix"><thead><tr><th>线路区域</th><th class="num">单位头程成本<div class="small muted" style="font-weight:400">S4.2 ｜ 元/kg ｜ 逆向</div></th></tr></thead><tbody><tr><td>美东</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S4.2 美东 实际值"><span class="ro-only">—</span></td></tr><tr><td>美西</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S4.2 美西 实际值"><span class="ro-only">—</span></td></tr><tr><td>英国</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S4.2 英国 实际值"><span class="ro-only">—</span></td></tr><tr><td>欧洲</td><td class="num"><input class="input dcell edit-only" data-save placeholder="实际" aria-label="S4.2 欧洲 实际值"><span class="ro-only">—</span></td></tr><tr class="total"><td>合计 / 均值</td><td class="num small">未填报 → 整体值待填报</td></tr></tbody></table></div>
+          <p class="note"><b>聚合口径：</b>加总型指标（UV「万」、社媒产出「万元」、上架 SPU「款」）在维度成员间<b>求和</b>；比率型指标（%、元、天、倍）在维度成员间<b>算术平均</b>。聚合值自动回填为该指标的年度整体值，形成「维度填报 → 指标整体 → 业财联动」的勾稽链路。</p>
+        </section>
+        <section class="card section">
+          <div class="card-title"><span>业务指标 → 财务指标 联动摘要</span><span class="small muted">共 31 条，按关联强度排序</span></div>
+          <div class="table-wrap"><table class="table"><thead><tr><th>业务指标</th><th>传导至财务指标</th><th>方向</th><th>强度</th><th>业务现状</th><th>责任部门</th></tr></thead><tbody><tr><td><span class="code-tag">S1.1</span> UV</td><td><span class="code-tag">F1</span> 营业收入</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-strong" style="width:80%"></i></span> 80%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">运营部 / 市场部</td></tr><tr><td><span class="code-tag">S3.3</span> 降本率</td><td><span class="code-tag">F2 / F3</span> 毛利额 / 毛利率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-strong" style="width:80%"></i></span> 80%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">供应中心</td></tr><tr><td><span class="code-tag">S1.2</span> 转化率</td><td><span class="code-tag">F1</span> 营业收入</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-strong" style="width:75%"></i></span> 75%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">运营部 / 视觉部</td></tr><tr><td><span class="code-tag">S4.2</span> 单位头程成本</td><td><span class="code-tag">F4.3+F4.4+F4.5</span> 头程+尾程+仓储费用合计</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-strong" style="width:72%"></i></span> 72%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部</td></tr><tr><td><span class="code-tag">S1.4</span> 折扣率</td><td><span class="code-tag">F3</span> 毛利率</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-strong" style="width:70%"></i></span> 70%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">运营部 / 市场部</td></tr><tr><td><span class="code-tag">S1.10</span> 单位广告成本</td><td><span class="code-tag">F4.1 → F4</span> 营销费用率 → 净利润</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-strong" style="width:70%"></i></span> 70%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">运营部 / 市场部</td></tr><tr><td><span class="code-tag">S4.3</span> 单位尾程成本</td><td><span class="code-tag">F4.3+F4.4+F4.5 → F4</span> 头程+尾程+仓储费用合计 → 净利润</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-strong" style="width:70%"></i></span> 70%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部</td></tr><tr><td><span class="code-tag">S4.6</span> 存销比</td><td><span class="code-tag">F7.6 / F7</span> 存货周转天数 / 经营净现金流</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-strong" style="width:70%"></i></span> 70%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部 / 供应中心</td></tr><tr><td><span class="code-tag">S1.5</span> 品效</td><td><span class="code-tag">F4.1</span> 营销费用率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:68%"></i></span> 68%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">市场部 / 运营部</td></tr><tr><td><span class="code-tag">S4.9</span> 呆滞库存占比</td><td><span class="code-tag">F7.6 / F7</span> 存货周转天数 / 经营净现金流</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-mid" style="width:65%"></i></span> 65%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部 / 供应中心</td></tr><tr><td><span class="code-tag">S1.8</span> 非付费流量占比</td><td><span class="code-tag">F4.1</span> 营销费用率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:62%"></i></span> 62%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">市场部 / 运营部</td></tr><tr><td><span class="code-tag">S4.1</span> 整柜装载率</td><td><span class="code-tag">F4.3+F4.4+F4.5</span> 头程+尾程+仓储费用合计</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:62%"></i></span> 62%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部</td></tr><tr><td><span class="code-tag">S4.7</span> 有货率（增量）</td><td><span class="code-tag">F1</span> 营业收入</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:62%"></i></span> 62%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部</td></tr><tr><td><span class="code-tag">S1.3</span> 客单价</td><td><span class="code-tag">F1 / F3</span> 营业收入 / 毛利率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:60%"></i></span> 60%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">运营部 / 产品作战部</td></tr><tr><td><span class="code-tag">S1.9</span> 非付费订单占比</td><td><span class="code-tag">F4.1 → F4</span> 营销费用率 → 净利润</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:60%"></i></span> 60%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">运营部</td></tr><tr><td><span class="code-tag">S3.6</span> 采购周期</td><td><span class="code-tag">F7.6 / F7</span> 存货周转天数 / 经营净现金流</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-mid" style="width:60%"></i></span> 60%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">供应中心</td></tr><tr><td><span class="code-tag">S4.4</span> 单位仓储费用</td><td><span class="code-tag">F4.3+F4.4+F4.5</span> 头程+尾程+仓储费用合计</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-mid" style="width:60%"></i></span> 60%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部</td></tr><tr><td><span class="code-tag">S3.2</span> 交货准时率（老品）</td><td><span class="code-tag">F1 / F4.3+F4.4+F4.5</span> 营业收入 / 头程+尾程+仓储费用合计</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:58%"></i></span> 58%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">供应中心</td></tr><tr><td><span class="code-tag">S4.8</span> 有货率（存量）</td><td><span class="code-tag">F1 / F7.6</span> 营业收入 / 存货周转天数</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:58%"></i></span> 58%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部</td></tr><tr><td><span class="code-tag">S2.3</span> 上架SPU数量（新品）</td><td><span class="code-tag">F1 / F2</span> 营业收入 / 毛利额</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:55%"></i></span> 55%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">研发部 / 产品作战部</td></tr><tr><td><span class="code-tag">S3.1</span> 交货准时率（新品）</td><td><span class="code-tag">F1 / F4</span> 营业收入 / 净利润</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:55%"></i></span> 55%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">供应中心 / 项目管理部</td></tr><tr><td><span class="code-tag">S4.5</span> 单位操作费用</td><td><span class="code-tag">F4.3+F4.4+F4.5</span> 头程+尾程+仓储费用合计</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-mid" style="width:55%"></i></span> 55%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">物流物控部</td></tr><tr><td><span class="code-tag">S1.7</span> 复购率</td><td><span class="code-tag">F1 / F4.1</span> 营业收入 / 营销费用率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:52%"></i></span> 52%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">市场部 / 运营部</td></tr><tr><td><span class="code-tag">S2.2</span> 上架SPU数量（老品迭代）</td><td><span class="code-tag">F2 / F3</span> 毛利额 / 毛利率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:50%"></i></span> 50%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">产品作战部</td></tr><tr><td><span class="code-tag">S3.4</span> 质检合格率（新品）</td><td><span class="code-tag">F2 / F5</span> 毛利额 / 净利润</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-mid" style="width:50%"></i></span> 50%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">供应中心 / 研发部</td></tr><tr><td><span class="code-tag">S1.6</span> 连带率</td><td><span class="code-tag">F1 / F3</span> 营业收入 / 毛利率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-weak" style="width:45%"></i></span> 45%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">运营部 / 产品作战部</td></tr><tr><td><span class="code-tag">S2.1</span> 新品开发周期</td><td><span class="code-tag">F7 / F2</span> 经营净现金流 / 毛利额</td>
+        <td class="down">负向</td><td><span class="mini"><i class="b-weak" style="width:45%"></i></span> 45%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">研发部 / 项目管理部</td></tr><tr><td><span class="code-tag">S3.5</span> 质检合格率（老品）</td><td><span class="code-tag">F2 / F4.2</span> 毛利额 / 物流履约费用率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-weak" style="width:45%"></i></span> 45%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">供应中心</td></tr><tr><td><span class="code-tag">S1.11</span> 社媒产出</td><td><span class="code-tag">F1 / F4.1</span> 营业收入 / 营销费用率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-weak" style="width:40%"></i></span> 40%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">市场部</td></tr><tr><td><span class="code-tag">S1.13</span> 视觉人效</td><td><span class="code-tag">F4.3 / F2</span> 管理费用占比 / 毛利额</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-weak" style="width:38%"></i></span> 38%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">视觉部</td></tr><tr><td><span class="code-tag">S1.12</span> 客服人效</td><td><span class="code-tag">F4.7</span> 管理费用率</td>
+        <td class="up">正向</td><td><span class="mini"><i class="b-weak" style="width:35%"></i></span> 35%</td>
+        <td><span class="badge">待填报</span></td><td class="small muted">运营部</td></tr></tbody></table></div>
+        </section>
+      </div>
+      <div id="st-loading" hidden aria-busy="true" class="card">
+        <div class="skeleton" style="width:30%;margin-bottom:16px"></div>
+        <div class="skeleton" style="margin-top:12px"></div><div class="skeleton" style="margin-top:12px"></div><div class="skeleton" style="margin-top:12px"></div>
+        <div class="skeleton" style="margin-top:12px"></div><div class="skeleton" style="margin-top:12px"></div><div class="skeleton" style="margin-top:12px"></div>
+      </div>
+      <div class="card state" id="st-error" hidden role="alert">
+        <div class="state-title">业财分析数据加载失败</div>
+        <div>服务器未返回数据，可能是网络中断。请重试。</div>
+        <div style="margin-top:16px"><button class="btn" type="button" id="btn-retry">重试</button></div>
+      </div>
+      <div class="card state" id="st-denied" hidden role="alert">
+        <div class="state-title">无权限</div>
+        <div>业财分析仅对 CEO、财务负责人、财务BP 开放（接口返回 403）。</div>
+        <div style="margin-top:16px"><a class="btn" href="PAGE-F00-01.html">返回工作台</a></div>
+      </div>
+    </main>
+  </div>
+</div>
+<div id="toast-host" aria-live="polite"></div>
+<script>
+  var VIEWS = { lead: { who: '林晓（财务负责人）', edit: true, reset: true }, bp: { who: '陈思雨（财务BP）', edit: true }, ceo: { who: '周明远（CEO）' } };
+  var view = 'lead';
+  function toast(msg) {
+    var t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.textContent = msg;
+    document.getElementById('toast-host').appendChild(t); setTimeout(function () { t.remove(); }, 3000);
+  }
+  /* 自动保存示意：修改后 500ms 合并为一次保存，期间页头显示「保存中…」 */
+  var saveTimer = null;
+  function autosave(msg) {
+    if (!VIEWS[view].edit) return;
+    var s = document.getElementById('saving');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () { s.hidden = false; setTimeout(function () { s.hidden = true; }, 700); }, 500);
+    if (msg) toast(msg);
+  }
+  document.addEventListener('change', function (e) { var el = e.target.closest('[data-save]'); if (el && window.onSave) window.onSave(el); else if (el) autosave(); });
+
+  var states = ['normal', 'loading', 'error', 'denied'];
+  function setState(st) {
+    states.forEach(function (k) { document.getElementById('st-' + k).hidden = k !== st; });
+    document.querySelectorAll('[data-state]').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.state === st); });
+    document.querySelectorAll('.loaded-only').forEach(function (el) { el.hidden = st !== 'normal'; });
+  }
+  document.querySelectorAll('[data-state]').forEach(function (b) { b.addEventListener('click', function () { setState(b.dataset.state); }); });
+  document.getElementById('btn-retry').addEventListener('click', function () { setState('loading'); setTimeout(function () { setState('normal'); }, 800); });
+  document.querySelectorAll('[data-view]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      view = b.dataset.view;
+      document.querySelectorAll('[data-view]').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+      document.getElementById('who').textContent = VIEWS[view].who;
+      document.body.classList.toggle('ro', !VIEWS[view].edit);
+      document.body.classList.toggle('can-reset', !!VIEWS[view].reset);
+      if (window.onView) window.onView(view);
+    });
+  });
+  var conflictBtn = document.getElementById('btn-conflict');
+  if (conflictBtn) conflictBtn.addEventListener('click', function () {
+    document.getElementById('save-error-text').textContent = conflictBtn.dataset.msg + '。刷新会丢弃你刚才未保存的修改。';
+    document.getElementById('save-error').hidden = false;
+  });
+  document.getElementById('btn-refresh').addEventListener('click', function () { document.getElementById('save-error').hidden = true; setState('loading'); setTimeout(function () { setState('normal'); toast('已重新读取服务器数据'); }, 800); });
+
+  /* 年度 / 月度维度：原型只示意期间标签变化，数值不重算 */
+  var dimSeg = document.getElementById('dim-seg');
+  if (dimSeg) {
+    var monthSel = document.getElementById('dim-month'), period = document.getElementById('dim-period');
+    function setPeriod() { period.textContent = dimSeg.dataset.dim === 'year' ? '2026年度累计（1-9月）' : '2026年 ' + monthSel.value + '月'; }
+    dimSeg.querySelectorAll('button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        dimSeg.dataset.dim = b.dataset.dim;
+        dimSeg.querySelectorAll('button').forEach(function (x) { x.setAttribute('aria-pressed', x === b); });
+        monthSel.hidden = b.dataset.dim !== 'month'; setPeriod();
+      });
+    });
+    monthSel.addEventListener('change', setPeriod);
+  }
+  document.body.classList.add('can-reset');
+
+  window.onSave = function (el) {
+    if (el.value.trim() !== '' && isNaN(Number(el.value))) { toast('请输入数字'); el.value = ''; return; }
+    el.nextElementSibling.textContent = el.value || '—';
+    autosave(el.classList.contains('dcell') ? '维度填报已更新，指标整体值与板块达成率已同步重算' : el.dataset.code + ' 实际值 已更新，相关指标与建议已重新计算');
+  };
+
+</script>
+</body>
+</html>

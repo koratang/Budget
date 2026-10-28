@@ -25,15 +25,17 @@ const EDGES: { b: string; f: string; s: number; d: '+' | '-' }[] = [
   { b: 'S4', f: 'F4', s: 0.62, d: '-' }, { b: 'S4', f: 'F7', s: 0.65, d: '+' }, { b: 'S4', f: 'F1', s: 0.50, d: '+' },
 ]
 const SAME = '#2563eb', REVERSE = '#e08600'
-const W = 1040, lx = 18, lw = 214, rx = W - 18 - lw
-const lTop = 46, lGap = 96, rTop = 24, rGap = 74
+/* 节点宽 260：副标题（编码 · 二级数 · 部门）单独占第二行，达成率与名称同处第一行右侧，两者不再重叠；
+   两列首个节点从 y=46 起，给列标题（y=30）留出完整一行 */
+const W = 1040, lx = 18, lw = 260, rx = W - 18 - lw
+const lTop = 46, lGap = 96, rTop = 46, rGap = 74
 
 const graph = computed(() => {
   const bizL1 = l1('biz'), finL1 = l1('fin')
   const ly: Record<string, number> = {}, ry: Record<string, number> = {}
   bizL1.forEach((n, i) => { ly[n.code] = lTop + i * lGap })
   finL1.forEach((n, i) => { ry[n.code] = rTop + i * rGap })
-  const H = Math.max(lTop + (bizL1.length - 1) * lGap + 52, rTop + (finL1.length - 1) * rGap + 44) + 16
+  const H = Math.max(lTop + (bizL1.length - 1) * lGap + 52, rTop + (finL1.length - 1) * rGap + 52) + 16
   const edges = EDGES.filter((e) => ly[e.b] !== undefined && ry[e.f] !== undefined).map((e, idx) => {
     const y1 = ly[e.b] + 21, y2 = ry[e.f] + 20
     const x1 = lx + lw, x2 = rx
@@ -86,6 +88,8 @@ const related = computed(() => {
 const edgeCls = (key: number): string => !related.value ? '' : related.value.edges.has(key) ? 'hl' : 'dim'
 const nodeCls = (side: string, code: string): string => !related.value ? '' : related.value.nodes.has(side + ':' + code) ? 'hl' : 'dim'
 
+
+/** 财务偏差反向归因（期间费用率条已在引擎按 F4.9 修正） */
 const reverse = computed(() => buildReverse())
 
 /* ---------- 关联关系明细表（原 linkTable / barMini） ---------- */
@@ -99,7 +103,7 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
 </script>
 
 <template>
-  <BizfinPage page-id="PAGE-F15-04" title="业财联动关系" :desc="desc">
+  <BizfinPage page-id="PAGE-F15-04" :sections="['indicators', 'biz_dim']" title="业财联动关系" :desc="desc">
     <section class="card section">
       <div class="card-title head-wrap">
         <span>业财联动关系图谱 <span class="small muted sub">一级指标层面传导关系 ｜ 鼠标悬停节点可高亮其关联路径</span></span>
@@ -126,7 +130,7 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
             <rect :x="lx" :y="n.y" width="4" height="42" rx="2" :fill="C.biz" />
             <text :x="lx + 14" :y="n.y + 18" font-size="12" font-weight="700" class="t-name">{{ n.name }}</text>
             <text :x="lx + 14" :y="n.y + 33" font-size="10" class="t-sub">{{ n.sub }}</text>
-            <text :x="lx + lw - 12" :y="n.y + 25" font-size="12.5" font-weight="800" text-anchor="end" :class="n.cls">{{ n.rate }}</text>
+            <text :x="lx + lw - 12" :y="n.y + 18" font-size="12.5" font-weight="800" text-anchor="end" :class="n.cls">{{ n.rate }}</text>
           </g>
 
           <g v-for="n in graph.right" :key="n.code" class="gnode" :class="nodeCls('fin', n.code)" :data-code="n.code" data-side="fin" @mouseenter="hover = { code: n.code, side: 'fin' }">
@@ -134,7 +138,7 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
             <rect :x="rx" :y="n.y" width="4" height="40" rx="2" :fill="C.fin" />
             <text :x="rx + 14" :y="n.y + 17" font-size="12" font-weight="700" class="t-name">{{ n.name }}</text>
             <text :x="rx + 14" :y="n.y + 31" font-size="10" class="t-sub">{{ n.sub }}</text>
-            <text :x="rx + lw - 12" :y="n.y + 24" font-size="12.5" font-weight="800" text-anchor="end" :class="n.cls">{{ n.rate }}</text>
+            <text :x="rx + lw - 12" :y="n.y + 17" font-size="12.5" font-weight="800" text-anchor="end" :class="n.cls">{{ n.rate }}</text>
           </g>
 
           <text :x="W / 2" :y="graph.H - 6" text-anchor="middle" font-size="10.5" class="t-sub">线宽表示关联强度，蓝色为同向传导，橙色为反向传导（业务指标提升 → 财务指标下降）</text>
@@ -187,17 +191,21 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
       </div>
       <div v-if="links.length" class="table-wrap">
         <table class="table link-table" data-testid="link-table">
+          <!-- 固定布局：传导逻辑为自适应主列，量化影响固定 220px，其余列按内容收紧；超宽只在 .table-wrap 内横向滚动 -->
+          <colgroup>
+            <col style="width: 150px"><col style="width: 180px"><col style="width: 64px"><col style="width: 112px">
+            <col><col style="width: 120px"><col style="width: 220px">
+          </colgroup>
           <thead>
             <tr>
-              <th style="width: 180px">业务指标</th><th style="width: 190px">财务指标</th>
-              <th style="width: 64px">方向</th><th style="width: 110px">关联强度</th>
-              <th>传导逻辑</th><th style="width: 150px">责任部门</th><th style="width: 220px">量化影响</th>
+              <th>业务指标</th><th>财务指标</th><th>方向</th><th>关联强度</th>
+              <th>传导逻辑</th><th>责任部门</th><th>量化影响</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="(l, i) in links" :key="i">
-              <td><span class="badge badge-info">{{ l.biz }}</span> {{ l.bizName }}</td>
-              <td><span class="badge badge-good">{{ l.fin }}</span> {{ l.finName }}</td>
+              <td class="wrap"><span class="badge badge-info">{{ l.biz }}</span> {{ l.bizName }}</td>
+              <td class="wrap"><span class="badge badge-good">{{ l.fin }}</span> {{ l.finName }}</td>
               <td><span class="badge" :class="l.dir === '正向' ? 'badge-good' : 'badge-bad'">{{ l.dir }}</span></td>
               <td>
                 <div class="mini-prog">
@@ -251,8 +259,10 @@ text.t-blank { fill: var(--muted); }
 .stack-item .n { width: 20px; height: 20px; border-radius: var(--radius-md); background: color-mix(in oklab, var(--accent), white 88%); color: var(--accent); font-size: var(--text-xs); font-weight: 700; display: flex; align-items: center; justify-content: center; flex: 0 0 20px; }
 .stack-item .c { font-size: var(--text-sm); color: var(--fg-2); line-height: 1.75; }
 .stack-item .c b { color: var(--fg); }
+.link-table { table-layout: fixed; min-width: 1060px; }
 .link-table td.wrap { white-space: normal; line-height: 1.65; padding-top: var(--space-1); padding-bottom: var(--space-1); }
-.impact { color: var(--success); font-weight: 600; }
+/* 量化影响同一格里正负并存，无法整体按涨红跌绿着色，统一用正文色加粗（原工具为财务主题绿，会与「跌绿」冲突） */
+.impact { color: var(--fg); font-weight: 600; }
 .tiny { font-size: 10px; }
 .mini-prog { display: flex; align-items: center; gap: 6px; min-width: 96px; }
 .mini-prog .bar { flex: 1; height: 6px; border-radius: var(--radius-pill); background: var(--border-soft); overflow: hidden; min-width: 40px; }

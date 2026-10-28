@@ -60,47 +60,47 @@ const ofKind = (k: 'fin' | 'biz') => S.IND.filter((i) => i.kind === k)
 function tplYear(): void {
   const sample: CsvCell[][] = S.IND.slice(0, 6).map((i) => [i.code, i.name, (i.kind === 'fin' ? '财务' : '业务'), (i.level === 1 ? '一级' : '二级'),
     i.unit, (i.dir === 1 ? '正向' : '逆向'), i.target, i.actual, i.weight, i.depts.join('/'), i.note || ''])
-  download('盛航业财指标导入模板_年度口径.csv', toCSV(IND_HEADER, sample))
+  download('业财指标导入模板_年度口径.csv', toCSV(IND_HEADER, sample))
   show('模板已下载：仅含 6 行示例，可按同格式补充后导入')
 }
 function tplMonth(): void {
-  download('盛航业财指标导入模板_月度口径.csv', toCSV(MONTH_HEADER, monthlyRowsOf(S.IND.slice(0, 3))))
+  download('业财指标导入模板_月度口径.csv', toCSV(MONTH_HEADER, monthlyRowsOf(S.IND.slice(0, 3))))
   show('月度模板已下载：含「月份」列，每行代表一个指标某个月的目标值与实际值')
 }
 function tplDim(): void {
-  download('盛航业务指标导入模板_维度口径.csv', toCSV(DIM_HEADER, dimRowsOf(ofKind('biz'))))
+  download('业务指标导入模板_维度口径.csv', toCSV(DIM_HEADER, dimRowsOf(ofKind('biz'))))
   show('维度模板已下载：每行代表一个「指标 × 维度成员」的目标值与实际值')
 }
 
 interface ExportBtn { label: string; primary?: boolean; run: () => void }
 const yearExports: ExportBtn[] = [
-  { label: '导出全部指标（CSV）', primary: true, run: () => { download('盛航业财指标_年度口径_全部_' + stamp() + '.csv', toCSV(IND_HEADER, rowsOf(S.IND))); show('已导出全部指标（年度口径）') } },
-  { label: '导出财务指标', run: () => { download('盛航财务指标_年度口径_' + stamp() + '.csv', toCSV(IND_HEADER, rowsOf(ofKind('fin')))); show('已导出财务指标（年度口径）') } },
-  { label: '导出业务指标', run: () => { download('盛航业务指标_年度口径_' + stamp() + '.csv', toCSV(IND_HEADER, rowsOf(ofKind('biz')))); show('已导出业务指标（年度口径）') } },
+  { label: '导出全部指标（CSV）', primary: true, run: () => { download('业财指标_年度口径_全部_' + stamp() + '.csv', toCSV(IND_HEADER, rowsOf(S.IND))); show('已导出全部指标（年度口径）') } },
+  { label: '导出财务指标', run: () => { download('财务指标_年度口径_' + stamp() + '.csv', toCSV(IND_HEADER, rowsOf(ofKind('fin')))); show('已导出财务指标（年度口径）') } },
+  { label: '导出业务指标', run: () => { download('业务指标_年度口径_' + stamp() + '.csv', toCSV(IND_HEADER, rowsOf(ofKind('biz')))); show('已导出业务指标（年度口径）') } },
   { label: '导出业财关联关系', run: () => {
     const h = ['业务指标编码', '业务指标', '财务指标编码', '财务指标', '影响方向', '关联强度', '关联程度', '传导逻辑', '责任部门', '量化影响']
     const rows: CsvCell[][] = LINKAGE.map((l) => [l.biz, l.bizName, l.fin, l.finName, l.dir, l.strength, l.coef, l.logic, l.dept, l.impact])
-    download('盛航业财关联关系_' + stamp() + '.csv', toCSV(h, rows))
+    download('业财关联关系_' + stamp() + '.csv', toCSV(h, rows))
     show('已导出业财关联关系')
   } },
   { label: '导出维度填报明细', run: () => {
     const rows = dimRowsOf(ofKind('biz'))
-    download('盛航业务指标_维度填报明细_' + stamp() + '.csv', toCSV(DIM_HEADER, rows))
+    download('业务指标_维度填报明细_' + stamp() + '.csv', toCSV(DIM_HEADER, rows))
     show('已导出维度填报明细（' + rows.length + ' 行）')
   } },
 ]
 const monthExports: ExportBtn[] = [
-  { label: '导出月度明细（全部指标）', primary: true, run: () => { download('盛航业财指标_月度明细_全部_' + stamp() + '.csv', toCSV(MONTH_HEADER, monthlyRowsOf(S.IND))); show('已导出月度明细（' + (S.IND.length * 9) + ' 行）') } },
-  { label: '导出月度明细（财务）', run: () => { download('盛航财务指标_月度明细_' + stamp() + '.csv', toCSV(MONTH_HEADER, monthlyRowsOf(ofKind('fin')))); show('已导出财务指标月度明细') } },
-  { label: '导出月度明细（业务）', run: () => { download('盛航业务指标_月度明细_' + stamp() + '.csv', toCSV(MONTH_HEADER, monthlyRowsOf(ofKind('biz')))); show('已导出业务指标月度明细') } },
+  { label: '导出月度明细（全部指标）', primary: true, run: () => { download('业财指标_月度明细_全部_' + stamp() + '.csv', toCSV(MONTH_HEADER, monthlyRowsOf(S.IND))); show('已导出月度明细（' + (S.IND.length * 9) + ' 行）') } },
+  { label: '导出月度明细（财务）', run: () => { download('财务指标_月度明细_' + stamp() + '.csv', toCSV(MONTH_HEADER, monthlyRowsOf(ofKind('fin')))); show('已导出财务指标月度明细') } },
+  { label: '导出月度明细（业务）', run: () => { download('业务指标_月度明细_' + stamp() + '.csv', toCSV(MONTH_HEADER, monthlyRowsOf(ofKind('biz')))); show('已导出业务指标月度明细') } },
   { label: '导出政策影响清单', run: () => {
     const rows: CsvCell[][] = S.POLICY_EVENTS.map((e) => [e.time, e.seg, e.desc, e.impact])
-    download('盛航政策环境事件台账_' + stamp() + '.csv', toCSV(['时间', '业务板块', '事件描述', '事件影响'], rows))
+    download('政策环境事件台账_' + stamp() + '.csv', toCSV(['时间', '业务板块', '事件描述', '事件影响'], rows))
     show('已导出政策环境事件台账')
   } },
   { label: '导出重点工作台账', run: () => {
     const rows: CsvCell[][] = S.KW_TASKS.map((e) => [e.time, e.cat, e.goal, e.breakdown, e.eta, e.progress, e.status])
-    download('盛航重点工作台账_' + stamp() + '.csv', toCSV(['时间', '工作分类', '工作目标', '工作分解', '预计完成时间', '目前进度', '工作状态'], rows))
+    download('重点工作台账_' + stamp() + '.csv', toCSV(['时间', '工作分类', '工作目标', '工作分解', '预计完成时间', '目前进度', '工作状态'], rows))
     show('已导出重点工作台账（' + rows.length + ' 行）')
   } },
 ]
@@ -193,7 +193,7 @@ async function onReset(): Promise<void> {
 </script>
 
 <template>
-  <BizfinPage page-id="PAGE-F15-09" title="业财数据管理" :desc="desc" :dim="false">
+  <BizfinPage page-id="PAGE-F15-09" title="业财数据管理" :desc="desc">
     <div v-if="!store.canEdit" class="readonly-bar" role="note" data-readonly>当前账号对「业财数据管理」仅查看，无法导入数据或清空手工覆盖；可下载模板与导出 CSV。</div>
 
     <div class="grid-2 section">
@@ -281,14 +281,14 @@ async function onReset(): Promise<void> {
       <div class="grid-3">
         <div>
           <div class="sub-h">1. 选择维度</div>
-          <div class="seg" role="group" aria-label="维度">
+          <div class="seg" role="group" aria-label="维度管理：维度">
             <button type="button" :aria-pressed="S.dim === 'year'" @click="setDim('year')">年度维度</button>
             <button type="button" :aria-pressed="S.dim === 'month'" @click="setDim('month')">月度维度</button>
           </div>
         </div>
         <div>
           <div class="sub-h">2. 选择月份（月度维度生效）</div>
-          <div class="seg months" role="group" aria-label="月份">
+          <div class="seg months" role="group" aria-label="维度管理：月份">
             <button v-for="(m, i) in MONTHS9" :key="m" type="button" :aria-pressed="i + 1 === S.curM" @click="setMonth(i + 1)">{{ m }}</button>
           </div>
         </div>
@@ -381,7 +381,11 @@ async function onReset(): Promise<void> {
 .kv dt { color: var(--muted); }
 .kv dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
 .kv.org { margin-bottom: var(--space-3); }
-.months { flex-wrap: wrap; }
+/* 月份按钮：规则网格，每个按钮自带完整边框，换行后不再出现 seg 拼接边框错位 */
+.seg.months { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 6px; border: 0; border-radius: 0; overflow: visible; }
+.seg.months button { border: 1px solid var(--border); border-radius: var(--radius-md); padding: 4px 0; text-align: center; font-variant-numeric: tabular-nums; }
+.seg.months button + button { border-left: 1px solid var(--border); }
+.seg.months button[aria-pressed="true"] { border-color: var(--accent); }
 .ov-btn { margin-top: var(--space-2); }
 .top-gap { margin-top: var(--space-4); }
 .chips { display: flex; flex-wrap: wrap; gap: var(--space-2); }

@@ -30,7 +30,7 @@ describe('PAGE-F15-08 重点工作进度', () => {
     expect(w.get('[data-kpi="cats"]').text()).toContain('核算 2')
     expect(w.get('[data-kpi="cats"]').text()).toContain('降本增收 7')
     expect(w.get('[data-kpi="cats"]').text()).toContain('已使用分类 4 / 6 项')
-    expect(w.find('[aria-label="维度"]').exists()).toBe(false)
+    expect(w.find('[aria-label="维度"]').exists()).toBe(true) /* 页面外壳统一显示维度切换 */
     const annual = w.get('[data-part="annual"]').findAll('tbody tr')
     expect(annual).toHaveLength(15)
     expect((annual[0].get('select[aria-label="工作状态"]').element as HTMLSelectElement).value).toBe('进行中')
@@ -65,7 +65,7 @@ describe('PAGE-F15-08 重点工作进度', () => {
     expect(w.get('[role="status"]').text()).toBe('已新增工作行，请填写时间 / 工作分类 / 工作目标 / 工作分解 / 预计完成时间 / 目前进度 / 工作状态')
     const first = S.KW_TASKS[0]
     const row = w.get('[data-part="annual"]').findAll('tbody tr')[0]
-    await row.get('input[aria-label="工作目标"]').setValue('美国 STURDY 防倾倒标准合规改模（含镜柜）')
+    await row.get('textarea[aria-label="工作目标"]').setValue('美国 STURDY 防倾倒标准合规改模（含镜柜）')
     expect(first.goal).toBe('美国 STURDY 防倾倒标准合规改模（含镜柜）')
     await row.get('button.btn-danger').trigger('click')
     await w.get('[data-part="annual"]').findAll('tbody tr')[0].get('button.btn-danger').trigger('click')
@@ -78,7 +78,7 @@ describe('PAGE-F15-08 重点工作进度', () => {
   it('CEO（只读）看不到编辑控件，进度以进度条显示', async () => {
     store.canEdit = false
     const w = await mountPage()
-    expect(w.findAll('input, select, button.btn-primary, button.btn-danger')).toHaveLength(0)
+    expect(w.findAll('input, textarea, select, button.btn-primary, button.btn-danger')).toHaveLength(0)
     expect(w.findAll('[data-progress]')[0].text()).toBe('62%')
   })
 })

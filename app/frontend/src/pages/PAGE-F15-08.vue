@@ -3,15 +3,27 @@
  * 重点工作进度 PAGE-F15-08（原工具 viewKeywork + renderKwTable + kwAdd / kwDel / kwSet）
  * KPI 概览 + 重点工作台账（年度重点工作 / 需要关注工作两分区共用一份台账）；可编辑者逐格修改、新增与删除（删除二次确认）。
  */
-import { computed, ref } from 'vue'
+import { computed, ref, type Directive } from 'vue'
 import BizfinPage from '@/components/g5/BizfinPage.vue'
 import { useToast } from '@/components/g1/useToast'
-import { KW_CATEGORIES, KW_CATEGORY_COLOR, KW_STATUS, S, fmt, kwStat, type KwTask } from '@/bizfin/engine'
+import { KW_CATEGORIES, KW_STATUS, S, fmt, kwStat, type KwTask } from '@/bizfin/engine'
 import { commit, store } from '@/bizfin/persist'
 
 type Field = keyof KwTask
 const { toast, show } = useToast()
 const pendingDel = ref<KwTask | null>(null)
+
+/* 多行文本框按内容行数自动增高：支持 field-sizing 的浏览器交给 CSS（随列宽变化实时重排）；
+   其余浏览器在挂载 / 更新 / 输入时按 scrollHeight 设高度。仍以 @change 保存，语义不变 */
+function fit(el: HTMLTextAreaElement): void {
+  if (typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('field-sizing', 'content')) return
+  el.style.height = ''
+  if (el.scrollHeight > 0) el.style.height = el.scrollHeight + 2 + 'px'
+}
+const vAutogrow: Directive<HTMLTextAreaElement> = {
+  mounted(el) { fit(el); el.addEventListener('input', () => fit(el)) },
+  updated: fit,
+}
 
 const st = computed(() => kwStat())
 const usedCats = computed(() => Object.keys(st.value.byCat).filter((k) => st.value.byCat[k] > 0).length)
@@ -47,7 +59,7 @@ function kwDel(p: KwTask): void {
   show(`已删除第 ${i + 1} 行工作台账`)
 }
 function kwSet(p: KwTask, f: Field, e: Event): void {
-  const el = e.target as HTMLInputElement | HTMLSelectElement
+  const el = e.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
   if (f === 'progress') {
     const v = parseFloat(el.value)
     p.progress = isNaN(v) ? 0 : Math.max(0, Math.min(100, v))
@@ -60,7 +72,7 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
 </script>
 
 <template>
-  <BizfinPage page-id="PAGE-F15-08" title="重点工作进度" desc="年度重点项目立项 / 进度 / 责任部门 / 财务影响归因" :dim="false">
+  <BizfinPage page-id="PAGE-F15-08" :sections="['keywork']" title="重点工作进度" desc="年度重点项目立项 / 进度 / 责任部门 / 财务影响归因">
     <div class="card note">
       <b>重点工作进度口径：</b>聚焦年度重点工作与需要关注工作，按工作分类核算 / 资金 / 合规 / 降本增收 / 财务BP / 信息化 共六档登记；
       每行可直接编辑，年度视图展示全部进行中与已完成工作，关注视图自动派生延误与阻滞项。
@@ -85,7 +97,8 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
       <div class="card" data-kpi="cats">
         <div class="kpi-label">分类覆盖</div>
         <div class="cats">
-          <span v-for="c in KW_CATEGORIES" :key="c" class="kw-cat" :style="{ background: KW_CATEGORY_COLOR[c] }">{{ c }} {{ st.byCat[c] || 0 }}</span>
+          <!-- 分类标签统一用中性色，不用原工具的红 / 绿分类色，避免与涨红跌绿语义冲突 -->
+          <span v-for="c in KW_CATEGORIES" :key="c" class="kw-cat">{{ c }} <b>{{ st.byCat[c] || 0 }}</b></span>
         </div>
         <div class="small muted">已使用分类 <b>{{ usedCats }} / 6</b> 项</div>
       </div>
@@ -106,10 +119,14 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
         <div v-if="!sec.rows.length" class="empty muted">{{ sec.empty }}</div>
         <div v-else class="table-wrap">
           <table class="table ledger">
+            <!-- 固定布局：工作分解为自适应主列；分类 / 状态列按下拉完整文字定宽，进度列收紧 -->
+            <colgroup>
+              <col class="w-time"><col class="w-cat"><col class="w-goal"><col><col class="w-eta"><col class="w-prog"><col class="w-st"><col v-if="store.canEdit" class="w-op">
+            </colgroup>
             <thead>
               <tr>
-                <th class="w-90">时间</th><th class="w-90">工作分类</th><th class="w-goal">工作目标</th><th>工作分解</th>
-                <th class="w-96">预计完成时间</th><th class="w-160">目前进度</th><th class="w-100">工作状态</th><th v-if="store.canEdit" class="w-op" />
+                <th>时间</th><th>工作分类</th><th>工作目标</th><th>工作分解</th>
+                <th>预计完成时间</th><th>目前进度</th><th>工作状态</th><th v-if="store.canEdit" />
               </tr>
             </thead>
             <tbody>
@@ -122,8 +139,8 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
                       <option v-for="c in optsOf(KW_CATEGORIES, p.cat)" :key="c" :value="c">{{ c }}</option>
                     </select>
                   </td>
-                  <td><input class="input" :value="p.goal" placeholder="工作目标" aria-label="工作目标" @change="kwSet(p, 'goal', $event)"></td>
-                  <td><input class="input" :value="p.breakdown" placeholder="工作分解 / 关键路径" aria-label="工作分解" @change="kwSet(p, 'breakdown', $event)"></td>
+                  <td><textarea v-autogrow class="area" rows="1" :value="p.goal" placeholder="工作目标" aria-label="工作目标" @change="kwSet(p, 'goal', $event)" /></td>
+                  <td><textarea v-autogrow class="area" rows="1" :value="p.breakdown" placeholder="工作分解 / 关键路径" aria-label="工作分解" @change="kwSet(p, 'breakdown', $event)" /></td>
                   <td><input class="input" :value="p.eta" placeholder="如 2026-11" aria-label="预计完成时间" @change="kwSet(p, 'eta', $event)"></td>
                   <td>
                     <span class="prog-edit">
@@ -183,7 +200,8 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
 .kpi-value.warn { color: var(--warn); }
 .kpi-value.good { color: var(--success); }
 .cats { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--space-2) 0; }
-.kw-cat { display: inline-block; padding: 1px 6px; border-radius: var(--radius-sm); color: var(--accent-on); font-size: var(--text-xs); }
+.kw-cat { display: inline-block; padding: 1px 6px; border-radius: var(--radius-sm); background: var(--surface-warm); border: 1px solid var(--border-soft); color: var(--fg-2); font-size: var(--text-xs); }
+.kw-cat b { color: var(--fg); }
 .desc { font-weight: 400; margin-left: var(--space-2); }
 .tools { display: inline-flex; align-items: center; gap: var(--space-2); }
 .part + .part { margin-top: var(--space-5); }
@@ -191,20 +209,29 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
 .part-title.warn { color: var(--warn); }
 .part-note { margin: 0 0 var(--space-2); }
 .empty { padding: var(--space-4) 0; text-align: center; font-size: var(--text-sm); }
-.ledger .input, .ledger .select { width: 100%; height: 28px; }
-.ledger td.wrap { white-space: normal; line-height: 1.6; padding-top: 6px; padding-bottom: 6px; }
-.prog-edit { display: inline-flex; align-items: center; gap: 6px; }
-.prog-edit .input { width: 64px; text-align: right; }
-.kw-bar { position: relative; display: inline-block; width: 120px; height: 16px; border-radius: var(--radius-sm); background: var(--border-soft); overflow: hidden; vertical-align: middle; }
+/* 盒模型按 border-box 计，输入框 / 下拉 / 多行框不再溢出到相邻列 */
+.ledger { table-layout: fixed; min-width: 960px; }
+.ledger td { vertical-align: top; padding-top: 4px; padding-bottom: 4px; height: auto; }
+.ledger .input, .ledger .select, .ledger .area { width: 100%; box-sizing: border-box; }
+.ledger .input, .ledger .select { height: 30px; }
+.ledger .select { padding-right: var(--space-1); }
+.area { display: block; min-height: 30px; padding: 5px var(--space-2); border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); color: var(--fg); font: inherit; font-size: var(--text-sm); line-height: 1.55; resize: vertical; overflow: hidden; field-sizing: content; transition: border-color var(--motion-fast) var(--ease-standard); }
+.area:hover { border-color: var(--muted); }
+.area:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
+.ledger td.wrap { white-space: normal; line-height: 1.6; padding-top: 6px; padding-bottom: 6px; word-break: break-word; }
+.prog-edit { display: flex; align-items: center; gap: 4px; }
+.ledger .prog-edit .input { width: 64px; text-align: right; padding: 0 var(--space-1); }
+.kw-bar { position: relative; display: inline-block; width: 100%; max-width: 120px; height: 16px; border-radius: var(--radius-sm); background: var(--border-soft); overflow: hidden; vertical-align: middle; }
 .kw-bar i { position: absolute; inset: 0 auto 0 0; }
 .kw-bar span { position: relative; display: block; text-align: center; font-size: var(--text-xs); line-height: 16px; color: var(--fg); }
-.w-90 { width: 90px; }
-.w-96 { width: 96px; }
-.w-100 { width: 100px; }
-.w-160 { width: 160px; }
+.w-time { width: 104px; }
+.w-cat { width: 124px; }
 .w-goal { width: 24%; }
-.w-op { width: 72px; }
-.op { display: flex; gap: var(--space-1); justify-content: flex-end; align-items: center; }
+.w-eta { width: 112px; }
+.w-prog { width: 104px; }
+.w-st { width: 100px; }
+.w-op { width: 96px; }
+.op { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; align-items: center; }
 .op .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
 .foot { margin: var(--space-3) 0 0; line-height: 1.7; }
 </style>

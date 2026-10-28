@@ -43,7 +43,7 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
     await open(page, path)
     const t = await text(page)
     check(R, `FLOW-38 ${pid} 无 NaN / undefined`, !/NaN|undefined/.test(t))
-    check(R, `FLOW-03x ${pid} 显示「示例数据」标记`, (await page.locator('[data-demo-badge]').count()) === 1)
+    check(R, `FLOW-40 首次进入 ${pid} 显示「示例数据」标记`, (await page.locator('[data-demo-badge]').count()) === 1)
     const sw = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
     check(R, `DESIGN ${pid} 1280 宽无页面级横向滚动`, sw)
     if (OUT) await shot(page, `${OUT}/${pid}.png`)
@@ -55,7 +55,12 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
   check(R, 'FLOW-38 驾驶舱净销售额 9,840', t.includes('9,840'))
   await open(page, '/bizfin/finance')
   t = await text(page)
-  const val = async (code) => page.locator(`tr[data-code="${code}"] [data-f="actual"]`).inputValue()
+  // 可编辑项读输入框；派生项（如 F4.9）为只读文本
+  const val = async (code) => {
+    const inp = page.locator(`tr[data-code="${code}"] [data-f="actual"]`)
+    if (await inp.count()) return inp.inputValue()
+    return (await page.locator(`tr[data-code="${code}"] td.num`).first().innerText()).trim()
+  }
   const f1 = await val('F1'); const ch = await Promise.all(['F1.1', 'F1.2', 'F1.3', 'F1.4', 'F1.5'].map(val))
   const mk = await Promise.all(['F1.6', 'F1.7', 'F1.8'].map(val))
   const sum = (a) => a.reduce((s, x) => s + Number(String(x).replace(/,/g, '')), 0)
@@ -140,14 +145,14 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
   const polDbg = (await (await page.request.get(BASE + '/api/bizfin/sections')).json()).sections.policy
   await open(page, '/bizfin/policy')
   // 编辑态单元格是输入框，内容取输入值
-  const descs = await page.locator('input[aria-label="事件描述"]').evaluateAll((els) => els.map((e) => e.value))
+  const descs = await page.locator('[aria-label="事件描述"]').evaluateAll((els) => els.map((e) => e.value))
   check(R, 'FLOW-39 新增政策事件刷新后仍在', (await page.locator('tbody tr').count()) === n0 + 1 && descs.includes('美国对进口浴室柜加征 10% 关税') && polDbg.data.some((e) => e.time === '2027-03-05'))
   await page.locator('tbody tr', { has: page.locator('input[value="2027-03-05"]') }).getByRole('button', { name: '删除' }).click()
   check(R, 'FLOW-39 删除需二次确认', (await page.getByRole('button', { name: '确认删除' }).count()) === 1 && (await page.locator('tbody tr').count()) === n0 + 1)
   await page.getByRole('button', { name: '确认删除' }).click()
   await page.waitForTimeout(1500)
   await open(page, '/bizfin/policy')
-  check(R, 'FLOW-39 确认后删除并保存', (await page.locator('tbody tr').count()) === n0 && !(await page.locator('input[aria-label="事件描述"]').evaluateAll((els) => els.map((e) => e.value))).includes('美国对进口浴室柜加征 10% 关税'))
+  check(R, 'FLOW-39 确认后删除并保存', (await page.locator('tbody tr').count()) === n0 && !(await page.locator('[aria-label="事件描述"]').evaluateAll((els) => els.map((e) => e.value))).includes('美国对进口浴室柜加征 10% 关税'))
 
   await open(page, '/bizfin/advice')
   const a0 = await page.locator('tbody tr').count()
@@ -187,7 +192,12 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
   const t = await page.locator('body').innerText()
   check(R, 'FLOW-40 导入提示写入 1 条、未识别 1 条', t.includes('导入完成：成功更新 1 条指标，1 条未匹配到编码被跳过'), (t.match(/导入完成[^\n]*/) || [''])[0])
   const meta = (await (await page.request.get(BASE + '/api/bizfin/sections')).json()).sections
-  check(R, 'FLOW-40 导入后指标部分不再是示例数据', meta.indicators.is_demo === false && meta.policy.is_demo === true)
+  check(R, 'FLOW-40 导入后指标与维度部分不再是示例数据', meta.indicators.is_demo === false && meta.biz_dim.is_demo === false && meta.policy.is_demo === false)
+  await open(page, '/bizfin/finance')
+  check(R, 'FLOW-40 财务指标页「示例数据」标记消失', (await page.locator('[data-demo-badge]').count()) === 0)
+  await open(page, '/bizfin/analysis/anaTraffic')
+  check(R, 'FLOW-40 推算子模块仍标示例数据', (await page.locator('[data-demo-badge]').count()) === 1)
+  await open(page, '/bizfin/data')
   check(R, 'FLOW-40 保存记录表显示陈思雨', (await page.locator('[data-testid="save-meta"]').innerText()).includes('陈思雨'))
   const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /导出.*指标/ }).first().click()])
   const csv = await (await import('node:fs/promises')).readFile(await dl.path(), 'utf8')

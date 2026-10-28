@@ -20,11 +20,11 @@ describe('PAGE-F15-07 经营建议', () => {
     vi.mocked(commit).mockClear()
   })
 
-  it('台账显示示例事件，不显示年度 / 月度切换', async () => {
+  it('台账显示示例事件，页头显示年度 / 月度切换', async () => {
     const w = await mountPage()
     expect(w.get('[data-testid="count"]').text()).toBe(`${ADVICE_SEED.length} 条`)
     expect(w.findAll('tbody tr')).toHaveLength(ADVICE_SEED.length)
-    expect(w.find('[aria-label="维度"]').exists()).toBe(false)
+    expect(w.find('[aria-label="维度"]').exists()).toBe(true) /* 页面外壳统一显示维度切换 */
     expect((w.get('tbody tr select').element as HTMLSelectElement).value).toBe(ADVICE_SEED[0].seg)
   })
 
@@ -39,7 +39,7 @@ describe('PAGE-F15-07 经营建议', () => {
     const last = w.findAll('tbody tr')[n]
     await last.get('input[aria-label="时间"]').setValue('2026-10-01')
     await last.get('select').setValue('仓配履约板块')
-    await last.get('input[aria-label="背景描述"]').setValue('独立站复购率连续两月低于目标')
+    await last.get('textarea[aria-label="背景描述"]').setValue('独立站复购率连续两月低于目标')
     expect(S.ADVICE_EVENTS[n]).toEqual({ time: '2026-10-01', seg: '仓配履约板块', desc: '独立站复购率连续两月低于目标', advice: '', impact: '' })
     expect(commit).toHaveBeenCalledTimes(4)
 
@@ -54,7 +54,7 @@ describe('PAGE-F15-07 经营建议', () => {
   it('CEO（只读）看不到编辑控件', async () => {
     store.canEdit = false
     const w = await mountPage()
-    expect(w.findAll('input, select, button.btn-primary, button.btn-danger')).toHaveLength(0)
+    expect(w.findAll('input, textarea, select, button.btn-primary, button.btn-danger')).toHaveLength(0)
     expect(w.text()).toContain(ADVICE_SEED[0].desc)
   })
 })

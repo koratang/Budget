@@ -1,29 +1,29 @@
 PASS FLOW-38 PAGE-F15-01 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-01 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-01 显示「示例数据」标记
 PASS DESIGN PAGE-F15-01 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-02 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-02 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-02 显示「示例数据」标记
 PASS DESIGN PAGE-F15-02 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-03 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-03 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-03 显示「示例数据」标记
 PASS DESIGN PAGE-F15-03 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-04 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-04 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-04 显示「示例数据」标记
 PASS DESIGN PAGE-F15-04 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-05 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-05 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-05 显示「示例数据」标记
 PASS DESIGN PAGE-F15-05 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-06 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-06 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-06 显示「示例数据」标记
 PASS DESIGN PAGE-F15-06 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-07 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-07 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-07 显示「示例数据」标记
 PASS DESIGN PAGE-F15-07 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-08 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-08 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-08 显示「示例数据」标记
 PASS DESIGN PAGE-F15-08 1280 宽无页面级横向滚动
 PASS FLOW-38 PAGE-F15-09 无 NaN / undefined
-PASS FLOW-03x PAGE-F15-09 显示「示例数据」标记
+PASS FLOW-40 首次进入 PAGE-F15-09 显示「示例数据」标记
 PASS DESIGN PAGE-F15-09 1280 宽无页面级横向滚动
 PASS FLOW-36 林晓侧栏业财分析 9 项
 PASS FLOW-38 驾驶舱净销售额 9,840
@@ -67,7 +67,9 @@ PASS FLOW-39 重点工作进度限制为 100 并保存 — 100
 PASS FLOW-39 重点工作统计刷新
 PASS FLOW-37 旧版本保存 409 并提示更新人 — 「政策环境事件」已被陈思雨更新，请刷新后再改
 PASS FLOW-40 导入提示写入 1 条、未识别 1 条 — 导入完成：成功更新 1 条指标，1 条未匹配到编码被跳过
-PASS FLOW-40 导入后指标部分不再是示例数据
+PASS FLOW-40 导入后指标与维度部分不再是示例数据
+PASS FLOW-40 财务指标页「示例数据」标记消失
+PASS FLOW-40 推算子模块仍标示例数据
 PASS FLOW-40 保存记录表显示陈思雨
 PASS FLOW-40 导出指标 CSV 表头同原工作台 — ﻿编码,指标名称,类型,层级,单位,方向,维度声明,目标值,实际值,权重,责任部门,说明/计算口径
 F1,净销售额,财
@@ -77,4 +79,4 @@ PASS FLOW-37/39/40 陈思雨全程无前端错误
 PASS FLOW-40 恢复前二次确认说明会清空服务器数据
 PASS FLOW-40 恢复后服务器无已保存部分
 PASS FLOW-40 恢复后重新显示示例数据
-passed=78; failed=0
+passed=80; failed=0

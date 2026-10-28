@@ -75,6 +75,25 @@ describe('PAGE-F15-02 财务指标', () => {
     const w = mount(Page)
     await flushPromises()
     expect(w.find('[data-testid="fin-table"] input').exists()).toBe(false)
-    expect(w.get('tr[data-code="F1"]').text()).toContain('9840')
+    expect(w.get('tr[data-code="F1"]').text()).toContain('9,840')
+  })
+
+  it('派生值（F4.9 期间费用率合计）带「派生」标签且不给输入框；明细显示千分位', async () => {
+    const w = mount(Page)
+    await flushPromises()
+    const row = w.get('tr[data-code="F4.9"]')
+    expect(row.find('input').exists()).toBe(false)
+    expect(row.find('[data-derived]').exists()).toBe(true)
+    expect(w.get('tr[data-code="F7.5"]').find('[data-derived]').exists()).toBe(true)
+    expect(w.get('tr[data-code="F1"]').find('[data-derived]').exists()).toBe(false)
+  })
+
+  it('期间费用率超标按 F4.9（实际 − 目标）计算，而非净利润 F4', async () => {
+    const w = mount(Page)
+    await flushPromises()
+    const f49 = find('F4.9')
+    const over = (f49?.actual ?? 0) - (f49?.target ?? 0)
+    expect(w.text()).toContain('期间费用率超标 ' + over.toFixed(1) + 'pt')
+    expect(w.text()).not.toContain('期间费用率超标 -766.1pt')
   })
 })

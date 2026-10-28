@@ -6,7 +6,9 @@
 import { computed, onMounted } from 'vue'
 import PageState from '@/components/PageState.vue'
 import { MONTHS9, S, dimLabel, fmt, overallHealth, periodLabel, recompute } from '@/bizfin/engine'
-import { anyDemo, load, store } from '@/bizfin/persist'
+import { SECTION_KEYS, load, store } from '@/bizfin/persist'
+import type { SectionKey } from '@/bizfin/engine'
+import { ApiError } from '@/api/client'
 import './g5.css'
 
 const props = withDefaults(
@@ -18,8 +20,10 @@ const props = withDefaults(
     dim?: boolean
     /** 本页含按结构基准推算的模拟数据（流量、新老客、订单、服务商单价、库存等），始终标「示例数据」 */
     synthetic?: boolean
+    /** 本页用到的数据部分：其中任一仍是示例数据时显示「示例数据」标记 */
+    sections?: SectionKey[]
   }>(),
-  { desc: undefined, dim: true, synthetic: false },
+  { desc: undefined, dim: true, synthetic: false, sections: () => SECTION_KEYS },
 )
 
 /** 综合健康度（原工具顶栏药丸）：≥95 达标、≥85 关注、其余预警 */
@@ -27,11 +31,15 @@ const health = computed(() => {
   const v = overallHealth()
   return v === null ? null : { text: `${dimLabel()} ${fmt(v, 1)}%`, cls: v >= 95 ? 'badge-good' : v >= 85 ? 'badge-warn' : 'badge-bad' }
 })
-const demo = computed(() => props.synthetic || anyDemo())
+const demo = computed(() => props.synthetic || props.sections.some((k) => store.meta[k].is_demo))
+/** 403 交给 PageState 显示统一的「无权限」标题，其余错误显示加载失败 */
+const errorTitle = computed(() => (store.error instanceof ApiError && store.error.isForbidden ? undefined : '业财分析数据加载失败'))
 const demoTip = computed(() =>
   props.synthetic
     ? '本页部分数据为按结构基准推算的示例数据（平台暂无流量、新老客、订单、服务商单价、库存等数据源），仅供演示口径与分析方法。'
-    : '尚有部分内容为原工具自带的示例数据；在「数据管理」导入正式数据后，此标记消失。',
+    : props.sections.every((k) => k === 'policy' || k === 'advice' || k === 'keywork')
+      ? '台账内容为原工具自带的示例条目；修改、新增或删除并保存后即视为正式台账，此标记消失。'
+      : '尚有部分内容为原工具自带的示例数据；在「业财数据管理」导入正式数据后，此标记消失。',
 )
 
 function setDim(d: 'year' | 'month'): void {
@@ -79,7 +87,7 @@ onMounted(() => void load())
       <button type="button" class="btn" @click="load(true)">刷新数据</button>
     </div>
 
-    <PageState v-if="!store.loaded && store.error" :error="store.error" title="业财分析数据加载失败" @retry="load(true)" />
+    <PageState v-if="!store.loaded && store.error" :error="store.error" :title="errorTitle" @retry="load(true)" />
     <PageState v-else-if="!store.loaded" state="loading" :rows="8" />
     <template v-else>
       <p v-if="demo" class="demo-note">{{ demoTip }}</p>

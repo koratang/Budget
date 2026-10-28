@@ -58,4 +58,17 @@ describe('PAGE-F15-01 经营总览驾驶舱', () => {
     expect(kpi).toContain('1,188')
     expect(kpi).toContain('环比 -9.3%')
   })
+
+  it('渠道毛利率：四条重合线末值只标一次并注明；传导链金额按涨红跌绿着色', async () => {
+    const w = mountPage()
+    await flushPromises()
+    const notes = w.findAll('[data-gm-overlap]').map((n) => n.text())
+    expect(notes.some((t) => t.includes("Amazon / Wayfair / HomeDepot / Lowe's 均为"))).toBe(true)
+    const svg = w.findAll('.chart').map((c) => c.html()).find((h) => h.includes('线重合'))
+    expect(svg).toBeDefined()
+    expect((svg || '').match(/线重合/g)).toHaveLength(1)
+    const first = w.get('[data-chain]').findAll('li')[0].get('.fin')
+    expect(first.text()).toMatch(/^净利润 \+/)
+    expect(first.classes()).toContain('up')
+  })
 })

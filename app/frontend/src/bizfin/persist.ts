@@ -26,6 +26,8 @@ export const SECTION_LABELS: Record<SectionKey, string> = {
   indicators: '财务与业务指标', biz_dim: '业务指标维度填报', policy: '政策环境事件', advice: '经营建议', keywork: '重点工作',
 }
 
+const LEDGERS = new Set<SectionKey>(['policy', 'advice', 'keywork'])
+
 const blankMeta = (): SectionMeta => ({ revision: null, is_demo: true, updated_by: null, updated_at: null })
 
 export const store = reactive({
@@ -80,7 +82,8 @@ const pendingOfficial = new Set<SectionKey>()
 
 async function put(key: SectionKey): Promise<void> {
   const meta = store.meta[key]
-  const isDemo = pendingOfficial.has(key) ? false : meta.is_demo
+  // 台账类（政策、建议、重点工作）没有导入入口：用户保存过即视为正式台账
+  const isDemo = pendingOfficial.has(key) || LEDGERS.has(key) ? false : meta.is_demo
   pendingOfficial.delete(key)
   store.saving++
   try {
@@ -99,8 +102,8 @@ async function put(key: SectionKey): Promise<void> {
 }
 
 /**
- * 引擎状态已修改，保存对应部分。markOfficial 为 true（数据管理导入正式数据）时去掉「示例数据」标记；
- * 其余编辑沿用原标记。
+ * 引擎状态已修改，保存对应部分。markOfficial 为 true（数据管理导入正式数据）或台账类部分时去掉「示例数据」标记；
+ * 指标与维度的普通编辑沿用原标记。
  */
 export function commit(keys: SectionKey | SectionKey[], markOfficial = false): void {
   if (!store.canEdit) return

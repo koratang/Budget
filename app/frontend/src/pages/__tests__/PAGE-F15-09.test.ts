@@ -79,7 +79,7 @@ describe('PAGE-F15-09 业财数据管理', () => {
     const btn = w.findAll('button').find((b) => b.text() === '导出全部指标（CSV）')
     await btn?.trigger('click')
     expect(create).toHaveBeenCalled()
-    expect(name).toMatch(/^盛航业财指标_年度口径_全部_\d{8}_\d{4}\.csv$/)
+    expect(name).toMatch(/^业财指标_年度口径_全部_\d{8}_\d{4}\.csv$/)
     expect(w.text()).toContain('已导出全部指标（年度口径）')
   })
 
@@ -141,5 +141,18 @@ describe('PAGE-F15-09 业财数据管理', () => {
     expect(w.find('[data-clear-ov]').exists()).toBe(false)
     expect(w.find('[data-readonly]').exists()).toBe(true)
     expect(w.findAll('button').some((b) => b.text() === '导出全部指标（CSV）')).toBe(true)
+  })
+
+  it('页头维度切换与页内「月度 / 年度维度管理」操作同一状态', async () => {
+    const w = mount(Page)
+    await flushPromises()
+    await w.get('[aria-label="维度"]').findAll('button')[1].trigger('click')
+    expect(S.dim).toBe('month')
+    expect(w.get('[aria-label="维度管理：维度"]').findAll('button')[1].attributes('aria-pressed')).toBe('true')
+    await w.get('[aria-label="维度管理：月份"]').findAll('button')[4].trigger('click')
+    expect(S.curM).toBe(5)
+    expect((w.get('select[aria-label="月份"]').element as HTMLSelectElement).value).toBe('5')
+    await w.get('[aria-label="维度管理：维度"]').findAll('button')[0].trigger('click')
+    expect(w.get('[aria-label="维度"]').findAll('button')[0].attributes('aria-pressed')).toBe('true')
   })
 })
