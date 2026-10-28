@@ -7,6 +7,7 @@ import { computed } from 'vue'
 import SvgChart from '@/components/g5/SvgChart.vue'
 import { C, COST_LINES, MONTHS9, PAL, S, channelEffectAll, channelRowsAt, fmt, iv, type EffRow } from '@/bizfin/engine'
 import { hBarChart, lineChart } from '@/bizfin/charts'
+import { TREND_COLOR, signTrend, trendStyle, type Trend } from './AnaKit'
 import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
 import AnaKitCode from './AnaKitCode.vue'
@@ -19,10 +20,11 @@ function lineVal(r: EffRow, key: string): number {
   const v: unknown = Reflect.get(r, key)
   return typeof v === 'number' ? v : 0
 }
-/* 原样：毛利率 ≥25% 红（涨）/ 15–25% 黄 / <15% 绿（跌） */
-function rateColor(rate: number): string {
-  return rate >= 0.25 ? 'var(--danger)' : rate >= 0.15 ? 'var(--warn)' : 'var(--success)'
+/* 涨红跌绿口径：毛利率 ≥25% 高档红 / 15–25% 中性 / <15% 低档绿；表格、条形图、图例共用 */
+function rateTrend(rate: number): Trend {
+  return rate >= 0.25 ? 'up' : rate >= 0.15 ? 'flat' : 'down'
 }
+const RATE_BAR: Record<Trend, string> = { up: C.up, flat: C.text3, down: C.down }
 
 const rows = computed(() => channelEffectAll())
 const totalRev = computed(() => rows.value.reduce((a, b) => a + b.revenue, 0))
@@ -52,7 +54,7 @@ const rateSvg = computed(() =>
     rows.value.slice().sort((a, b) => b.grossRate - a.grossRate).map((r) => ({
       label: r.key,
       value: r.grossRate * 100,
-      color: r.grossRate >= 0.25 ? C.down : r.grossRate >= 0.15 ? C.warn : C.up,
+      color: RATE_BAR[rateTrend(r.grossRate)],
       text: fmt(r.grossRate * 100, 1) + '% 毛利 ' + fmt(r.gross, 0) + '万',
     })),
     { w: 540, labelW: 108, rowH: 30, rightW: 170 },
@@ -89,9 +91,9 @@ const trendCharts = computed(() => {
     <div class="grid-4 kpis">
       <AnaKitKpi data-kpi="gross" label="渠道总毛利额" :value="fmt(totalGross, 0)" unit="万" tone="biz"
         :foot="`收入 ${fmt(totalRev, 0)} 万 × 综合毛利率 ${fmt(blendedRate * 100, 1)}%`" />
-      <AnaKitKpi data-kpi="top" label="毛利最高渠道" :value="top.key" tone="good" compact
+      <AnaKitKpi data-kpi="top" label="毛利最高渠道" :value="top.key" tone="up" compact
         :foot="`${fmt(top.gross, 0)} 万 · 毛利率 ${fmt(top.grossRate * 100, 1)}%`" />
-      <AnaKitKpi data-kpi="bot" label="毛利最低渠道" :value="bot.key" tone="bad" compact
+      <AnaKitKpi data-kpi="bot" label="毛利最低渠道" :value="bot.key" tone="down" compact
         :foot="`${fmt(bot.gross, 0)} 万 · 毛利率 ${fmt(bot.grossRate * 100, 1)}%`" />
       <AnaKitKpi data-kpi="hhi" label="渠道集中度（HHI）" :value="fmt(hhi, 0)" tone="fin"
         foot="数值越大说明渠道越集中，< 1500 为分散、1500-2500 为中等、>2500 为高集中度" />
@@ -111,9 +113,9 @@ const trendCharts = computed(() => {
             <tr v-for="r in rows" :key="r.key">
               <td class="strong">{{ r.key }}</td>
               <template v-for="c in COST_LINES" :key="c.key">
-                <td v-if="c.key === 'grossRate'" class="num strong" :style="{ color: rateColor(r.grossRate) }">{{ fmt(r.grossRate * 100, 1) }}%</td>
+                <td v-if="c.key === 'grossRate'" class="num" :style="trendStyle(rateTrend(r.grossRate))">{{ fmt(r.grossRate * 100, 1) }}%</td>
                 <td v-else-if="c.type === 'income'" class="num income">{{ fmt(lineVal(r, c.key), 0) }}</td>
-                <td v-else-if="c.key === 'gross'" class="num strong" :style="{ color: r.gross >= 0 ? rateColor(r.grossRate) : 'var(--success)' }">{{ r.gross >= 0 ? '+' : '' }}{{ fmt(r.gross, 0) }}</td>
+                <td v-else-if="c.key === 'gross'" class="num" :style="trendStyle(signTrend(r.gross))">{{ r.gross >= 0 ? '+' : '' }}{{ fmt(r.gross, 0) }}</td>
                 <td v-else class="num">{{ fmt(lineVal(r, c.key), 0) }}</td>
               </template>
               <td class="num muted">{{ fmt(r.share * 100, 1) }}%</td>
@@ -121,8 +123,8 @@ const trendCharts = computed(() => {
             <tr class="total" data-test="matrix-total">
               <td>合计</td>
               <template v-for="c in COST_LINES" :key="c.key">
-                <td v-if="c.key === 'grossRate'" class="num" :style="{ color: blendedRate >= 0.25 ? 'var(--danger)' : 'var(--success)' }">{{ fmt(blendedRate * 100, 1) }}%</td>
-                <td v-else-if="c.key === 'gross'" class="num" :style="{ color: totalGross >= 0 ? 'var(--danger)' : 'var(--success)' }">{{ totalGross >= 0 ? '+' : '' }}{{ fmt(totalGross, 0) }}</td>
+                <td v-if="c.key === 'grossRate'" class="num" :style="{ color: TREND_COLOR[rateTrend(blendedRate)] }">{{ fmt(blendedRate * 100, 1) }}%</td>
+                <td v-else-if="c.key === 'gross'" class="num" :style="{ color: TREND_COLOR[signTrend(totalGross)] }">{{ totalGross >= 0 ? '+' : '' }}{{ fmt(totalGross, 0) }}</td>
                 <td v-else class="num">{{ fmt(colTotal(c.key), 0) }}</td>
               </template>
               <td class="num">100.0%</td>
@@ -141,7 +143,7 @@ const trendCharts = computed(() => {
       <AnaKitCard title="渠道收入规模（万元）" desc="按本期收入降序">
         <SvgChart :svg="revSvg" label="渠道收入规模" />
       </AnaKitCard>
-      <AnaKitCard title="渠道毛利率（%）" desc="颜色：绿≥25% / 黄15–25% / 红<15%">
+      <AnaKitCard title="渠道毛利率（%）" desc="颜色（高红低绿）：红 ≥25% / 灰 15–25% / 绿 <15%">
         <SvgChart :svg="rateSvg" label="渠道毛利率" />
       </AnaKitCard>
     </div>

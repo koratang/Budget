@@ -12,7 +12,7 @@ import AnaKitCode from './AnaKitCode.vue'
 import AnaKitKpi from './AnaKitKpi.vue'
 import AnaKitLegend from './AnaKitLegend.vue'
 import AnaKitNote from './AnaKitNote.vue'
-import { comboChart, hBarChart, lineChart, stack100 } from '@/bizfin/charts'
+import { COMBO_BAR_COLOR, comboChart, hBarChart, lineChart, stack100 } from '@/bizfin/charts'
 import {
   ADMIN_DEPTS, ADMIN_D_COLOR, ADMIN_TYPES, ADMIN_T_COLOR, C, MONTHS9, S, YEAR_LABEL,
   adminAnnualPool, adminMatrix, adminMatrixNow, adminPoolByM, find, fmt, iv, jsNum, mSeries, periodLabel,
@@ -22,8 +22,8 @@ import {
 const sum = (arr: number[]): number => arr.reduce((a, b) => a + b, 0)
 /* 部门的主导费用类型（发生额最大的类型） */
 const mainTypeOf = (row: AdminRow): string => ADMIN_TYPES[row.types.indexOf(Math.max(...row.types))].name
-/* 柱色：comboChart 柱体固定色，图例与之一致 */
-const BAR_COLOR = '#bfd5fb'
+/* 柱色：同一常量既传给 comboChart 也用于图例，保证一致 */
+const BAR_COLOR = COMBO_BAR_COLOR
 
 const v = computed(() => {
   const poolM = adminPoolByM()
@@ -59,7 +59,7 @@ const v = computed(() => {
   return {
     isMonth, poolM, annual, snap, poolAnnual, poolNow, f43Actual, f43Target, rateGap, rateM,
     deptByM, typeByM, typeAnnual, topTypeIdx, deptAnnualTot, topDeptIdx, typeSnap, topDepts,
-    comboSvg: comboChart(MONTHS9, poolM, [{ color: C.fin, values: rateM }], { h: 268 }),
+    comboSvg: comboChart(MONTHS9, poolM, [{ color: C.fin, values: rateM }], { h: 268, barColor: BAR_COLOR }),
     stackSvg: stack100(MONTHS9, ADMIN_TYPES.map((t, ti) => ({ name: t.name, color: ADMIN_T_COLOR[t.name], values: typeByM[ti].byM })), { h: 268 }),
     hbarSvg: hBarChart(annual.map((r) => ({
       label: r.dept, value: r.total, color: ADMIN_D_COLOR[r.dept],

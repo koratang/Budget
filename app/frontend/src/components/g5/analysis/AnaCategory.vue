@@ -10,7 +10,7 @@ import {
   type CatModelRow, type SpuRow,
 } from '@/bizfin/engine'
 import { lineChart, stack100 } from '@/bizfin/charts'
-import { goodBad } from './AnaKit'
+import { TREND_COLOR, hiLo, signTrend, trendStyle, type Trend } from './AnaKit'
 import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
 import AnaKitCode from './AnaKitCode.vue'
@@ -56,14 +56,15 @@ const qtySvg = computed(() => catLine('qty', 0))
 const perSvg = computed(() => catLine('perSpu', 1))
 
 /* 月度新品 / 老品收入占比（新品 = 2025/2026 上新；老品 = 2024 年及以前） */
-const newOldLegend = [{ name: '新品（滚动）', color: C.up }, { name: '老品', color: C.text3 }]
+/* 新品 / 老品是分类，不用红绿（避免与涨跌语义冲突） */
+const newOldLegend = [{ name: '新品（滚动）', color: C.biz }, { name: '老品', color: C.text3 }]
 const newOldSvg = computed(() => {
   const byM = ymByM.value.map((rows) => {
     const nw = rows.filter((r) => isNewYear(r.label)).reduce((a, r) => a + r.share, 0)
     return { nw, old: 100 - nw }
   })
   return stack100(MONTHS9, [
-    { name: '新品（滚动）', color: C.up, values: byM.map((x) => x.nw) },
+    { name: '新品（滚动）', color: C.biz, values: byM.map((x) => x.nw) },
     { name: '老品', color: C.text3, values: byM.map((x) => x.old) },
   ], { w: 600, h: 266, bw: 34 })
 })
@@ -78,9 +79,9 @@ const yearSvg = computed(() =>
 const spus = computed(() => buildSpuTable())
 const topN = computed(() => spus.value.slice(0, 10))
 const botN = computed(() => spus.value.slice(-10).reverse())
-/* 原样：TOP 表一律红（高）；Bottom 表 ≥25% 黄、<25% 绿 */
-function spuColor(r: SpuRow, hi: boolean): string {
-  return r.grossRate >= 0.25 ? (hi ? 'var(--danger)' : 'var(--warn)') : (hi ? 'var(--danger)' : 'var(--success)')
+/* 涨红跌绿口径（与渠道效益同档）：SPU 毛利率 ≥25% 高档红 / 15–25% 中性 / <15% 低档绿，TOP / Bottom 两表同一规则 */
+function spuTrend(r: SpuRow): Trend {
+  return r.grossRate >= 0.25 ? 'up' : r.grossRate >= 0.15 ? 'flat' : 'down'
 }
 </script>
 
@@ -92,7 +93,7 @@ function spuColor(r: SpuRow, hi: boolean): string {
       <AnaKitKpi data-kpi="spu" label="在售 SPU 合计" :value="fmt(totalSpu, 0)" unit="个" :foot="`${CATEGORIES.length} 个品类 · 日均在架结构`" />
       <AnaKitKpi data-kpi="qty" label="销量合计" :value="fmt(totalQty / 10000, 2)" unit="万件"
         :foot="`件单比 ${fmt(totalQty / (orders || 1), 2)}（1 单 1 件）`" />
-      <AnaKitKpi data-kpi="topPer" label="品效最高品类" :value="topPer.cat" tone="good" compact
+      <AnaKitKpi data-kpi="topPer" label="品效最高品类" :value="topPer.cat" tone="up" compact
         :foot="`${fmt(topPer.perSpu, 1)} 万元 / SPU · 在售 ${fmt(topPer.spu, 0)} 个`" />
       <AnaKitKpi data-kpi="newShare" label="2025/2026 新品销售占比" :value="fmt(newShareNow, 1)" unit="%" tone="biz" foot="新品驱动型增长结构" />
     </div>
@@ -115,9 +116,9 @@ function spuColor(r: SpuRow, hi: boolean): string {
               <td class="num">{{ fmt(r.price, 0) }}</td>
               <td class="num">{{ fmt(r.revenue, 0) }}</td>
               <td class="num">{{ fmt(r.share, 1) }}%</td>
-              <td class="num" :style="goodBad(r.perSpu >= avgPer, 'good', 'warn')">{{ fmt(r.perSpu, 1) }}</td>
-              <td class="num" :style="goodBad(r.grossRate >= 5, 'good', 'bad')">{{ fmt(r.grossRate, 1) }}%</td>
-              <td class="num" :style="goodBad(r.gross >= 0, 'good', 'bad')">{{ r.gross >= 0 ? '+' : '' }}{{ fmt(r.gross, 0) }}</td>
+              <td class="num" :style="hiLo(r.perSpu >= avgPer)">{{ fmt(r.perSpu, 1) }}</td>
+              <td class="num" :style="hiLo(r.grossRate >= 5)">{{ fmt(r.grossRate, 1) }}%</td>
+              <td class="num" :style="trendStyle(signTrend(r.gross))">{{ r.gross >= 0 ? '+' : '' }}{{ fmt(r.gross, 0) }}</td>
             </tr>
             <tr class="total" data-test="total">
               <td>合计</td>
@@ -126,7 +127,7 @@ function spuColor(r: SpuRow, hi: boolean): string {
               <td class="num">{{ fmt(totalRev, 0) }}</td><td class="num">100.0%</td>
               <td class="num">{{ fmt(avgPer, 1) }}</td>
               <td class="num">{{ fmt(totalRev > 0 ? totalGross / totalRev * 100 : 0, 1) }}%</td>
-              <td class="num" :style="{ color: totalGross >= 0 ? 'var(--success)' : 'var(--danger)' }">{{ fmt(totalGross, 0) }}</td>
+              <td class="num" :style="{ color: TREND_COLOR[signTrend(totalGross)] }">{{ totalGross >= 0 ? '+' : '' }}{{ fmt(totalGross, 0) }}</td>
             </tr>
           </tbody>
         </table>
@@ -177,7 +178,7 @@ function spuColor(r: SpuRow, hi: boolean): string {
               <tr v-for="r in topN" :key="r.code">
                 <td class="strong">{{ r.code }}</td><td>{{ r.cat }}</td>
                 <td class="num">{{ fmt(r.revenue, 0) }}</td>
-                <td class="num strong" :style="{ color: spuColor(r, true) }">{{ fmt(r.grossRate * 100, 1) }}%</td>
+                <td class="num" :style="trendStyle(spuTrend(r))">{{ fmt(r.grossRate * 100, 1) }}%</td>
               </tr>
             </tbody>
           </table>
@@ -191,7 +192,7 @@ function spuColor(r: SpuRow, hi: boolean): string {
               <tr v-for="r in botN" :key="r.code">
                 <td class="strong">{{ r.code }}</td><td>{{ r.cat }}</td>
                 <td class="num">{{ fmt(r.revenue, 0) }}</td>
-                <td class="num strong" :style="{ color: spuColor(r, false) }">{{ fmt(r.grossRate * 100, 1) }}%</td>
+                <td class="num" :style="trendStyle(spuTrend(r))">{{ fmt(r.grossRate * 100, 1) }}%</td>
               </tr>
             </tbody>
           </table>

@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 import { channelModel, fmt } from '@/bizfin/engine'
-import { goodBad } from './AnaKit'
+import { hiLo } from './AnaKit'
 import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
 import AnaKitKpi from './AnaKitKpi.vue'
@@ -38,7 +38,7 @@ const topTwo = computed(() => rows.value.slice(0, 2).map((r) => r.channel).join(
       <AnaKitKpi data-kpi="newRev" label="新客收入贡献" :value="fmt(newRevSh, 1)" unit="%" tone="biz"
         :foot="`${fmt(cm.newRevenue, 0)} 万元 / 合计 ${fmt(cm.revenue, 0)} 万元`" />
       <AnaKitKpi data-kpi="aovNew" label="新客客单价" :value="fmt(aovNew, 0)" unit="元" :foot="`老客客单价 ${fmt(aovOld, 0)} 元（+12%）`" />
-      <AnaKitKpi data-kpi="topNew" label="新客占比最高渠道" :value="topNew.channel" tone="good" compact
+      <AnaKitKpi data-kpi="topNew" label="新客占比最高渠道" :value="topNew.channel" tone="up" compact
         :foot="`新客占比 ${fmt(topNew.newShare, 1)}%，客单价 ${fmt(topNew.aov, 0)} 元`" />
     </div>
 
@@ -56,7 +56,7 @@ const topTwo = computed(() => rows.value.slice(0, 2).map((r) => r.channel).join(
           <tbody>
             <tr v-for="r in rows" :key="r.channel">
               <td class="strong">{{ r.channel }}</td>
-              <td class="num" :style="goodBad(r.newShare >= cm.newShare, 'warn', 'good')">{{ fmt(r.newShare, 1) }}%</td>
+              <td class="num" :style="hiLo(r.newShare >= cm.newShare)">{{ fmt(r.newShare, 1) }}%</td>
               <td class="num">{{ fmt(r.oldShare, 1) }}%</td>
               <td class="num">{{ fmt(r.newOrders, 0) }}</td>
               <td class="num">{{ fmt(r.oldOrders, 0) }}</td>

@@ -75,6 +75,16 @@ describe('仓储分析', () => {
     expect(rows).toHaveLength(5) /* 4 座海外仓 + 合计 */
     expect(rows[0].text()).toContain('万邑通·美西仓')
     expect(w.text()).not.toContain('自有仓')
+    /* 合计行与 KPI 同一取整口径：期初合计 22,000 ≡ KPI，入 / 出 / 期末同理，且逐行勾稽 */
+    const tot = rows[4].findAll('td').map((td) => num(td.text()))
+    expect(tot.slice(1)).toEqual([k('open'), k('in'), k('out'), k('close')])
+    rows.slice(0, 4).forEach((tr) => {
+      const c = tr.findAll('td').map((td) => num(td.text()))
+      expect(c[1] + c[2] - c[3]).toBe(c[4])
+    })
+    /* 6 张 KPI 用 3 列网格整齐排列 */
+    expect(w.get('.kpi-grid').classes()).toContain('grid-3')
+    expect(w.findAll('.kpi-grid .ana-kpi')).toHaveLength(6)
   })
 
   it('月度：库存表标注当月，KPI 为当月流水', async () => {
@@ -86,6 +96,8 @@ describe('仓储分析', () => {
     expect(kpiFoot(w, 'open')).toBe('当月月初 4 仓合计')
     const k = (key: string): number => num(kpiVal(w, key))
     expect(k('open') + k('in') - k('out')).toBe(k('close'))
+    const tot = w.get('[data-testid="stock-table"]').findAll('tbody tr')[4].findAll('td').map((td) => num(td.text()))
+    expect(tot.slice(1)).toEqual([k('open'), k('in'), k('out'), k('close')])
   })
 })
 

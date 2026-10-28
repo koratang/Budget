@@ -7,7 +7,7 @@ import { computed } from 'vue'
 import SvgChart from '@/components/g5/SvgChart.vue'
 import { CHANNELS, CH_COLOR, MONTHS9, S, channelModel, find, fmt, hasData, mSeries, type ChannelModelRow } from '@/bizfin/engine'
 import { lineChart } from '@/bizfin/charts'
-import { goodBad } from './AnaKit'
+import { hiLo } from './AnaKit'
 import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
 import AnaKitCode from './AnaKitCode.vue'
@@ -101,11 +101,11 @@ const trendDefs = computed(() => {
               <td class="num">{{ fmt(r.uv / 10000, 1) }}</td>
               <td class="num">{{ fmt(r.uv / totalUv * 100, 1) }}%</td>
               <td class="num">{{ fmt(r.paidUv / 10000, 1) }}</td>
-              <td class="num" :style="goodBad(r.organic >= cm.organic, 'good', 'warn')">{{ fmt(r.organic, 1) }}%</td>
+              <td class="num" :style="hiLo(r.organic >= cm.organic)">{{ fmt(r.organic, 1) }}%</td>
               <td class="num">{{ fmt(r.orders, 0) }}</td>
-              <td class="num" :style="goodBad(r.cvr >= cm.cvr, 'good', 'warn')">{{ fmt(r.cvr, 2) }}%</td>
+              <td class="num" :style="hiLo(r.cvr >= cm.cvr)">{{ fmt(r.cvr, 2) }}%</td>
               <td class="num">{{ fmt(r.mkt, 0) }}</td>
-              <td class="num" :style="goodBad(r.cpc <= cm.cpc, 'good', 'bad')">{{ fmt(r.cpc, 2) }}</td>
+              <td class="num" :style="hiLo(r.cpc > cm.cpc)">{{ fmt(r.cpc, 2) }}</td>
               <td class="num">{{ fmt(r.mktRate, 1) }}%</td>
             </tr>
             <tr class="total" data-test="total">

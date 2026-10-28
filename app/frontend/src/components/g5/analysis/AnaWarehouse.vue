@@ -24,6 +24,17 @@ const ovShareBase = WH_OVERSEAS.reduce((a, pr) => a + pr.share, 0)
 /* 前置备货系数（入库 = 出库 × 系数） */
 const STOCK_IN_IDX = [1.28, 1.22, 1.15, 1.10, 1.08, 1.12, 1.18, 1.15, 1.12]
 const sum = (arr: number[]): number => arr.reduce((a, b) => a + b, 0)
+/* 最大余数法：把整数 total 按份额拆成整数，且各份之和恰好等于 total */
+function allocInt(total: number, shares: number[]): number[] {
+  const tot = sum(shares) || 1
+  const raw = shares.map((sh) => total * sh / tot)
+  const out = raw.map((x) => Math.floor(x))
+  let rest = total - sum(out)
+  raw.map((x, i) => ({ i, frac: x - Math.floor(x) })).sort((a, b) => b.frac - a.frac).forEach((r) => {
+    if (rest > 0) { out[r.i] += 1; rest -= 1 }
+  })
+  return out
+}
 
 const v = computed(() => {
   const p = costPools()
@@ -77,14 +88,17 @@ const v = computed(() => {
   const kOut = isMonth ? outByM[curIdx] : sum(outByM.slice(0, mN))
   const kClose = closeByM[curIdx]
 
-  /* 海外仓库存数据表（期初 / 入库 / 出库 / 期末，各仓按当月份额拆分） */
+  /* 海外仓库存数据表（期初 / 入库 / 出库 / 期末，各仓按当月份额拆分）
+     取整口径与 KPI 一致：先取 KPI 的合计整数，再用最大余数法拆到各仓（各仓之和 ≡ KPI，不再出现 22,000 对 21,999 的取整差）；
+     各仓期末 = 期初 + 入库 − 出库，因此逐行勾稽成立，且期末合计 ≡ KPI 期末。 */
   const shRef = ovSharesByM[curIdx]
+  const openSp = allocInt(kOpen, shRef), inSp = allocInt(kIn, shRef), outSp = allocInt(kOut, shRef)
   const stockRows = WH_OVERSEAS.map((pr, i) => ({
     name: whName(pr),
-    open: Math.round(kOpen * shRef[i]),
-    in: Math.round(kIn * shRef[i]),
-    out: Math.round(kOut * shRef[i]),
-    close: Math.round(kClose * shRef[i]),
+    open: openSp[i],
+    in: inSp[i],
+    out: outSp[i],
+    close: openSp[i] + inSp[i] - outSp[i],
   }))
   const stockSum = stockRows.reduce(function (a, r) {
     a.open += r.open; a.in += r.in; a.out += r.out; a.close += r.close; return a
@@ -103,7 +117,8 @@ const v = computed(() => {
 
 <template>
   <div data-ana-view="anaWarehouse">
-    <div class="kpi-grid">
+    <!-- 6 张 KPI 用 g5.css 的 grid-3 排成整齐的 3×2（窄屏自动降为 2 列 / 1 列） -->
+    <div class="grid-3 kpi-grid">
       <AnaKitKpi
         label="仓储成本总额" :value="fmt(v.whCostNow, 1)" unit="万元" tone="fin" data-kpi="cost"
         :foot="(v.isMonth ? '当月 · ' : '全年累计 · ') + '仓储 ' + fmt(v.whCostNow / (1 + WH_HANDLING), 1) + ' + 代发 ' + fmt(v.whCostNow * WH_HANDLING / (1 + WH_HANDLING), 1)"
@@ -160,6 +175,6 @@ const v = computed(() => {
 </template>
 
 <style scoped>
-.kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(178px, 1fr)); gap: var(--space-3); margin-bottom: var(--space-4); }
+.kpi-grid { gap: var(--space-3); margin-bottom: var(--space-4); }
 .strong { font-weight: 700; }
 </style>

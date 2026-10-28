@@ -75,6 +75,46 @@ describe('渠道效益分析', () => {
   })
 })
 
+describe('涨红跌绿颜色口径（高 / 正 = 红，低 / 负 = 绿）', () => {
+  const RED = 'var(--danger)', GREEN = 'var(--success)'
+  const color = (td: { attributes: (k: string) => string | undefined }): string => td.attributes('style') ?? ''
+
+  it('渠道效益：毛利额正值红、负值绿，合计 +554 红；毛利率 ≥25% 红、<15% 绿；条形图图例同口径', () => {
+    const w = mount(AnaChannel)
+    const rows = w.findAll('[data-test="matrix"] tbody tr')
+    let pos = 0, neg = 0
+    rows.forEach((tr) => {
+      const tds = tr.findAll('td')
+      const gross = tds[9]
+      const rate = tds[10]
+      if (gross.text().startsWith('+')) { expect(color(gross)).toContain(RED); pos++ }
+      else if (gross.text().startsWith('-') || gross.text().startsWith('−')) { expect(color(gross)).toContain(GREEN); neg++ }
+      const r = num(rate.text())
+      if (r >= 25) expect(color(rate)).toContain(RED)
+      if (r < 15) expect(color(rate)).toContain(GREEN)
+    })
+    expect(pos).toBeGreaterThan(0)
+    expect(neg).toBeGreaterThan(0) /* 示例数据中 Wayfair 为负 */
+    expect(w.text()).toContain('红 ≥25% / 灰 15–25% / 绿 <15%')
+    expect(w.get('[data-kpi="top"]').attributes('data-tone')).toBe('up')
+    expect(w.get('[data-kpi="bot"]').attributes('data-tone')).toBe('down')
+  })
+
+  it('品类分析：贡献毛利额正值红、负值绿，合计红；SPU TOP 表高毛利红', () => {
+    const w = mount(AnaCategory)
+    const rows = w.findAll('table')[0].findAll('tbody tr')
+    rows.forEach((tr) => {
+      const g = tr.findAll('td')[8]
+      if (g.text().startsWith('+')) expect(color(g)).toContain(RED)
+      if (g.text().startsWith('-')) expect(color(g)).toContain(GREEN)
+    })
+    expect(color(w.get('[data-test="total"]').findAll('td')[8])).toContain(RED)
+    const top1 = w.get('[data-test="spu-top"] tbody tr').findAll('td')[3]
+    expect(num(top1.text())).toBeGreaterThanOrEqual(25)
+    expect(color(top1)).toContain(RED)
+  })
+})
+
 describe('流量分析', () => {
   it('合计行：UV × 转化率 ≡ 订单量，CPC = 营销费用 ÷ 付费 UV', () => {
     const w = mount(AnaTraffic)
