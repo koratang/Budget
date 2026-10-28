@@ -418,16 +418,19 @@ export function lineChart(labels: string[], series: LineSeries[], o?: LineOpts):
     if (last && last.text === e.text && e.y - last.y < GAP) { last.idx.push(e.idx[0]); return }
     merged.push({ y: e.y, text: e.text, color: e.color, idx: e.idx.slice() })
   })
+  /* 右边距最多占画布 32%，保证绘图区宽度；合并标签写全名会超出时改写为「N 线均为 x」（名称见图例与图下说明） */
+  const maxPadR = Math.floor(W * 0.32)
   merged.forEach(function (e) {
     if (e.idx.length < 2) return
     /* 名称按序列顺序（与图例一致） */
     const names = e.idx.slice().sort((a, b) => a - b).map((i) => series[i].name || '')
-    e.text = (names.every((x) => x) ? names.join(' / ') + ' 均为 ' : names.length + ' 线均为 ') + e.text
+    const full = names.every((x) => x) ? names.join(' / ') + ' 均为 ' + e.text : ''
+    e.text = full && textWidth(full, endSize) + 12 <= maxPadR ? full : names.length + ' 线均为 ' + e.text
     e.color = C.text2
   })
   if (merged.length && !dual) {
     const need = Math.max(...merged.map((e) => textWidth(e.text, endSize))) + 12
-    pad.r = Math.max(pad.r, Math.ceil(need))
+    pad.r = Math.min(Math.max(pad.r, Math.ceil(need)), Math.max(pad.r, maxPadR))
   }
   const iw = W - pad.l - pad.r
   const X = function (i: number): number { return n > 1 ? pad.l + iw * i / (n - 1) : pad.l + iw / 2 }

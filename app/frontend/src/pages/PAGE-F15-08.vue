@@ -228,10 +228,10 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
 .kw-bar { position: relative; display: inline-block; width: 100%; max-width: 120px; height: 16px; border-radius: var(--radius-sm); background: var(--border-soft); overflow: hidden; vertical-align: middle; }
 .kw-bar i { position: absolute; inset: 0 auto 0 0; }
 .kw-bar span { position: relative; display: block; text-align: center; font-size: var(--text-xs); line-height: 16px; color: var(--fg); }
-.w-time { width: 88px; }
+.w-time { width: 96px; }
 .w-cat { width: 116px; }
 .w-goal { width: 180px; }
-.w-eta { width: 88px; }
+.w-eta { width: 96px; }
 .w-prog { width: 92px; }
 .w-st { width: 100px; }
 .w-op { width: 60px; }

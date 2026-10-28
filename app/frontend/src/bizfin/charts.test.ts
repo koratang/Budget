@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import { HALF_W, OVERLAP_DASH, coincidentGroups, comboChart, fontScale, hBarChart, lineChart, niceScale, niceScaleN, sameAsEarlier, spreadLabels, stack100 } from './charts'
+import { PAL } from './engine'
 
 /** 取左轴刻度文字（lineChart 左轴标签 x = pad.l − 8 = 48，右对齐） */
 function leftTicks(svgStr: string): string[] {
@@ -199,5 +200,16 @@ describe('comboChart', () => {
         expect(overlap).toBe(false)
       })
     })
+  })
+
+  it('lineChart：合并标签过长时改写为「N 线均为 x」，绘图区宽度不被挤占（右边距 ≤ 32%）', () => {
+    const v = [29.1, 29.2, 29.3, 29.5]
+    const names = ['Amazon', 'Wayfair', 'HomeDepot', "Lowe's"]
+    const out = lineChart(['01月', '02月', '03月', '04月'], names.map((name, i) => ({ name, color: PAL[i], values: v })),
+      { w: HALF_W, h: 290, dec: 1, endLabel: true, endUnit: '%' })
+    expect(out).toContain('>4 线均为 29.5%<')
+    const xs = [...out.matchAll(/<text x="([\d.]+)"[^>]*>0[1-4]月<\/text>/g)].map((m) => Number(m[1]))
+    expect(xs).toHaveLength(4)
+    expect(xs[3] - xs[0]).toBeGreaterThan(HALF_W * 0.5)
   })
 })

@@ -71,7 +71,8 @@ describe('PAGE-F15-01 经营总览驾驶舱', () => {
     // 重合线的末端标签由 lineChart 合并为一个「… 均为 x%」
     // 图下说明与图内合并标签取同一末值
     const val = /均为 (\d+\.\d%)/.exec(notes.join(''))?.[1] ?? ''
-    const svg = w.findAll('.chart').map((c) => c.html()).find((h) => h.includes('Lowe&#39;s 均为') || h.includes("Lowe's 均为"))
+    // 四个全名放不下（右边距上限 32%），图内写「4 线均为 x%」，全名在图下说明
+    const svg = w.findAll('.chart').map((c) => c.html()).find((h) => h.includes('4 线均为'))
     expect(svg).toBeDefined()
     expect((svg || '').match(/均为 \d+\.\d%/g)).toEqual(['均为 ' + val])
     const first = w.get('[data-chain]').findAll('li')[0].get('.fin')
