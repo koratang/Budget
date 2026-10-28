@@ -63,6 +63,10 @@ if not exist "%ROOT%\data\seeded.flag" (
     "%PY%" -m scripts.import_ops_history "%ROOT%\ops-history-2026.xlsx" --year 2026 --create-missing
   )
 )
+rem 模拟演示数据：2027 年度预算闭环与 2027 年 1–3 月实际等（已写过会自动跳过）
+echo 写入模拟演示数据（首次约需 1 分钟）...
+"%PY%" -m scripts.seed_demo
+if errorlevel 1 goto :err_migrate
 
 echo [4/4] 启动系统：浏览器将打开 http://localhost:8000
 start "钉钉替身（试用版用，勿关）" /min "%PY%" -m uvicorn dingtalk_stub.main:app --host 127.0.0.1 --port 8090
