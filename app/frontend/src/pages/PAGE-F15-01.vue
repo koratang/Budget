@@ -188,7 +188,7 @@ const v = computed(() => {
 
 <template>
   <BizfinPage page-id="PAGE-F15-01" :sections="['indicators', 'biz_dim']" title="经营总览驾驶舱" :desc="desc">
-    <div class="kpi-grid section">
+    <div class="kpi-grid">
       <div v-for="k in v.kpis" :key="k.ind.code" class="card kpi" :class="k.cls" :data-kpi="k.ind.code">
         <div class="kpi-label">{{ k.label }} <span class="code-tag">{{ k.ind.code }}</span></div>
         <div class="kpi-val">{{ k.val }}<span class="u">{{ k.ind.unit }}</span></div>
@@ -198,6 +198,11 @@ const v = computed(() => {
         </div>
       </div>
     </div>
+    <!-- 同一卡片里红色有两种含义，这里点明：顶边色按达成率分档（红 = 达成偏低），环比 / 同比按变动方向（红 = 上升） -->
+    <p class="small muted color-legend section" data-color-legend>
+      <span><i class="sw t-good-bg"></i><i class="sw t-info-bg"></i><i class="sw t-warn-bg"></i><i class="sw t-bad-bg"></i>顶边色 / 预警表达成率：达成率分档（绿 ≥100%、蓝 ≥90%、橙 ≥80%、红 &lt;80%）</span>
+      <span><b class="up">红</b> / <b class="down">绿</b>环比 · 同比：涨红跌绿</span>
+    </p>
 
     <section class="card section">
       <div class="card-title">
@@ -217,7 +222,7 @@ const v = computed(() => {
     </section>
 
     <div class="grid-2 section">
-      <section class="card">
+      <section class="card fill-card">
         <div class="card-title"><span>渠道收入结构</span><span class="small muted">单位：万元</span></div>
         <div class="donut-row">
           <div class="donut"><SvgChart :svg="v.donut" label="渠道收入结构" /></div>
@@ -289,7 +294,7 @@ const v = computed(() => {
             <tbody>
               <tr v-for="i in v.highRisk" :key="i.code">
                 <td class="code-tag">{{ i.code }}</td>
-                <td class="nm"><span class="badge" :class="i.kind === 'fin' ? 'badge-good' : 'badge-info'">{{ i.kind === 'fin' ? '财务' : '业务' }}</span> {{ i.name }}</td>
+                <td class="nm"><span class="badge" :class="i.kind === 'fin' ? '' : 'badge-info'">{{ i.kind === 'fin' ? '财务' : '业务' }}</span> {{ i.name }}</td>
                 <td class="small muted dept">{{ deptOf(i) }}</td>
                 <td class="num">{{ fmt(i.actual) }}</td>
                 <td class="num muted">{{ fmt(i.target) }}</td>
@@ -313,6 +318,19 @@ const v = computed(() => {
 .kpi-val { font-size: var(--text-2xl); font-weight: 700; margin-top: var(--space-1); font-variant-numeric: tabular-nums; }
 .kpi-val .u { font-size: var(--text-xs); font-weight: 400; color: var(--muted); margin-left: 3px; }
 .kpi-foot { display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-2); font-size: var(--text-xs); color: var(--muted); font-weight: 600; }
+/* 色彩图例：说明顶边色（达成率分档）与环比 / 同比（涨红跌绿）两套口径 */
+.color-legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin-top: var(--space-2); }
+.color-legend .sw { display: inline-block; width: 10px; height: 3px; border-radius: 1px; margin-right: 2px; vertical-align: 3px; }
+.color-legend .sw:last-of-type { margin-right: 6px; }
+.color-legend b { font-weight: 700; }
+.color-legend b.down { margin-right: 6px; }
+.t-good-bg { background: var(--success); }
+.t-info-bg { background: var(--accent); }
+.t-warn-bg { background: var(--warn); }
+.t-bad-bg { background: var(--danger); }
+/* 渠道收入结构卡与右侧毛利率卡同高：环形图区域吃掉剩余高度并垂直居中，说明文字贴底，不在卡片下部留大片空白 */
+.fill-card { display: flex; flex-direction: column; }
+.fill-card .donut-row { flex: 1; }
 .sub { font-weight: 400; margin-left: var(--space-2); }
 .note { font-size: var(--text-xs); color: var(--muted); line-height: 1.75; margin: var(--space-2) 0 0; }
 .note b { color: var(--fg); }

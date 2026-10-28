@@ -63,4 +63,16 @@ describe('PAGE-F15-04 业财联动关系', () => {
     expect(txt).toContain('期间费用率超标 ' + over.toFixed(1) + 'pt')
     expect(txt).not.toContain('766.1pt')
   })
+
+  it('未填报的财务指标（F6 净资产收益率）节点达成率显示「—」而非「0%」，百分比实际值保留 1 位', async () => {
+    const w = mount(Page)
+    await flushPromises()
+    const f6 = w.get('g[data-side="fin"][data-code="F6"]')
+    expect(f6.text()).not.toContain('0%')
+    expect(f6.findAll('text')[2].text()).toBe('—')
+    expect(f6.findAll('text')[2].classes()).toContain('t-blank')
+    expect(f6.text()).toContain('实际 —')
+    expect(w.get('g[data-side="fin"][data-code="F3"]').text()).toContain('实际 31.4')
+    expect(w.get('g[data-side="fin"][data-code="F3"]').text()).not.toContain('31.40')
+  })
 })

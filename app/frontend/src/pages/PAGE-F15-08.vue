@@ -78,7 +78,7 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
       每行可直接编辑，年度视图展示全部进行中与已完成工作，关注视图自动派生延误与阻滞项。
     </div>
 
-    <section class="grid-4 section" aria-label="KPI 概览">
+    <section class="kpi-row section" aria-label="KPI 概览">
       <div class="card" data-kpi="total">
         <div class="kpi-label">年度重点工作</div>
         <div class="kpi-value">{{ st.total }}<span class="u">项</span></div>
@@ -119,9 +119,9 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
         <div v-if="!sec.rows.length" class="empty muted">{{ sec.empty }}</div>
         <div v-else class="table-wrap">
           <table class="table ledger">
-            <!-- 固定布局：工作分解为自适应主列；分类 / 状态列按下拉完整文字定宽，进度列收紧 -->
+            <!-- 固定布局：工作分解为唯一弹性主列（同原工具），工作目标定宽 180px；分类 / 状态列按下拉完整文字定宽，进度列收紧 -->
             <colgroup>
-              <col class="w-time"><col class="w-cat"><col><col><col class="w-eta"><col class="w-prog"><col class="w-st"><col v-if="store.canEdit" class="w-op">
+              <col class="w-time"><col class="w-cat"><col class="w-goal"><col><col class="w-eta"><col class="w-prog"><col class="w-st"><col v-if="store.canEdit" class="w-op">
             </colgroup>
             <thead>
               <tr>
@@ -154,10 +154,10 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
                       <option v-for="s in optsOf(KW_STATUS, p.status)" :key="s" :value="s">{{ s }}</option>
                     </select>
                   </td>
-                  <td class="num">
+                  <td class="op-td">
                     <div class="op">
                       <template v-if="pendingDel === p">
-                        <button type="button" class="btn btn-danger" @click="kwDel(p)">确认删除</button>
+                        <button type="button" class="btn btn-danger" title="确认删除该行" aria-label="确认删除该行" @click="kwDel(p)">确认</button>
                         <button type="button" class="btn" @click="pendingDel = null">取消</button>
                       </template>
                       <button v-else type="button" class="btn btn-danger" title="删除该行" @click="pendingDel = p">删除</button>
@@ -199,7 +199,11 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
 .kpi-value .u { font-size: var(--text-sm); font-weight: 400; margin-left: 2px; color: var(--muted); }
 .kpi-value.warn { color: var(--warn); }
 .kpi-value.good { color: var(--success); }
-.cats { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--space-2) 0; }
+/* 分类覆盖卡加宽（1.6 份），6 个分类标签排两行即可，四张 KPI 卡高度接近，前三张卡底部不再空出一截 */
+.kpi-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.6fr); gap: var(--space-4); }
+@media (max-width: 1200px) { .kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { .kpi-row { grid-template-columns: minmax(0, 1fr); } }
+.cats { display: flex; flex-wrap: wrap; gap: 4px; margin: var(--space-1) 0; }
 .kw-cat { display: inline-block; padding: 1px 6px; border-radius: var(--radius-sm); background: var(--surface-warm); border: 1px solid var(--border-soft); color: var(--fg-2); font-size: var(--text-xs); }
 .kw-cat b { color: var(--fg); }
 .desc { font-weight: 400; margin-left: var(--space-2); }
@@ -224,13 +228,16 @@ function kwSet(p: KwTask, f: Field, e: Event): void {
 .kw-bar { position: relative; display: inline-block; width: 100%; max-width: 120px; height: 16px; border-radius: var(--radius-sm); background: var(--border-soft); overflow: hidden; vertical-align: middle; }
 .kw-bar i { position: absolute; inset: 0 auto 0 0; }
 .kw-bar span { position: relative; display: block; text-align: center; font-size: var(--text-xs); line-height: 16px; color: var(--fg); }
-.w-time { width: 100px; }
+.w-time { width: 88px; }
 .w-cat { width: 116px; }
-.w-eta { width: 96px; }
+.w-goal { width: 180px; }
+.w-eta { width: 88px; }
 .w-prog { width: 92px; }
-.w-st { width: 108px; }
-.w-op { width: 84px; }
-.op { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; align-items: center; }
-.op .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+.w-st { width: 100px; }
+.w-op { width: 60px; }
+/* 操作列宽贴合「删除」按钮；二次确认时「确认 / 取消」上下竖排，不撑宽列 */
+.ledger td.op-td { padding-left: var(--space-1); padding-right: var(--space-1); }
+.op { display: flex; flex-direction: column; gap: var(--space-1); align-items: stretch; }
+.op .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); justify-content: center; }
 .foot { margin: var(--space-3) 0 0; line-height: 1.7; }
 </style>

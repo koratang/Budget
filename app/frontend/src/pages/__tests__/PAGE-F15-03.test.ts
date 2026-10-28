@@ -87,4 +87,26 @@ describe('PAGE-F15-03 业务指标', () => {
     expect(w.findAll('input')).toHaveLength(0)
     expect(w.get('[data-matrix="S1-channel"]').text()).toContain('未填报 → 整体值待填报')
   })
+
+  it('宽矩阵按实际溢出显示横向滚动提示与右缘遮罩，滚到最右去掉遮罩；指标列 ≤ 3 的矩阵收紧表宽', async () => {
+    const w = await mountPage()
+    const box = w.get('[data-matrix="S1-channel"] .mx')
+    expect(box.classes()).not.toContain('ovf') /* 未溢出时不显示提示 */
+    const wrap = box.get('.table-wrap')
+    const el = wrap.element as HTMLElement
+    Object.defineProperty(el, 'scrollWidth', { configurable: true, value: 2000 })
+    Object.defineProperty(el, 'clientWidth', { configurable: true, value: 960 })
+    el.scrollLeft = 0
+    await wrap.trigger('scroll')
+    expect(box.classes()).toEqual(expect.arrayContaining(['ovf', 'more']))
+    expect(box.get('.scroll-hint').text()).toContain('左右滑动查看更多列')
+    el.scrollLeft = 1040
+    await wrap.trigger('scroll')
+    expect(box.classes()).toContain('ovf')
+    expect(box.classes()).not.toContain('more')
+
+    expect(box.classes()).not.toContain('compact')
+    expect(w.get('[data-matrix="S2-category"] .mx').classes()).toContain('compact')
+    expect(w.get('[data-matrix="S4-lane"] .mx').classes()).toContain('compact')
+  })
 })

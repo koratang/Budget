@@ -6,7 +6,7 @@
 import { computed, ref } from 'vue'
 import BizfinPage from '@/components/g5/BizfinPage.vue'
 import {
-  C, LINKAGE, NAV, bizHealth, buildReverse, children, fmt, healthColor, isBlankBiz, l1, rate,
+  C, LINKAGE, NAV, bizHealth, buildReverse, children, fmt, hasData, healthColor, isBlankBiz, l1, rate,
 } from '@/bizfin/engine'
 
 const desc = NAV.find((n) => n.id === 'linkage')?.sub
@@ -56,12 +56,17 @@ const graph = computed(() => {
       cls: blank ? 't-blank' : tier(rate(n)),
     }
   })
-  const right = finL1.map((n) => ({
-    code: n.code, name: n.name, y: ry[n.code],
-    sub: n.code + ' · ' + n.unit + ' · 实际 ' + fmt(n.actual),
-    rate: fmt(rate(n), 0) + '%',
-    cls: tier(rate(n)),
-  }))
+  /* 未填报 / 无目标的财务指标（如 F6 净资产收益率）达成率无意义，节点显示「—」，与财务指标页同口径，不再显示「0%」；
+     百分比指标实际值保留 1 位（31.4 而非 31.40），与 KPI 卡一致 */
+  const right = finL1.map((n) => {
+    const blank = !hasData(n) || !n.target
+    return {
+      code: n.code, name: n.name, y: ry[n.code],
+      sub: n.code + ' · ' + n.unit + ' · 实际 ' + (hasData(n) ? fmt(n.actual, n.unit === '%' ? 1 : undefined) : '—'),
+      rate: blank ? '—' : fmt(rate(n), 0) + '%',
+      cls: blank ? 't-blank' : tier(rate(n)),
+    }
+  })
   const bh = bizHealth()
   return {
     H, edges, left, right,
@@ -205,7 +210,7 @@ const barCls = (v: number): string => v >= 0.7 ? 'b-strong' : v >= 0.5 ? 'b-mid'
           <tbody>
             <tr v-for="(l, i) in links" :key="i">
               <td class="wrap"><span class="badge badge-info">{{ l.biz }}</span> {{ l.bizName }}</td>
-              <td class="wrap"><span class="badge badge-good">{{ l.fin }}</span> {{ l.finName }}</td>
+              <td class="wrap"><span class="badge">{{ l.fin }}</span> {{ l.finName }}</td>
               <td><span class="badge dir" :class="l.dir === '正向' ? 'badge-bad' : 'badge-good'">{{ l.dir }}</span></td>
               <td>
                 <div class="mini-prog">
@@ -249,7 +254,8 @@ text.t-warn { fill: var(--warn); }
 text.t-bad { fill: var(--danger); }
 text.t-blank { fill: var(--muted); }
 .legend { margin-top: var(--space-2); }
-.grid-1-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: var(--space-4); }
+/* 左侧层级结构内容短：列宽 1 : 2 让右侧归因列表少换行、整体变矮；两卡顶对齐，左卡不再被拉高留出大片空白 */
+.grid-1-2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); gap: var(--space-4); align-items: start; }
 @media (max-width: 1240px) { .grid-1-2 { grid-template-columns: minmax(0, 1fr); } }
 .struct { font-size: var(--text-xs); font-family: var(--font-mono); background: var(--surface-warm); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-3); line-height: 1.85; color: var(--fg-2); overflow-x: auto; margin: 0; }
 .struct b { color: var(--accent); font-weight: 600; }

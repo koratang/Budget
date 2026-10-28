@@ -155,4 +155,13 @@ describe('PAGE-F15-09 业财数据管理', () => {
     await w.get('[aria-label="维度管理：维度"]').findAll('button')[0].trigger('click')
     expect(w.get('[aria-label="维度"]').findAll('button')[0].attributes('aria-pressed')).toBe('true')
   })
+
+  it('维度说明 4 条排成 2 × 2；指标字典「财务」类型标签用中性色（不用涨跌绿）', async () => {
+    const w = mount(Page)
+    await flushPromises()
+    const notes = w.get('.chk-list.dim-notes')
+    expect(notes.findAll('.chk')).toHaveLength(4)
+    const finTag = w.findAll('td .badge').find((b) => b.text() === '财务')
+    expect(finTag?.classes()).not.toContain('badge-good')
+  })
 })

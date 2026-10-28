@@ -86,10 +86,10 @@ function avSet(i: number, f: Field, e: Event): void {
                 <td><textarea v-autogrow class="area" rows="1" :value="ev.desc" placeholder="背景 / 问题现状" aria-label="背景描述" @change="avSet(i, 'desc', $event)" /></td>
                 <td><textarea v-autogrow class="area" rows="1" :value="ev.advice" placeholder="管理建议 / 改善动作" aria-label="管理建议" @change="avSet(i, 'advice', $event)" /></td>
                 <td><textarea v-autogrow class="area" rows="1" :value="ev.impact" placeholder="对业务 / 财务的影响评估" aria-label="影响评估" @change="avSet(i, 'impact', $event)" /></td>
-                <td class="num">
+                <td class="op-td">
                   <div class="op">
                     <template v-if="pendingDel === ev">
-                      <button type="button" class="btn btn-danger" @click="avDel(i)">确认删除</button>
+                      <button type="button" class="btn btn-danger" title="确认删除该行" aria-label="确认删除该行" @click="avDel(i)">确认</button>
                       <button type="button" class="btn" @click="pendingDel = null">取消</button>
                     </template>
                     <button v-else type="button" class="btn btn-danger" title="删除该行" @click="pendingDel = ev">删除</button>
@@ -126,10 +126,12 @@ function avSet(i: number, f: Field, e: Event): void {
 .area:hover { border-color: var(--muted); }
 .area:focus-visible { outline: none; border-color: var(--accent); box-shadow: var(--focus-ring); }
 .ledger td.wrap { white-space: normal; line-height: 1.6; padding-top: 6px; padding-bottom: 6px; word-break: break-word; }
-.op { display: flex; flex-wrap: wrap; gap: var(--space-1); justify-content: flex-end; align-items: center; }
+/* 操作列宽贴合「删除」按钮；二次确认时「确认 / 取消」上下竖排，不撑宽列 */
+.ledger td.op-td { padding-left: var(--space-1); padding-right: var(--space-1); }
+.op { display: flex; flex-direction: column; gap: var(--space-1); align-items: stretch; }
 .w-time { width: 116px; }
 .w-seg { width: 150px; }
-.w-op { width: 96px; }
-.op .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); }
+.w-op { width: 60px; }
+.op .btn { height: 26px; padding: 0 var(--space-2); font-size: var(--text-xs); justify-content: center; }
 .note { margin: var(--space-3) 0 0; }
 </style>

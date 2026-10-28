@@ -24,6 +24,10 @@ describe('PAGE-F15-01 经营总览驾驶舱', () => {
     expect(w.get('[data-kpi="F3"]').text()).toContain('31.4')
     expect(w.get('[data-kpi="F4"]').text()).toContain('553.9')
     expect(w.get('[data-kpi="F7"]').text()).toContain('820')
+    /* 顶边色（达成率分档）与环比 / 同比（涨红跌绿）两套红色含义有图例说明 */
+    const lg = w.get('[data-color-legend]').text()
+    expect(lg).toContain('达成率分档')
+    expect(lg).toContain('涨红跌绿')
   })
 
   it('渠道结构、传导链、勾稽校验与达成率预警', async () => {

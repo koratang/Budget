@@ -36,7 +36,13 @@ function deltaOf(i: Indicator, v: number | null): Delta {
   return { text: (v >= 0 ? '+' : '') + fmt(v, 1) + '%', cls: good ? 'up' : 'down' }
 }
 
-/* ---------- KPI（F1-F7） ---------- */
+/* ---------- KPI（F1-F7） ----------
+   小数位统一按原工具 kpiCard 的 dec 规则：驾驶舱显式指定的指标沿用其 dec（净利润 F4 为 1 位，与驾驶舱 553.9 同口径），
+   其余按 kpiCard 默认（% / 分 / 倍 1 位，其余 0 位）。原 viewFinance 自带「% / 天 1 位、其余 0 位」的另一套规则，
+   会把净利润取整成 554，与驾驶舱不一致，这里不再沿用 */
+const KPI_DEC: Record<string, number> = { F1: 0, F3: 1, F4: 1, F7: 0 }
+const kpiDec = (i: Indicator): number =>
+  KPI_DEC[i.code] ?? ((i.unit === '%' || i.unit === '分' || i.unit === '倍') ? 1 : 0)
 const kpis = computed(() => ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7'].map((c) => {
   const i = need(c)
   const blank = !hasData(i)
@@ -47,7 +53,7 @@ const kpis = computed(() => ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7'].map((c) =
   }
   return {
     i,
-    val: blank ? '—' : fmt(i.actual, (i.unit === '%' || i.unit === '天') ? 1 : 0),
+    val: blank ? '—' : fmt(i.actual, kpiDec(i)),
     mom: cell(my.mom, '环比'),
     yoy: cell(my.yoy, '同比'),
   }

@@ -298,7 +298,7 @@ async function onReset(): Promise<void> {
           <button v-if="store.canEdit" type="button" class="btn ov-btn" data-clear-ov @click="clearOverrides">清空 {{ periodLabel() }} 的手工覆盖</button>
         </div>
       </div>
-      <div class="chk-list top-gap">
+      <div class="chk-list dim-notes top-gap">
         <div class="chk ok"><span class="ic" aria-hidden="true">✓</span><div><div class="t">发生额型指标（万元 / 单 / 万次）</div>
           <div class="d">月度值按季节权重拆分，<b>月度合计严格等于年度累计值</b>；一级指标与二级明细的月度值双向勾稽一致。</div></div></div>
         <div class="chk ok"><span class="ic" aria-hidden="true">✓</span><div><div class="t">比率均值型指标（% / 天 / 元 / 倍 / 分）</div>
@@ -345,7 +345,7 @@ async function onReset(): Promise<void> {
           <tbody>
             <tr v-for="i in S.IND" :key="i.code">
               <td class="code-tag">{{ i.code }}</td>
-              <td><span class="badge" :class="i.kind === 'fin' ? 'badge-good' : 'badge-info'">{{ i.kind === 'fin' ? '财务' : '业务' }}</span></td>
+              <td><span class="badge" :class="i.kind === 'fin' ? '' : 'badge-info'">{{ i.kind === 'fin' ? '财务' : '业务' }}</span></td>
               <td><span class="badge" :class="{ 'badge-info': i.level === 1 }">{{ i.level === 1 ? '一级' : '二级' }}</span></td>
               <td>{{ i.name }}</td>
               <td class="muted">{{ i.unit }}</td>
@@ -398,4 +398,7 @@ async function onReset(): Promise<void> {
 .chk .t { font-size: var(--text-sm); font-weight: 600; }
 .chk .d { font-size: var(--text-xs); color: var(--fg-2); line-height: 1.65; }
 .chk .d b { color: var(--fg); }
+/* 4 条维度说明固定两列排成 2 × 2，不再出现第二行只剩 1 条、右侧大片留白 */
+.chk-list.dim-notes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 760px) { .chk-list.dim-notes { grid-template-columns: minmax(0, 1fr); } }
 </style>

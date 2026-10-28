@@ -45,6 +45,8 @@ describe('PAGE-F15-07 经营建议', () => {
 
     await last.get('button.btn-danger').trigger('click')
     expect(S.ADVICE_EVENTS).toHaveLength(n + 1) /* 第一次点击只进入确认 */
+    /* 确认态「确认 / 取消」竖排在窄操作列内 */
+    expect(w.findAll('tbody tr')[n].findAll('.op button').map((b) => b.text())).toEqual(['确认', '取消'])
     await w.findAll('tbody tr')[n].get('button.btn-danger').trigger('click')
     expect(S.ADVICE_EVENTS).toHaveLength(n)
     expect(w.get('[role="status"]').text()).toBe(`已删除第 ${n + 1} 行管理建议`)

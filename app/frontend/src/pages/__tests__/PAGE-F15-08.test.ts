@@ -57,6 +57,13 @@ describe('PAGE-F15-08 重点工作进度', () => {
     expect(w.get('[data-part="watch"]').findAll('tbody tr')).toHaveLength(2)
   })
 
+  it('工作目标定宽、工作分解为唯一弹性主列', async () => {
+    const w = await mountPage()
+    const cols = w.get('[data-part="annual"] colgroup').findAll('col')
+    expect(cols[2].classes()).toContain('w-goal')
+    expect(cols[3].classes()).toEqual([])
+  })
+
   it('新增与二次确认删除', async () => {
     const w = await mountPage()
     await w.get('button.btn-primary').trigger('click')
@@ -68,6 +75,7 @@ describe('PAGE-F15-08 重点工作进度', () => {
     await row.get('textarea[aria-label="工作目标"]').setValue('美国 STURDY 防倾倒标准合规改模（含镜柜）')
     expect(first.goal).toBe('美国 STURDY 防倾倒标准合规改模（含镜柜）')
     await row.get('button.btn-danger').trigger('click')
+    expect(w.get('[data-part="annual"]').findAll('tbody tr')[0].findAll('.op button').map((b) => b.text())).toEqual(['确认', '取消'])
     await w.get('[data-part="annual"]').findAll('tbody tr')[0].get('button.btn-danger').trigger('click')
     expect(S.KW_TASKS).toHaveLength(15)
     expect(S.KW_TASKS.indexOf(first)).toBe(-1)

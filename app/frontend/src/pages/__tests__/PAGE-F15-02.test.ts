@@ -22,6 +22,10 @@ describe('PAGE-F15-02 财务指标', () => {
     expect(w.get('[data-kpi="F1"]').text()).toContain('9,840')
     expect(w.get('[data-kpi="F3"]').text()).toContain('31.4')
     expect(w.get('[data-kpi="F6"]').text()).toContain('—')
+    /* KPI 小数位与驾驶舱同口径（原 kpiCard dec 规则）：净利润 1 位，不再取整成 554 */
+    expect(w.get('[data-kpi="F4"]').text()).toContain('553.9')
+    expect(w.get('[data-kpi="F2"]').text()).toContain('3,093')
+    expect(w.get('[data-kpi="F5"]').text()).toContain('5.6')
     const row = w.get('tr[data-code="F1"]')
     expect((row.get('input').element as HTMLInputElement).value).toBe('9840')
     expect(row.text()).toContain('+15.0%')

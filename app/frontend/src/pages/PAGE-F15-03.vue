@@ -4,7 +4,7 @@
  * 逐板块：二级指标明细表（实际值可编辑）+ 分维度填报矩阵（渠道 / 品类 / 线路），末尾为业财联动摘要。
  * 编辑沿用原「表格编辑」事件委托：维度单元格 → editDimCell；指标实际值 → editCell（月度维度下写月度覆盖）。
  */
-import { computed } from 'vue'
+import { computed, type Directive } from 'vue'
 import BizfinPage from '@/components/g5/BizfinPage.vue'
 import { useToast } from '@/components/g1/useToast'
 import {
@@ -92,6 +92,30 @@ function cellRate(i: Indicator, dk: string, mb: string): { text: string; cls: st
 function aggText(i: Indicator, dk: string): string | null {
   const a = bizDimAgg(i.code, dk, 'actual')
   return a === null ? null : `${fmt(a, decOf(i))} ${i.unit}`
+}
+
+/* ---------------- 宽矩阵横向滚动提示 ----------------
+   表格宽于容器时，外层 .mx 加 ovf（显示「左右滑动查看更多列」小字）；右侧仍有未显示的列时再加 more（右缘渐隐遮罩），滚到最右即去掉。
+   容器尺寸或表格内容变化（窗口缩放、侧栏折叠、维度切换）都会重新判断 */
+function syncHint(el: HTMLElement): void {
+  const box = el.closest('.mx')
+  if (!box) return
+  const ovf = el.scrollWidth - el.clientWidth > 1
+  box.classList.toggle('ovf', ovf)
+  box.classList.toggle('more', ovf && el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+}
+const hintObservers = new WeakMap<HTMLElement, ResizeObserver>()
+const vScrollHint: Directive<HTMLElement> = {
+  mounted(el) {
+    syncHint(el)
+    el.addEventListener('scroll', () => syncHint(el), { passive: true })
+    const ro = new ResizeObserver(() => syncHint(el))
+    ro.observe(el)
+    if (el.firstElementChild) ro.observe(el.firstElementChild)
+    hintObservers.set(el, ro)
+  },
+  updated: syncHint,
+  unmounted(el) { hintObservers.get(el)?.disconnect() },
 }
 
 /* ---------------- 业财联动摘要 ---------------- */
@@ -211,49 +235,55 @@ function onActual(e: Event, i: Indicator): void {
       <section v-for="m in b.matrices" :key="b.p.code + m.dimKey" class="card section" :data-matrix="`${b.p.code}-${m.dimKey}`">
         <div class="card-title"><span>{{ b.p.name }} · 分{{ m.label }}矩阵</span></div>
         <p class="small muted desc">{{ matrixDesc(m) }}</p>
-        <div class="table-wrap">
-          <table class="table matrix">
-            <thead>
-              <tr>
-                <th>{{ m.label }}</th>
-                <th v-for="i in m.inds" :key="i.code" class="num">
-                  {{ i.name }}<br><small class="muted">{{ i.code }} ｜ {{ i.unit }}{{ i.dir === -1 ? ' ｜ 逆向' : '' }}</small>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="mb in m.members" :key="mb">
-                <td class="dim">{{ mb }}</td>
-                <td v-for="i in m.inds" :key="i.code" class="dcell-td">
-                  <div class="dc-pair">
-                    <template v-for="f in fieldsOf(m)" :key="f">
-                      <input
-                        v-if="store.canEdit"
-                        class="input dcell" :value="cellVal(i.code, m.dimKey, mb, f)"
-                        :placeholder="f === 'target' ? '目标' : '实际'"
-                        :aria-label="`${mb} · ${i.name} ${f === 'target' ? '目标值' : '实际值'}`"
-                        :title="`${mb} · ${i.name} ${f === 'target' ? '目标值' : '实际值'}`"
-                        @change="onDimCell($event, i.code, m.dimKey, mb, f)"
-                      >
-                      <span v-else class="dcell-ro" :class="{ muted: cellVal(i.code, m.dimKey, mb, f) === '' }" :title="`${mb} · ${i.name} ${f === 'target' ? '目标值' : '实际值'}`">
-                        {{ cellVal(i.code, m.dimKey, mb, f) || (f === 'target' ? '目标 —' : '—') }}
-                      </span>
-                    </template>
-                  </div>
-                  <div v-if="!m.actualOnly" class="dcr" :class="cellRate(i, m.dimKey, mb).cls" :title="cellRate(i, m.dimKey, mb).title">
-                    {{ cellRate(i, m.dimKey, mb).text }}
-                  </div>
-                </td>
-              </tr>
-              <tr class="total">
-                <td>合计 / 均值</td>
-                <td v-for="i in m.inds" :key="i.code" :data-agg="i.code">
-                  <span v-if="aggText(i, m.dimKey) === null" class="small muted">未填报 → 整体值待填报</span>
-                  <span v-else class="small">整体值 <b>{{ aggText(i, m.dimKey) }}</b></span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <!-- 指标列 ≤ 3 时按内容收紧表宽，不再把一两列输入框推到最右、和行标签之间空出大块 -->
+        <div class="mx" :class="{ compact: m.inds.length <= 3 }">
+          <p class="scroll-hint small muted" aria-hidden="true">表格较宽，左右滑动查看更多列 ⇆</p>
+          <div class="mx-shell">
+            <div v-scroll-hint class="table-wrap">
+              <table class="table matrix">
+                <thead>
+                  <tr>
+                    <th>{{ m.label }}</th>
+                    <th v-for="i in m.inds" :key="i.code" class="num">
+                      {{ i.name }}<br><small class="muted">{{ i.code }} ｜ {{ i.unit }}{{ i.dir === -1 ? ' ｜ 逆向' : '' }}</small>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="mb in m.members" :key="mb">
+                    <td class="dim">{{ mb }}</td>
+                    <td v-for="i in m.inds" :key="i.code" class="dcell-td">
+                      <div class="dc-pair">
+                        <template v-for="f in fieldsOf(m)" :key="f">
+                          <input
+                            v-if="store.canEdit"
+                            class="input dcell" :value="cellVal(i.code, m.dimKey, mb, f)"
+                            :placeholder="f === 'target' ? '目标' : '实际'"
+                            :aria-label="`${mb} · ${i.name} ${f === 'target' ? '目标值' : '实际值'}`"
+                            :title="`${mb} · ${i.name} ${f === 'target' ? '目标值' : '实际值'}`"
+                            @change="onDimCell($event, i.code, m.dimKey, mb, f)"
+                          >
+                          <span v-else class="dcell-ro" :class="{ muted: cellVal(i.code, m.dimKey, mb, f) === '' }" :title="`${mb} · ${i.name} ${f === 'target' ? '目标值' : '实际值'}`">
+                            {{ cellVal(i.code, m.dimKey, mb, f) || (f === 'target' ? '目标 —' : '—') }}
+                          </span>
+                        </template>
+                      </div>
+                      <div v-if="!m.actualOnly" class="dcr" :class="cellRate(i, m.dimKey, mb).cls" :title="cellRate(i, m.dimKey, mb).title">
+                        {{ cellRate(i, m.dimKey, mb).text }}
+                      </div>
+                    </td>
+                  </tr>
+                  <tr class="total">
+                    <td>合计 / 均值</td>
+                    <td v-for="i in m.inds" :key="i.code" :data-agg="i.code">
+                      <span v-if="aggText(i, m.dimKey) === null" class="small muted">未填报 → 整体值待填报</span>
+                      <span v-else class="small">整体值 <b>{{ aggText(i, m.dimKey) }}</b></span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
         <p class="small muted chart-note">
           <b>聚合口径：</b>加总型指标（UV「万」、社媒产出「万元」、上架 SPU「款」）在维度成员间<b>求和</b>；
@@ -307,6 +337,18 @@ function onActual(e: Event, i: Indicator): void {
 .input.dcell { width: 96px; height: 26px; text-align: right; font-size: var(--text-xs); }
 .dcell-ro { display: inline-block; min-width: 96px; text-align: right; font-variant-numeric: tabular-nums; }
 .dcr { margin-top: 2px; text-align: right; font-size: var(--text-xs); }
+/* 横向滚动提示：提示小字 + 右缘渐隐遮罩（.ovf / .more 由 v-scroll-hint 按实际溢出切换）；滚动条常显细条 */
+.mx .scroll-hint { display: none; margin: 0 0 var(--space-1); text-align: right; }
+.mx.ovf .scroll-hint { display: block; }
+.mx-shell { position: relative; }
+.mx-shell::after { content: ''; position: absolute; top: 1px; right: 1px; bottom: 1px; width: 56px; border-radius: 0 var(--radius-lg) var(--radius-lg) 0; background: linear-gradient(to right, transparent, var(--surface)); pointer-events: none; opacity: 0; transition: opacity var(--motion-fast) var(--ease-standard); }
+.mx.more .mx-shell::after { opacity: 1; }
+.mx .table-wrap { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+.mx .table-wrap::-webkit-scrollbar { height: 8px; }
+.mx .table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: var(--radius-pill); }
+.mx.compact .mx-shell { width: fit-content; max-width: 100%; }
+.mx.compact .matrix { width: auto; }
+.mx.compact .matrix th.num { min-width: 150px; }
 .chart-note { margin: var(--space-3) 0 0; line-height: 1.7; }
 .mini-prog { display: inline-flex; align-items: center; gap: 6px; font-size: var(--text-xs); }
 .mini-prog .bar { display: inline-block; width: 48px; height: 6px; border-radius: var(--radius-pill); background: var(--border-soft); overflow: hidden; }
