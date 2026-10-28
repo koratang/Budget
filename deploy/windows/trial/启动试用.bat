@@ -2,7 +2,20 @@
 chcp 65001 >nul
 rem 预算管理平台 · Windows 免安装试用版（开发配置 + 演示数据，仅本机使用）
 cd /d "%~dp0"
+set "HOME_DIR=%CD%"
+if not exist "%HOME_DIR%\data" mkdir "%HOME_DIR%\data"
+rem 内置数据库不支持中文或空格路径：把本文件夹映射成一个空闲盘符（subst，无需管理员），之后全部从纯英文路径运行
+set "DRV="
+if exist "%HOME_DIR%\data\drive.txt" set /p DRV=<"%HOME_DIR%\data\drive.txt"
+if defined DRV if not exist "%DRV%\python\python.exe" set "DRV="
+if not defined DRV for %%D in (B R S T U V W X Y) do if not defined DRV if not exist %%D:\ subst %%D: "%HOME_DIR%" >nul 2>&1 && set "DRV=%%D:"
+if defined DRV (
+  >"%HOME_DIR%\data\drive.txt" echo %DRV%
+  cd /d %DRV%\
+)
 set "ROOT=%CD%"
+if "%ROOT:~-1%"=="\" set "ROOT=%ROOT:~0,-1%"
+echo 运行目录：%ROOT%
 set "PG=%ROOT%\pgsql\bin"
 set "PGDATA=%ROOT%\data\pg"
 set "PY=%ROOT%\python\python.exe"
@@ -66,6 +79,8 @@ echo 数据库启动失败，详见 data\pg.log。若 54329 端口被占用，�
 echo ---------- data\pg.log 内容 ----------
 if exist "%ROOT%\data\pg.log" type "%ROOT%\data\pg.log"
 echo ---------- 当前路径：%ROOT% ----------
+echo ---------- 数据库程序自检 ----------
+"%PG%\postgres" -V
 pause & exit /b 1
 :err_migrate
 echo 数据库结构更新或演示数据写入失败，请把上面的报错截图发给我。
