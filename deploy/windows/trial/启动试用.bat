@@ -63,6 +63,9 @@ echo 数据库初始化失败，详见 data\initdb.log。请把本文件夹放�
 pause & exit /b 1
 :err_pg
 echo 数据库启动失败，详见 data\pg.log。若 54329 端口被占用，请先运行「停止试用.bat」。
+echo ---------- data\pg.log 内容 ----------
+if exist "%ROOT%\data\pg.log" type "%ROOT%\data\pg.log"
+echo ---------- 当前路径：%ROOT% ----------
 pause & exit /b 1
 :err_migrate
 echo 数据库结构更新或演示数据写入失败，请把上面的报错截图发给我。
