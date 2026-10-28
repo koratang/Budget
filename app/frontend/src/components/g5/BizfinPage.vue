@@ -5,7 +5,7 @@
  */
 import { computed, onMounted } from 'vue'
 import PageState from '@/components/PageState.vue'
-import { MONTHS9, S, periodLabel, recompute } from '@/bizfin/engine'
+import { MONTHS9, S, dimLabel, fmt, overallHealth, periodLabel, recompute } from '@/bizfin/engine'
 import { anyDemo, load, store } from '@/bizfin/persist'
 import './g5.css'
 
@@ -14,7 +14,7 @@ const props = withDefaults(
     pageId: string
     title: string
     desc?: string
-    /** 显示年度 / 月度维度切换（原工具全局维度） */
+    /** 显示年度 / 月度维度切换与综合健康度（原工具每页顶栏都有，默认显示） */
     dim?: boolean
     /** 本页含按结构基准推算的模拟数据（流量、新老客、订单、服务商单价、库存等），始终标「示例数据」 */
     synthetic?: boolean
@@ -22,6 +22,11 @@ const props = withDefaults(
   { desc: undefined, dim: true, synthetic: false },
 )
 
+/** 综合健康度（原工具顶栏药丸）：≥95 达标、≥85 关注、其余预警 */
+const health = computed(() => {
+  const v = overallHealth()
+  return v === null ? null : { text: `${dimLabel()} ${fmt(v, 1)}%`, cls: v >= 95 ? 'badge-good' : v >= 85 ? 'badge-warn' : 'badge-bad' }
+})
 const demo = computed(() => props.synthetic || anyDemo())
 const demoTip = computed(() =>
   props.synthetic
@@ -55,6 +60,7 @@ onMounted(() => void load())
       <div v-if="store.loaded" class="head-tools">
         <span v-if="store.saving" class="small muted" role="status">保存中…</span>
         <template v-if="dim">
+          <span v-if="health" class="badge" :class="health.cls" title="综合健康度 = 财务健康度与业务健康度的平均" data-health>{{ health.text }}</span>
           <div class="seg" role="group" aria-label="维度">
             <button type="button" :aria-pressed="S.dim === 'year'" @click="setDim('year')">年度</button>
             <button type="button" :aria-pressed="S.dim === 'month'" @click="setDim('month')">月度</button>

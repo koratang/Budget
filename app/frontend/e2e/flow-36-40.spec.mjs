@@ -21,6 +21,14 @@ async function open(page, path) {
   await page.waitForTimeout(400)
 }
 const text = (page) => page.locator('main').innerText()
+// 整页截图：视口拉到页面高度，固定侧栏随之延伸、当前菜单项可见；截完恢复 1280×900
+async function shot(page, file) {
+  const h = await page.evaluate(() => document.documentElement.scrollHeight)
+  await page.setViewportSize({ width: 1280, height: Math.max(900, h) })
+  await page.waitForTimeout(200)
+  await page.screenshot({ path: file })
+  await page.setViewportSize({ width: 1280, height: 900 })
+}
 const PAGES = [
   ['PAGE-F15-01', '/bizfin/dashboard'], ['PAGE-F15-02', '/bizfin/finance'], ['PAGE-F15-03', '/bizfin/business'],
   ['PAGE-F15-04', '/bizfin/linkage'], ['PAGE-F15-05', '/bizfin/analysis/anaChannel'], ['PAGE-F15-06', '/bizfin/policy'],
@@ -38,7 +46,7 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
     check(R, `FLOW-03x ${pid} 显示「示例数据」标记`, (await page.locator('[data-demo-badge]').count()) === 1)
     const sw = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
     check(R, `DESIGN ${pid} 1280 宽无页面级横向滚动`, sw)
-    if (OUT) await page.screenshot({ path: `${OUT}/${pid}.png`, fullPage: true })
+    if (OUT) await shot(page, `${OUT}/${pid}.png`)
   }
   await open(page, '/bizfin/dashboard')
   const nav = await page.locator('aside').innerText()
@@ -68,7 +76,7 @@ const NAV9 = ['经营总览驾驶舱', '财务指标', '业务指标', '业财�
     for (const id of ['anaTraffic', 'anaUser', 'anaOrder', 'anaCategory', 'anaLogiPre', 'anaLogiPost', 'anaWarehouse', 'anaAdmin']) {
       await open(page, `/bizfin/analysis/${id}`)
       check(R, `FLOW-38 数据分析 ${id} 无 NaN`, !/NaN|undefined/.test(await text(page)))
-      await page.screenshot({ path: `${OUT}/PAGE-F15-05-${id}.png`, fullPage: true })
+      await shot(page, `${OUT}/PAGE-F15-05-${id}.png`)
     }
   }
   // 维度切换
