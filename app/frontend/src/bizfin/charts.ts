@@ -72,6 +72,8 @@ export interface LineOpts {
   /** 末端标签的默认小数位（各序列可用 dec 覆盖）；坐标轴刻度的小数位由刻度步长决定 */
   dec?: number | null
   dots?: boolean
+  /** 末端标签数值后缀（如 '%'） */
+  endUnit?: string
 }
 export interface StackSeries {
   name?: string
@@ -97,6 +99,27 @@ export interface GaugeOpts {
   w?: number
   h?: number
   label?: string
+}
+
+/* ---------- 字号随画布宽度自适应 ----------
+   图表以 viewBox 等比缩放到卡片宽度。全宽卡片（约 900–1000px）用 w ≥ 576 的画布，字号按原值；
+   半宽卡片（1280 视口下约 460px）请传 w ≈ 480（HALF_W），此时缩放比约 0.96，字号乘 576 / w ≈ 1.2，
+   使 10 ~ 11 号字渲染后约 11.5 ~ 12.7px（不再缩到 7 ~ 8px）。系数上限 1.35，防止过窄画布字号失控。 */
+/** 半宽卡片推荐的画布宽度 */
+export const HALF_W = 480
+/** 字号放大系数：w ≥ 576 时为 1，越窄越大（上限 1.35） */
+export function fontScale(w: number): number {
+  return Math.min(1.35, Math.max(1, 576 / w))
+}
+/** 估算单行文字宽度（CJK 按 1em、其余按 0.6em），用于给末端标签预留右边距 */
+export function textWidth(s: string, size: number): number {
+  let n = 0
+  for (const ch of s) n += ch.charCodeAt(0) > 0x2e7f ? 1 : 0.6
+  return n * size
+}
+/** 一位小数的字号（避免 font-size 出现长小数） */
+function fz(base: number, k: number): number {
+  return Number((base * k).toFixed(1))
 }
 
 export function svg(vb: string, inner: string, style?: string): string {
@@ -198,6 +221,7 @@ export function spreadLabels(ys: number[], gap: number, min: number, max: number
 export function barChart(items: BarItem[], o?: BarOpts): string {
   o = o || {}
   const W = o.w || 560, H = o.h || 260
+  const k = fontScale(W)
   const pad = { l: 54, r: 14, t: 18, b: 44 }
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b
   const ax = niceScale(0, (Math.max(...items.map(i => Math.max(i.value, i.target || 0))) || 1) * 1.18)
@@ -208,7 +232,7 @@ export function barChart(items: BarItem[], o?: BarOpts): string {
   ax.ticks.forEach(function (t) {
     const y = pad.t + ih - ih * t / max
     g += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (W - pad.r) + '" y2="' + y + '" stroke="' + C.grid + '"/>'
-    g += txt(pad.l - 8, y + 3.5, fmt(t, ax.dec), { anchor: 'end', size: 10.5, fill: C.text3 })
+    g += txt(pad.l - 8, y + 3.5, fmt(t, ax.dec), { anchor: 'end', size: fz(10.5, k), fill: C.text3 })
   })
   const dec = o.dec
   items.forEach(function (it, idx) {
@@ -217,12 +241,12 @@ export function barChart(items: BarItem[], o?: BarOpts): string {
     const y = pad.t + ih - h
     const color = it.color || PAL[idx % PAL.length]
     g += '<rect x="' + (cx - bw / 2) + '" y="' + y + '" width="' + bw + '" height="' + h + '" rx="3.5" fill="' + esc(color) + '" opacity=".92"/>'
-    g += txt(cx, y - 6, fmt(it.value, dec), { anchor: 'middle', size: 10.5, weight: 700, fill: C.text })
+    g += txt(cx, y - 6, fmt(it.value, dec), { anchor: 'middle', size: fz(10.5, k), weight: 700, fill: C.text })
     if (it.target != null) {
       const ty = pad.t + ih - ih * it.target / max
       g += '<line x1="' + (cx - bw / 2 - 6) + '" y1="' + ty + '" x2="' + (cx + bw / 2 + 6) + '" y2="' + ty + '" stroke="' + C.up + '" stroke-width="1.6" stroke-dasharray="4 3"/>'
     }
-    g += txt(cx, H - pad.b + 18, it.label, { anchor: 'middle', size: 10.5, fill: C.text2 })
+    g += txt(cx, H - pad.b + 18, it.label, { anchor: 'middle', size: fz(10.5, k), fill: C.text2 })
   })
   return svg('0 0 ' + W + ' ' + H, g)
 }
@@ -231,6 +255,7 @@ export function barChart(items: BarItem[], o?: BarOpts): string {
 export function hBarChart(items: HBarItem[], o?: HBarOpts): string {
   o = o || {}
   const rowH = o.rowH || 28, W = o.w || 560
+  const k = fontScale(W)
   const padL = o.labelW || 120, padR = o.rightW || 74
   const H = 16 + items.length * rowH
   const iw = W - padL - padR
@@ -249,10 +274,10 @@ export function hBarChart(items: HBarItem[], o?: HBarOpts): string {
       const v = it.value
       const w = Math.max(2, Math.abs(v) * sc)
       const x = v >= 0 ? zeroX : zeroX - w
-      g += txt(padL - 10, y + bh / 2 + 4, it.label, { anchor: 'end', size: 11, fill: C.text2, weight: it.bold ? 600 : 400 })
+      g += txt(padL - 10, y + bh / 2 + 4 * k, it.label, { anchor: 'end', size: fz(11, k), fill: C.text2, weight: it.bold ? 600 : 400 })
       g += '<rect x="' + Math.min(x, zeroX) + '" y="' + y + '" width="' + Math.max(w, 2) + '" height="' + bh + '" rx="3" fill="' + esc(it.color || C.biz) + '" opacity=".9"/>'
       const tx = v >= 0 ? (zeroX + w + 6) : (zeroX - w - 6)
-      g += txt(tx, y + bh / 2 + 4, (it.text != null ? it.text : fmt(v, 1)), { anchor: v >= 0 ? 'start' : 'end', size: 11, weight: 700, fill: it.tcolor || C.text })
+      g += txt(tx, y + bh / 2 + 4 * k, (it.text != null ? it.text : fmt(v, 1)), { anchor: v >= 0 ? 'start' : 'end', size: fz(11, k), weight: 700, fill: it.tcolor || C.text })
     })
     return svg('0 0 ' + W + ' ' + H, g)
   }
@@ -261,14 +286,14 @@ export function hBarChart(items: HBarItem[], o?: HBarOpts): string {
     const y = 8 + idx * rowH + 4
     const bh = rowH - 14
     const w = Math.max(3, iw * it.value / max)
-    g += txt(padL - 10, y + bh / 2 + 4, it.label, { anchor: 'end', size: 11, fill: C.text2, weight: it.bold ? 600 : 400 })
+    g += txt(padL - 10, y + bh / 2 + 4 * k, it.label, { anchor: 'end', size: fz(11, k), fill: C.text2, weight: it.bold ? 600 : 400 })
     g += '<rect x="' + padL + '" y="' + y + '" width="' + iw + '" height="' + bh + '" rx="3" fill="#f2f5fa"/>'
     g += '<rect x="' + padL + '" y="' + y + '" width="' + w + '" height="' + bh + '" rx="3" fill="' + esc(it.color || C.biz) + '" opacity=".9"/>'
     if (it.target != null) {
       const tx = padL + Math.min(iw, iw * it.target / max)
       g += '<line x1="' + tx + '" y1="' + (y - 2) + '" x2="' + tx + '" y2="' + (y + bh + 2) + '" stroke="' + C.up + '" stroke-width="1.5" stroke-dasharray="3 2.5"/>'
     }
-    g += txt(W - padR + 8, y + bh / 2 + 4, (it.text != null ? it.text : fmt(it.value, 1)), { anchor: 'start', size: 11, weight: 700, fill: it.tcolor || C.text })
+    g += txt(W - padR + 8, y + bh / 2 + 4 * k, (it.text != null ? it.text : fmt(it.value, 1)), { anchor: 'start', size: fz(11, k), weight: 700, fill: it.tcolor || C.text })
   })
   return svg('0 0 ' + W + ' ' + H, g)
 }
@@ -280,6 +305,9 @@ export function comboChart(labels: string[], bars: number[], lines: ComboLine[],
   o = o || {}
   const W = o.w || 640, H = o.h || 280
   const barColor = o.barColor || COMBO_BAR_COLOR
+  const k = fontScale(W)
+  /* 柱顶数值的字高（随字号放大） */
+  const th = 10 * k
   const pad = { l: 58, r: 60, t: 20, b: 40 }
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b
   const AB = niceScale(0, (Math.max(...bars) || 1) * 1.22)
@@ -291,11 +319,11 @@ export function comboChart(labels: string[], bars: number[], lines: ComboLine[],
   const AL = niceScaleN(clampLo(minL - span * 0.3, minL), maxL + span * 0.35, AB.ticks.length - 1)
   const lo = AL.lo, hi = AL.hi
   let g = ''
-  AB.ticks.forEach(function (t, k) {
+  AB.ticks.forEach(function (t, ti) {
     const y = pad.t + ih - ih * t / maxB
     g += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (W - pad.r) + '" y2="' + y + '" stroke="' + C.grid + '"/>'
-    g += txt(pad.l - 8, y + 3.5, fmt(t, AB.dec), { anchor: 'end', size: 10.5, fill: C.text3 })
-    g += txt(W - pad.r + 8, y + 3.5, fmt(AL.ticks[k], AL.dec) + '%', { anchor: 'start', size: 10.5, fill: C.text3 })
+    g += txt(pad.l - 8, y + 3.5, fmt(t, AB.dec), { anchor: 'end', size: fz(10.5, k), fill: C.text3 })
+    g += txt(W - pad.r + 8, y + 3.5, fmt(AL.ticks[ti], AL.dec) + '%', { anchor: 'start', size: fz(10.5, k), fill: C.text3 })
   })
   const step = iw / labels.length
   const bw = Math.min(38, step * 0.44)
@@ -306,19 +334,19 @@ export function comboChart(labels: string[], bars: number[], lines: ComboLine[],
     const h = Math.max(1, ih * v / maxB)
     const top = pad.t + ih - h
     g += '<rect x="' + (cx - bw / 2) + '" y="' + top + '" width="' + bw + '" height="' + h + '" rx="3" fill="' + esc(barColor) + '"/>'
-    /* 数值文字（基线 y，字高约 10）与折线点（半径约 4.5）是否相交 */
+    /* 数值文字（基线 y，字高约 th）与折线点（半径约 4.5）是否相交 */
     const pys = lines.map((L) => PT(L.values[idx], idx)[1]).filter((y) => isFinite(y))
-    const hits = (y: number): boolean => pys.some((py) => py + 4.5 > y - 10 && py - 4.5 < y + 2)
+    const hits = (y: number): boolean => pys.some((py) => py + 4.5 > y - th && py - 4.5 < y + 2)
     let ly = top - 6
     if (hits(ly)) {
-      const above = Math.min(...pys.filter((py) => py + 4.5 > ly - 10 && py - 4.5 < ly + 2)) - 8
-      const inside = top + 13
+      const above = Math.min(...pys.filter((py) => py + 4.5 > ly - th && py - 4.5 < ly + 2)) - 8
+      const inside = top + 3 + th
       const topMost = Math.min(...pys) - 8
-      if (!hits(above) && above >= 10) ly = above
-      else if (h >= 18 && !hits(inside)) ly = inside
-      else ly = Math.max(10, topMost)
+      if (!hits(above) && above >= th) ly = above
+      else if (h >= th + 8 && !hits(inside)) ly = inside
+      else ly = Math.max(th, topMost)
     }
-    labelsSvg += txt(cx, ly, fmt(v, 0), { anchor: 'middle', size: 10, fill: C.text2 })
+    labelsSvg += txt(cx, ly, fmt(v, 0), { anchor: 'middle', size: fz(10, k), fill: C.text2 })
   })
   lines.forEach(function (L) {
     let d = ''
@@ -332,7 +360,7 @@ export function comboChart(labels: string[], bars: number[], lines: ComboLine[],
   /* 柱顶数值最后绘制，保证在折线之上 */
   g += labelsSvg
   labels.forEach(function (lb, i) {
-    g += txt(pad.l + step * i + step / 2, H - pad.b + 18, lb, { anchor: 'middle', size: 10.5, fill: C.text2 })
+    g += txt(pad.l + step * i + step / 2, H - pad.b + 18, lb, { anchor: 'middle', size: fz(10.5, k), fill: C.text2 })
   })
   return svg('0 0 ' + W + ' ' + H, g)
 }
@@ -341,13 +369,17 @@ export function comboChart(labels: string[], bars: number[], lines: ComboLine[],
    series: [{name, values:[…], color, axis:1|2, dash?, dec?}]
    o.dual = true 时 axis:2 的序列改走右轴刻度（用于量纲不同的双指标同图）
    纵轴取整齐刻度（数据全非负时下限不低于 0），右轴与左轴网格线数一致；
-   末端标签按 y 排序纵向避让，同值且重叠的标签合并为一个。 */
+   末端标签按 y 排序纵向避让；同值且重叠的标签合并为一个，写明「A / B 均为 x」并用中性色（不再只取其中一条线的颜色）。
+   整段曲线与前面某条序列完全重合（见 sameAsEarlier）且未指定线型的序列，自动改画虚线（OVERLAP_DASH），透出下层线的颜色；
+   图例可据 sameAsEarlier 画同样的虚线，图下的文字说明可用 coincidentGroups 列出重合的序列。 */
 export function lineChart(labels: string[], series: LineSeries[], o?: LineOpts): string {
   const opt: LineOpts = o || {}
   const dual = !!opt.dual
   const W = opt.w || 640, H = opt.h || 268
+  const k = fontScale(W)
+  const unit = opt.endUnit || ''
   const pad = { l: 56, r: dual ? 58 : (opt.endLabel ? 46 : 20), t: 20, b: 40 }
-  const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b
+  const ih = H - pad.t - pad.b
   const n = labels.length
   /* 留白后的数据范围（与原版相同的 20% / 26% 留白），再交给 niceScale 取整齐刻度 */
   const scope = function (list: LineSeries[]): { lo: number; hi: number } {
@@ -364,42 +396,65 @@ export function lineChart(labels: string[], series: LineSeries[], o?: LineOpts):
   const A = niceScale(rA.lo, rA.hi)
   const rB = dual ? scope(series.filter(function (s) { return s.axis === 2 })) : rA
   const B = dual ? niceScaleN(rB.lo, rB.hi, A.ticks.length - 1) : A
-  const X = function (i: number): number { return n > 1 ? pad.l + iw * i / (n - 1) : pad.l + iw / 2 }
   const Y = function (v: number, r: { lo: number; hi: number }): number { return pad.t + ih - ih * (v - r.lo) / ((r.hi - r.lo) || 1) }
+  const rangeOf = (s: LineSeries): AxisScale => (s.axis === 2 && dual) ? B : A
   const dec1 = opt.dec == null ? 1 : opt.dec
+  const endSize = fz(10.5, k)
+  const GAP = 12 * k
+
+  /* 末端标签：先按值与纵向位置合并（与横向无关），再据最长标签预留右边距 */
+  interface EndLabel { y: number; text: string; color: string; idx: number[] }
+  const ends: EndLabel[] = []
+  if (opt.endLabel) {
+    series.forEach(function (s, si) {
+      if (!s.values.length) return
+      const lv = s.values[s.values.length - 1]
+      ends.push({ y: Y(lv, rangeOf(s)), text: fmt(lv, s.dec == null ? dec1 : s.dec) + unit, color: s.color, idx: [si] })
+    })
+  }
+  const merged: EndLabel[] = []
+  ends.slice().sort((a, b) => a.y - b.y).forEach(function (e) {
+    const last = merged[merged.length - 1]
+    if (last && last.text === e.text && e.y - last.y < GAP) { last.idx.push(e.idx[0]); return }
+    merged.push({ y: e.y, text: e.text, color: e.color, idx: e.idx.slice() })
+  })
+  merged.forEach(function (e) {
+    if (e.idx.length < 2) return
+    /* 名称按序列顺序（与图例一致） */
+    const names = e.idx.slice().sort((a, b) => a - b).map((i) => series[i].name || '')
+    e.text = (names.every((x) => x) ? names.join(' / ') + ' 均为 ' : names.length + ' 线均为 ') + e.text
+    e.color = C.text2
+  })
+  if (merged.length && !dual) {
+    const need = Math.max(...merged.map((e) => textWidth(e.text, endSize))) + 12
+    pad.r = Math.max(pad.r, Math.ceil(need))
+  }
+  const iw = W - pad.l - pad.r
+  const X = function (i: number): number { return n > 1 ? pad.l + iw * i / (n - 1) : pad.l + iw / 2 }
+
   let g = ''
-  A.ticks.forEach(function (t, k) {
+  A.ticks.forEach(function (t, ti) {
     const y = Y(t, A)
     g += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (W - pad.r) + '" y2="' + y + '" stroke="' + C.grid + '"/>'
-    g += txt(pad.l - 8, y + 3.5, fmt(t, A.dec), { anchor: 'end', size: 10.5, fill: C.text3 })
-    if (dual) g += txt(W - pad.r + 8, y + 3.5, fmt(B.ticks[k], B.dec), { anchor: 'start', size: 10.5, fill: C.text3 })
+    g += txt(pad.l - 8, y + 3.5, fmt(t, A.dec), { anchor: 'end', size: fz(10.5, k), fill: C.text3 })
+    if (dual) g += txt(W - pad.r + 8, y + 3.5, fmt(B.ticks[ti], B.dec), { anchor: 'start', size: fz(10.5, k), fill: C.text3 })
   })
-  labels.forEach(function (lb, i) { g += txt(X(i), H - pad.b + 18, lb, { anchor: 'middle', size: 10.5, fill: C.text2 }) })
-  const ends: { y: number; text: string; color: string }[] = []
-  series.forEach(function (s) {
-    const r = (s.axis === 2 && dual) ? B : A
-    const d = s.values.map(function (v, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + Y(v, r).toFixed(1) }).join(' ')
+  labels.forEach(function (lb, i) { g += txt(X(i), H - pad.b + 18, lb, { anchor: 'middle', size: fz(10.5, k), fill: C.text2 }) })
+  const same = sameAsEarlier(series)
+  series.forEach(function (s, si) {
+    const r = rangeOf(s)
+    const ys = s.values.map((v) => Y(v, r))
+    const dash = s.dash || (same[si] != null ? OVERLAP_DASH : '')
+    const d = ys.map(function (y, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ',' + y.toFixed(1) }).join(' ')
     g += '<path d="' + d + '" fill="none" stroke="' + esc(s.color) + '" stroke-width="' + (s.width || 2.3) + '"' +
-      (s.dash ? ' stroke-dasharray="' + esc(s.dash) + '"' : '') + ' stroke-linecap="round" stroke-linejoin="round"/>'
+      (dash ? ' stroke-dasharray="' + esc(dash) + '"' : '') + ' stroke-linecap="' + (dash ? 'butt' : 'round') + '" stroke-linejoin="round"/>'
     if (opt.dots !== false) {
-      s.values.forEach(function (v, i) {
-        g += '<circle cx="' + X(i).toFixed(1) + '" cy="' + Y(v, r).toFixed(1) + '" r="2.9" fill="#fff" stroke="' + esc(s.color) + '" stroke-width="1.8"/>'
+      ys.forEach(function (y, i) {
+        g += '<circle cx="' + X(i).toFixed(1) + '" cy="' + y.toFixed(1) + '" r="2.9" fill="#fff" stroke="' + esc(s.color) + '" stroke-width="1.8"/>'
       })
     }
-    if (opt.endLabel && s.values.length) {
-      const lv = s.values[s.values.length - 1]
-      ends.push({ y: Y(lv, r), text: fmt(lv, s.dec == null ? dec1 : s.dec), color: s.color })
-    }
   })
-  if (ends.length) {
-    const GAP = 12
-    /* 同值且原位置重叠的标签合并为一个（取第一条序列的颜色） */
-    const merged: typeof ends = []
-    ends.slice().sort((a, b) => a.y - b.y).forEach(function (e) {
-      const last = merged[merged.length - 1]
-      if (last && last.text === e.text && e.y - last.y < GAP) return
-      merged.push(e)
-    })
+  if (merged.length) {
     const ys = spreadLabels(merged.map((e) => e.y), GAP, pad.t, pad.t + ih)
     const ex = X(n - 1)
     merged.forEach(function (e, i) {
@@ -407,10 +462,34 @@ export function lineChart(labels: string[], series: LineSeries[], o?: LineOpts):
       if (Math.abs(ys[i] - e.y) > 3) {
         g += '<line x1="' + (ex + 3).toFixed(1) + '" y1="' + e.y.toFixed(1) + '" x2="' + (ex + 6).toFixed(1) + '" y2="' + ys[i].toFixed(1) + '" stroke="' + esc(e.color) + '" stroke-width="1"/>'
       }
-      g += txt(ex + 7, Number((ys[i] + 4).toFixed(1)), e.text, { size: 10.5, weight: 700, fill: e.color })
+      g += txt(ex + 7, Number((ys[i] + 4 * k).toFixed(1)), e.text, { size: endSize, weight: 700, fill: e.color })
     })
   }
   return svg('0 0 ' + W + ' ' + H, g)
+}
+
+/** 重合序列（后画的那条）的虚线样式 */
+export const OVERLAP_DASH = '7 6'
+const sameValue = (a: number, b: number): boolean => Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(a), Math.abs(b))
+/** 每条序列若与前面某条序列整段重合（逐点相对误差 ≤ 1e-9，只差浮点噪声），返回那条序列的下标，否则 null */
+export function sameAsEarlier(series: LineSeries[]): (number | null)[] {
+  return series.map(function (s, i) {
+    for (let j = 0; j < i; j++) {
+      const p = series[j]
+      if ((p.axis === 2) === (s.axis === 2) && p.values.length === s.values.length && p.values.every((v, t) => sameValue(v, s.values[t]))) return j
+    }
+    return null
+  })
+}
+/** 整段重合的序列分组（只返回 ≥ 2 条的组，按序列顺序），供图下文字说明重合线 */
+export function coincidentGroups(series: LineSeries[]): string[][] {
+  const same = sameAsEarlier(series)
+  const groups = new Map<number, string[]>()
+  same.forEach(function (j, i) {
+    const root = j == null ? i : j
+    groups.set(root, (groups.get(root) || []).concat(series[i].name || ''))
+  })
+  return [...groups.values()].filter((g) => g.length > 1)
 }
 
 /* 占比月度趋势：100% 堆叠柱
@@ -418,6 +497,7 @@ export function lineChart(labels: string[], series: LineSeries[], o?: LineOpts):
 export function stack100(labels: string[], series: StackSeries[], o?: StackOpts): string {
   o = o || {}
   const W = o.w || 640, H = o.h || 258
+  const k = fontScale(W)
   const pad = { l: 52, r: 16, t: 18, b: 42 }
   const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b
   const n = labels.length, step = iw / n
@@ -429,10 +509,10 @@ export function stack100(labels: string[], series: StackSeries[], o?: StackOpts)
     tots.push(s || 1)
   }
   let g = ''
-  for (let k = 0; k <= 4; k++) {
-    const y = pad.t + ih - ih * k / 4
+  for (let q = 0; q <= 4; q++) {
+    const y = pad.t + ih - ih * q / 4
     g += '<line x1="' + pad.l + '" y1="' + y + '" x2="' + (W - pad.r) + '" y2="' + y + '" stroke="' + C.grid + '"/>'
-    g += txt(pad.l - 8, y + 3.5, (k * 25) + '%', { anchor: 'end', size: 10.5, fill: C.text3 })
+    g += txt(pad.l - 8, y + 3.5, (q * 25) + '%', { anchor: 'end', size: fz(10.5, k), fill: C.text3 })
   }
   for (let i = 0; i < n; i++) {
     const cx = pad.l + step * i + step / 2
@@ -443,10 +523,10 @@ export function stack100(labels: string[], series: StackSeries[], o?: StackOpts)
       const y = pad.t + ih - ih * (acc + v) / 100
       g += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + y.toFixed(2) + '" width="' + bw +
         '" height="' + Math.max(0.4, h).toFixed(2) + '" fill="' + esc(se.color) + '" opacity=".93"/>'
-      if (v >= 9) g += txt(cx, y + h / 2 + 3.5, fmt(v, 0) + '%', { anchor: 'middle', size: 9.5, weight: 700, fill: '#fff' })
+      if (v >= 9) g += txt(cx, y + h / 2 + 3.5 * k, fmt(v, 0) + '%', { anchor: 'middle', size: fz(10, k), weight: 700, fill: '#fff' })
       acc += v
     })
-    g += txt(cx, H - pad.b + 18, labels[i], { anchor: 'middle', size: 10.5, fill: C.text2 })
+    g += txt(cx, H - pad.b + 18, labels[i], { anchor: 'middle', size: fz(10.5, k), fill: C.text2 })
   }
   return svg('0 0 ' + W + ' ' + H, g)
 }

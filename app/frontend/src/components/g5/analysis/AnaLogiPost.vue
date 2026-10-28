@@ -10,6 +10,7 @@ import AnaKitChartNote from './AnaKitChartNote.vue'
 import AnaKitCode from './AnaKitCode.vue'
 import AnaKitKpi from './AnaKitKpi.vue'
 import AnaKitLegend from './AnaKitLegend.vue'
+import { lineLegend, overlapNote } from './AnaKit'
 import { lineChart, type LineSeries } from '@/bizfin/charts'
 import {
   CHANNELS, CH_COLOR, MONTHS9, S, channelRowsAt, costPools, fmt, mSeries, orderModel, provColor, providerCost, provShares,
@@ -78,7 +79,8 @@ const v = computed(() => {
     pill: '月度（' + mLabels[0] + ' ~ ' + mLabels[mLabels.length - 1] + '）',
     qtySvg: lineChart(mLabels, qtySeries, { w: 860, h: 280, endLabel: false, dec: 0 }), qtyLegend: legend(qtySeries),
     costSvg: lineChart(mLabels, costSeries, { w: 860, h: 280, endLabel: false, dec: 2 }), costLegend: legend(costSeries),
-    chSvg: lineChart(mLabels, chRateSeries, { w: 860, h: 280, endLabel: true, dec: 2 }), chLegend: legend(chRateSeries),
+    chSvg: lineChart(mLabels, chRateSeries, { w: 860, h: 280, endLabel: true, dec: 2, endUnit: '%' }), chLegend: lineLegend(chRateSeries),
+    chOverlap: overlapNote(chRateSeries, 2, '%'),
   }
 })
 </script>
@@ -109,7 +111,10 @@ const v = computed(() => {
     <AnaKitCard title="渠道尾程成本占比月度趋势" desc="各渠道尾程成本 ÷ 该渠道收入（%）">
       <SvgChart :svg="v.chSvg" label="渠道尾程成本占比月度趋势" />
       <AnaKitLegend :items="v.chLegend" />
-      <AnaKitChartNote>小包直发为主的渠道尾程费率显著高于整柜直送的商超渠道；优化方向是把高频订单向海外仓前置库存迁移，用仓储成本换取尾程费率下降。</AnaKitChartNote>
+      <AnaKitChartNote>
+        小包直发为主的渠道尾程费率显著高于整柜直送的商超渠道；优化方向是把高频订单向海外仓前置库存迁移，用仓储成本换取尾程费率下降。
+        <template v-if="v.chOverlap"><br><span data-test="overlap-note">注：{{ v.chOverlap }}。</span></template>
+      </AnaKitChartNote>
     </AnaKitCard>
   </div>
 </template>

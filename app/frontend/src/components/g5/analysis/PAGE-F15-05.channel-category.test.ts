@@ -167,6 +167,23 @@ describe('品类分析', () => {
     /* 3 张折线 + 2 张 100% 堆叠 */
     expect(w.findAll('svg')).toHaveLength(5)
   })
+
+  it('SPU 两个口径分别写明：KPI 期末在售 618 = 580 + 49 − 11，TOP 卡 580 为期初基础 SPU', () => {
+    const w = mount(AnaCategory)
+    expect(kpiVal(w, 'spu')).toBe('618个')
+    expect(kpiFoot(w, 'spu')).toBe('期末在售 = 期初 580 + 上新 49 − 下架 11')
+    expect(w.text()).toContain('共 580 个 SPU（期初基础 SPU，不含年内上新）')
+  })
+
+  it('占比图说明与数据一致：示例数据各月新品占比相同，不写「逐月变化」，写明结构稳定与各年份占比', () => {
+    const w = mount(AnaCategory)
+    const text = w.text()
+    expect(text).toContain('新品占比各月均为 28.7%，结构稳定')
+    expect(text).not.toContain('逐月变化')
+    expect(text).not.toContain('先升后稳')
+    expect(text).toContain('在售 SPU 合计由 01月 586 个逐月小幅增加到 09月 618 个')
+    expect(text).toContain('1-9 月各上市年份的销售占比保持不变（2023 年及以前 48% / 2024 年上新 24% / 2025 年上新 20% / 2026 年上新 9%）')
+  })
 })
 
 describe('CEO 只读', () => {

@@ -8,6 +8,9 @@
  *   模板里写 :style="hiLo(r.cvr >= cm.cvr)"。
  * - signTrend(v)：按正负号取档；trendStyle(t) / TREND_COLOR[t]：按档取样式 / 颜色。
  */
+import { OVERLAP_DASH, coincidentGroups, sameAsEarlier, type LineSeries } from '@/bizfin/charts'
+import { fmt } from '@/bizfin/engine'
+
 /** KPI 卡左侧色条色调（原 kpiSimple 的 cls）；'up' / 'down' 为涨红跌绿口径的「最高 / 最低」 */
 export type KpiTone = 'fin' | 'biz' | 'warn' | 'bad' | 'good' | 'up' | 'down'
 
@@ -29,4 +32,23 @@ export function trendStyle(t: Trend): { color: string; fontWeight: number } {
 
 export function hiLo(high: boolean): { color: string; fontWeight: number } {
   return trendStyle(high ? 'up' : 'down')
+}
+
+/** 折线图图例项：每条线画线型短线；与前面序列整段重合的序列用 OVERLAP_DASH（与 lineChart 自动叠画的虚线一致） */
+export function lineLegend(series: LineSeries[]): { name: string; color: string; dash: string }[] {
+  const same = sameAsEarlier(series)
+  return series.map((s, i) => ({ name: s.name ?? '', color: s.color, dash: s.dash || (same[i] != null ? OVERLAP_DASH : '') }))
+}
+
+/**
+ * 重合线说明（无重合时返回空串），与 lineChart 的合并末端标签对应，如
+ * 「Home Depot 与 Lowe's 逐月数值相同，两线重合（Lowe's 以虚线叠画），末端标签合并为「Home Depot / Lowe's 均为 1.88%」」
+ */
+export function overlapNote(series: LineSeries[], dec: number, unit = ''): string {
+  return coincidentGroups(series).map((g) => {
+    const first = series.find((s) => s.name === g[0])
+    const last = first && first.values.length ? fmt(first.values[first.values.length - 1], dec) + unit : ''
+    return g.join(' 与 ') + ' 逐月数值相同，' + (g.length === 2 ? '两' : g.length + ' ') + '线重合（' + g.slice(1).join('、') +
+      ' 以虚线叠画），末端标签合并为「' + g.join(' / ') + ' 均为 ' + last + '」'
+  }).join('；')
 }

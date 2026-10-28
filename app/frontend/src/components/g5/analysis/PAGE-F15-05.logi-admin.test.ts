@@ -31,9 +31,31 @@ describe('头程物流分析', () => {
     expect(kpiFoot(w, 'cost')).toContain('全年累计')
     expect(kpiFoot(w, 'cost')).toContain('F4.3')
     expect(kpiVal(w, 'rate')).toBe('2.15%')
-    expect(w.findAll('svg')).toHaveLength(3)
+    expect(w.findAll('.chart svg')).toHaveLength(3)
     expect(w.text()).toContain('美森快船·美西')
     expect(w.text()).toContain('月度（01月 ~ 09月）')
+  })
+
+  it('9 条服务商-线路线：颜色按服务商（5 种）、线型按线路，图例画同样的线型；重合的渠道线合并标注并在图下注明', () => {
+    const w = mount(AnaLogiPre)
+    const charts = w.findAll('div.chart')
+    /* 图 1：9 条线 5 种颜色、4 种线型（美西实线） */
+    const paths = charts[0].findAll('path')
+    expect(paths).toHaveLength(9)
+    expect(new Set(paths.map((p) => p.attributes('stroke'))).size).toBe(5)
+    expect(new Set(paths.map((p) => p.attributes('stroke-dasharray') ?? '')).size).toBe(4)
+    /* 图例与图中线型一致：美森快船·美东 用 8 4 虚线 */
+    const legend = w.findAll('.legend')[0]
+    expect(legend.findAll('line')).toHaveLength(9)
+    const east = legend.findAll('span').find((sp) => sp.text() === '美森快船·美东')
+    expect(east?.get('line').attributes('stroke-dasharray')).toBe('8 4')
+    /* 图 3：Home Depot 与 Lowe's、Wayfair 与 独立站 头程占比逐月相同 → 合并标签 + 图下注明 */
+    const ch = charts[2].text()
+    expect(ch).toContain('Wayfair / 独立站 均为 1.97%')
+    expect(ch).toContain('Home Depot / Lowe\'s 均为 1.88%')
+    const note = w.get('[data-test="overlap-note"]').text()
+    expect(note).toContain('Wayfair 与 独立站 逐月数值相同')
+    expect(note).toContain('Home Depot 与 Lowe\'s 逐月数值相同')
   })
 
   it('切到月度维度后 KPI 改为当月口径并自动刷新', async () => {
@@ -58,7 +80,10 @@ describe('尾程物流分析', () => {
     expect(orders).toBeGreaterThan(0)
     expect(num(kpiVal(w, 'uc'))).toBeCloseTo(418.2 * 10000 / orders, 0)
     expect(w.text()).toContain('专线卡车')
-    expect(w.findAll('svg')).toHaveLength(3)
+    expect(w.findAll('.chart svg')).toHaveLength(3)
+    /* 尾程占比：Home Depot 与 Lowe's 逐月相同，合并标签写明两者、图下注明 */
+    expect(w.findAll('div.chart')[2].text()).toContain('Home Depot / Lowe\'s 均为 3.97%')
+    expect(w.get('[data-test="overlap-note"]').text()).toContain('Home Depot 与 Lowe\'s 逐月数值相同')
   })
 })
 
@@ -122,6 +147,12 @@ describe('管理费用分析', () => {
     expect(w.get('[data-testid="type-month-table"]').findAll('tbody tr')).toHaveLength(8) /* 7 类 + 合计 */
     expect(w.text()).toContain('2026年度累计（1-9月）')
     expect(w.findAll('svg')).toHaveLength(4)
+    /* 4 张半宽图用 480 宽画布：1280 视口下卡片内宽约 462px，最小字号按缩放比折算后仍 ≥ 11px */
+    w.findAll('.chart svg').forEach((svg) => {
+      expect(svg.attributes('viewBox')).toMatch(/^0 0 480 /)
+      const sizes = [...svg.html().matchAll(/font-size="([\d.]+)"/g)].map((m) => Number(m[1]))
+      expect(Math.min(...sizes) * 462 / 480).toBeGreaterThanOrEqual(11)
+    })
   })
 
   it('月度维度：矩阵取选中月份，合计等于该月管理费用池', async () => {

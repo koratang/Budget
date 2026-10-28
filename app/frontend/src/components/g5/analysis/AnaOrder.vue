@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import SvgChart from '@/components/g5/SvgChart.vue'
 import { CHANNELS, CH_COLOR, MONTHS9, S, fmt, mSeries, orderModel } from '@/bizfin/engine'
-import { hBarChart, lineChart } from '@/bizfin/charts'
+import { HALF_W, hBarChart, lineChart } from '@/bizfin/charts'
 import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
 import AnaKitCode from './AnaKitCode.vue'
@@ -48,7 +48,7 @@ const ordSvg = computed(() =>
       label: r.channel, value: r.orders, color: CH_COLOR[r.channel],
       text: fmt(r.orders, 0) + ' 单 (' + fmt(r.orders / (om.value.total || 1) * 100, 1) + '%)',
     })),
-    { w: 520, labelW: 104, rowH: 30, rightW: 158 },
+    { w: HALF_W, labelW: 96, rowH: 30, rightW: 156 },
   ),
 )
 const aovSvg = computed(() =>
@@ -57,7 +57,7 @@ const aovSvg = computed(() =>
       label: r.channel, value: r.aov, color: CH_COLOR[r.channel],
       text: fmt(r.aov, 0) + ' 元 (' + (r.aov >= om.value.blendedAov ? '+' : '') + fmt(r.aov - om.value.blendedAov, 0) + ')',
     })),
-    { w: 520, labelW: 104, rowH: 30, rightW: 158 },
+    { w: HALF_W, labelW: 96, rowH: 30, rightW: 156 },
   ),
 )
 </script>

@@ -10,6 +10,7 @@ import AnaKitChartNote from './AnaKitChartNote.vue'
 import AnaKitCode from './AnaKitCode.vue'
 import AnaKitKpi from './AnaKitKpi.vue'
 import AnaKitLegend from './AnaKitLegend.vue'
+import { lineLegend, overlapNote } from './AnaKit'
 import { lineChart, type LineSeries } from '@/bizfin/charts'
 import {
   CHANNELS, CH_COLOR, FREIGHT_IDX, LOGI_PROVIDERS, MONTHS9, PAL, S,
@@ -32,6 +33,19 @@ const PROV_LANES = [
 const provIdx: Record<string, number> = {}
 LOGI_PROVIDERS.forEach(function (pr, i) { provIdx[pr.name] = i })
 const cmbName = (pl: { prov: string; lane: string }): string => pl.prov.replace(/（.*?）/g, '') + '·' + pl.lane
+/* 9 条线的区分：颜色按服务商（5 个色相拉开，避开红 / 绿以免与涨跌语义混淆），线型按线路；图例画同样的线型 */
+const PROV_LINE_COLOR: Record<string, string> = {
+  '美森快船（海运快线）': PAL[0], /* 蓝 */
+  '中远海运（普船）': PAL[3], /* 橙 */
+  '燕文物流': PAL[2], /* 紫 */
+  '递四方': PAL[7], /* 品红 */
+  '万邑通（头程集运）': PAL[8], /* 青 */
+}
+const LANE_DASH: Record<string, string> = { '美西': '', '美东': '8 4', '欧洲': '2 3', '英国': '10 3 2 3' }
+const laneStyle = (pl: { prov: string; lane: string }): { name: string; color: string; dash?: string } => {
+  const dash = LANE_DASH[pl.lane]
+  return { name: cmbName(pl), color: PROV_LINE_COLOR[pl.prov], ...(dash ? { dash } : {}) }
+}
 
 /* 服务商份额加权单位成本（元/kg）；m = null 为年度加权 */
 function weightedUc(m: number | null): number {
@@ -50,10 +64,10 @@ const v = computed(() => {
   const unitCostByM = mSeries((m) => weightedUc(m))
 
   /* 图 1：服务商-线路 发货量月度趋势（吨） */
-  const qtySeries: LineSeries[] = PROV_LANES.map(function (pl, k) {
+  const qtySeries: LineSeries[] = PROV_LANES.map(function (pl) {
     const pi = provIdx[pl.prov]
     return {
-      name: cmbName(pl), color: PAL[k % PAL.length], values: mSeries(function (m) {
+      ...laneStyle(pl), values: mSeries(function (m) {
         const sh = provShares(LOGI_PROVIDERS, m)[pi]
         const uc = unitCostByM[m]
         const tot = uc > 0 ? costPools(m).logiPre * 10000 / uc / 1000 : 0
@@ -62,10 +76,10 @@ const v = computed(() => {
     }
   })
   /* 图 2：服务商-线路 单位成本月度趋势（元/kg） */
-  const costSeries: LineSeries[] = PROV_LANES.map(function (pl, k) {
+  const costSeries: LineSeries[] = PROV_LANES.map(function (pl) {
     const pr = LOGI_PROVIDERS[provIdx[pl.prov]]
     return {
-      name: cmbName(pl), color: PAL[k % PAL.length],
+      ...laneStyle(pl),
       values: mSeries((m) => providerCost(pr.cost, FREIGHT_IDX, 'pc-' + pr.name, m) * LANE_IDX_PRE[pl.lane]),
     }
   })
@@ -90,13 +104,13 @@ const v = computed(() => {
   const preRate = revNow > 0 ? costNow / revNow * 100 : 0
   const ucJan = unitCostByM[0] || 0
 
-  const legend = (ss: LineSeries[]): { name: string; color: string }[] => ss.map((s) => ({ name: s.name ?? '', color: s.color }))
   return {
     isMonth, costNow, qtyNow, ucNow, preRate, ucJan,
     pill: '月度（' + mLabels[0] + ' ~ ' + mLabels[mLabels.length - 1] + '）',
-    qtySvg: lineChart(mLabels, qtySeries, { w: 860, h: 280, endLabel: false, dec: 0 }), qtyLegend: legend(qtySeries),
-    costSvg: lineChart(mLabels, costSeries, { w: 860, h: 280, endLabel: false, dec: 2 }), costLegend: legend(costSeries),
-    chSvg: lineChart(mLabels, chRateSeries, { w: 860, h: 280, endLabel: true, dec: 2 }), chLegend: legend(chRateSeries),
+    qtySvg: lineChart(mLabels, qtySeries, { w: 860, h: 280, endLabel: false, dec: 0 }), qtyLegend: lineLegend(qtySeries),
+    costSvg: lineChart(mLabels, costSeries, { w: 860, h: 280, endLabel: false, dec: 2 }), costLegend: lineLegend(costSeries),
+    chSvg: lineChart(mLabels, chRateSeries, { w: 860, h: 280, endLabel: true, dec: 2, endUnit: '%' }), chLegend: lineLegend(chRateSeries),
+    chOverlap: overlapNote(chRateSeries, 2, '%'),
   }
 })
 </script>
@@ -127,7 +141,10 @@ const v = computed(() => {
     <AnaKitCard title="渠道头程成本占比月度趋势" desc="各渠道头程成本 ÷ 该渠道收入（%）">
       <SvgChart :svg="v.chSvg" label="渠道头程成本占比月度趋势" />
       <AnaKitLegend :items="v.chLegend" />
-      <AnaKitChartNote>头程占比高的渠道说明其收入对运价更敏感：大件直发比例高的渠道需优先推进包装减负与集拼，占比上行时应同步评估提价或调整履约线路。</AnaKitChartNote>
+      <AnaKitChartNote>
+        头程占比高的渠道说明其收入对运价更敏感：大件直发比例高的渠道需优先推进包装减负与集拼，占比上行时应同步评估提价或调整履约线路。
+        <template v-if="v.chOverlap"><br><span data-test="overlap-note">注：{{ v.chOverlap }}。</span></template>
+      </AnaKitChartNote>
     </AnaKitCard>
   </div>
 </template>

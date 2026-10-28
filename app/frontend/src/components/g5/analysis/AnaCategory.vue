@@ -6,10 +6,10 @@
 import { computed } from 'vue'
 import SvgChart from '@/components/g5/SvgChart.vue'
 import {
-  C, CATEGORIES, CAT_COLOR, MONTHS9, NEW_YEARS, PROV_COLOR, buildSpuTable, catModel, fmt, mSeries, orderModel, yearMixRows,
+  C, CATEGORIES, CAT_COLOR, CAT_NEW_SPU, CAT_SPU, MONTHS9, NEW_YEARS, PROV_COLOR, buildSpuTable, catModel, fmt, mSeries, orderModel, yearMixRows,
   type CatModelRow, type SpuRow,
 } from '@/bizfin/engine'
-import { lineChart, stack100 } from '@/bizfin/charts'
+import { HALF_W, lineChart, stack100 } from '@/bizfin/charts'
 import { TREND_COLOR, hiLo, signTrend, trendStyle, type Trend } from './AnaKit'
 import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
@@ -34,6 +34,16 @@ const topPer = computed(() => cat.value.slice().sort((a, b) => b.perSpu - a.perS
 const newShareNow = computed(() => ym.value.filter((r) => isNewYear(r.label)).reduce((a, r) => a + r.share, 0))
 const avgPer = computed(() => totalRev.value / (totalSpu.value || 1))
 const sorted = computed(() => cat.value.slice().sort((a, b) => b.revenue - a.revenue))
+/* SPU 两个口径（引擎原样）：
+   - KPI / 明细表「在售 SPU」= catSpu 期末值 = 期初基础 SPU + 年内上新 − 结构性下架（默认 580 + 49 − 11 = 618）；
+   - TOP / Bottom 的 SPU 明细 = buildSpuTable，按各品类期初基础 SPU（CAT_SPU，合计 580）逐个生成，不含年内上新。
+   两数含义不同，不强行统一，在 KPI 脚注与 TOP 卡片上分别写明口径。 */
+/* 在售 SPU 月度首末合计（说明文字按数据描述：引擎按月线性上新 / 下架，曲线是逐月小幅上升，而非原文案的「先升后稳」） */
+const spuFirst = computed(() => (catM.value[0] || []).reduce((a, r) => a + r.spu, 0))
+const spuLast = computed(() => (catM.value[catM.value.length - 1] || []).reduce((a, r) => a + r.spu, 0))
+const sumOf = (rec: Record<string, number>): number => CATEGORIES.reduce((a, c) => a + (rec[c] || 0), 0)
+const baseSpu = sumOf(CAT_SPU)
+const newSpu = sumOf(CAT_NEW_SPU)
 
 const catLegend = CATEGORIES.map((c) => ({ name: c, color: CAT_COLOR[c] }))
 function catLine(field: CatField, dec: number): string {
@@ -48,7 +58,7 @@ function catLine(field: CatField, dec: number): string {
       }),
       dec,
     })),
-    { w: 600, h: 266, dots: false, endLabel: true, dec },
+    { w: HALF_W, h: 256, dots: false, endLabel: true, dec },
   )
 }
 const spuSvg = computed(() => catLine('spu', 0))
@@ -66,8 +76,20 @@ const newOldSvg = computed(() => {
   return stack100(MONTHS9, [
     { name: '新品（滚动）', color: C.biz, values: byM.map((x) => x.nw) },
     { name: '老品', color: C.text3, values: byM.map((x) => x.old) },
-  ], { w: 600, h: 266, bw: 34 })
+  ], { w: HALF_W, h: 256, bw: 30 })
 })
+/* 新品占比的月度区间：说明文字按数据如实描述（示例模型的上市年份结构按品类固定，各月结构不变时不写「逐月上行」） */
+const newByM = computed(() => ymByM.value.map((rows) => rows.filter((r) => isNewYear(r.label)).reduce((a, r) => a + r.share, 0)))
+/** 各月占比是否相同（极差 < 0.05pt，避免 9.15% 这类值在 1 位小数取整边界上被误判为变化） */
+const flat = (xs: number[]): boolean => Math.max(...xs) - Math.min(...xs) < 0.05
+const newRangeText = computed(() => {
+  const xs = newByM.value
+  if (flat(xs)) return `各月均为 ${fmt(xs[0], 1)}%，结构稳定`
+  const first = xs[0], last = xs[xs.length - 1]
+  return `各月在 ${fmt(Math.min(...xs), 1)}% ~ ${fmt(Math.max(...xs), 1)}% 之间，${MONTHS9[0]} ${fmt(first, 1)}% → ${MONTHS9[xs.length - 1]} ${fmt(last, 1)}%`
+})
+const yearFlat = computed(() => NEW_YEARS.every((_y, i) => flat(ymByM.value.map((rs) => rs[i].share))))
+const yearShareText = computed(() => ym.value.map((r) => `${r.label} ${fmt(r.share, 0)}%`).join(' / '))
 const yearLegend = NEW_YEARS.map((y, i) => ({ name: y, color: PROV_COLOR[i % PROV_COLOR.length] }))
 const yearSvg = computed(() =>
   stack100(MONTHS9, NEW_YEARS.map((y, i) => ({
@@ -90,7 +112,8 @@ function spuTrend(r: SpuRow): Trend {
     <AnaKitNote title="品类分析口径：">件均价 = 综合客单价 × 品类相对价指数（按渠道口径近似），<AnaKitCode code="F2.1" />~<AnaKitCode code="F2.5" /> 的品类收入结构经校准满足 <b>Σ（收入份额 ÷ 相对价）= 1</b>，因此 <b>销量合计 ≡ 订单量</b>（件单比 1.00），且销量加权件均价 ≡ 客单价。在售 SPU 按「基础 SKU + 年内上新 SKU − 结构性下架」逐月演进；<b>品效 = 品类收入 ÷ 在售 SPU 数</b>，衡量单个 SKU 的产出效率。上市年份销售占比按各品类的年份结构矩阵 （2023 年及以前 / 2024 / 2025 / 2026 上新）加权得到，合计恒为 100%。</AnaKitNote>
 
     <div class="grid-4 kpis">
-      <AnaKitKpi data-kpi="spu" label="在售 SPU 合计" :value="fmt(totalSpu, 0)" unit="个" :foot="`${CATEGORIES.length} 个品类 · 日均在架结构`" />
+      <AnaKitKpi data-kpi="spu" label="在售 SPU 合计" :value="fmt(totalSpu, 0)" unit="个"
+        :foot="`期末在售 = 期初 ${fmt(baseSpu, 0)} + 上新 ${fmt(newSpu, 0)} − 下架 ${fmt(baseSpu + newSpu - totalSpu, 0)}`" />
       <AnaKitKpi data-kpi="qty" label="销量合计" :value="fmt(totalQty / 10000, 2)" unit="万件"
         :foot="`件单比 ${fmt(totalQty / (orders || 1), 2)}（1 单 1 件）`" />
       <AnaKitKpi data-kpi="topPer" label="品效最高品类" :value="topPer.cat" tone="up" compact
@@ -141,7 +164,7 @@ function spuTrend(r: SpuRow): Trend {
       <AnaKitCard title="各品类每月在售 SPU 数量" desc="单位：个">
         <AnaKitLegend :items="catLegend" />
         <SvgChart :svg="spuSvg" label="各品类每月在售 SPU 数量" />
-        <AnaKitChartNote>年内上新 SKU 逐步上架、结构性长尾 SKU 逐步下架，在售 SPU 数量呈"先升后稳"的演进曲线。</AnaKitChartNote>
+        <AnaKitChartNote>年内上新 SKU 逐月上架、结构性长尾 SKU 逐月下架，上新多于下架，在售 SPU 合计由 {{ MONTHS9[0] }} {{ fmt(spuFirst, 0) }} 个逐月小幅增加到 {{ MONTHS9[catM.length - 1] }} {{ fmt(spuLast, 0) }} 个。</AnaKitChartNote>
       </AnaKitCard>
       <AnaKitCard title="各品类每月销量" desc="单位：件">
         <AnaKitLegend :items="catLegend" />
@@ -159,18 +182,22 @@ function spuTrend(r: SpuRow): Trend {
       <AnaKitCard title="月度新品与老品收入占比" desc="每根 100% ｜ 新品（滚动）vs 老品">
         <AnaKitLegend :items="newOldLegend" />
         <SvgChart :svg="newOldSvg" label="月度新品与老品收入占比" />
-        <AnaKitChartNote>新品合计贡献 {{ fmt(newShareNow, 1) }}% 的收入，是收入增量的主要来源；老品占比随新品替代节奏逐月变化，需通过换代升级与老品清仓策略控制占比与库存风险。</AnaKitChartNote>
+        <AnaKitChartNote>新品（2025 / 2026 上新）合计贡献 {{ fmt(newShareNow, 1) }}% 的收入；新品占比{{ newRangeText }}<template v-if="flat(newByM)">（示例模型按各品类固定的上市年份结构推算，月间差异只来自品类收入结构变化）</template>。需通过换代升级与老品清仓策略控制老品占比与库存风险。</AnaKitChartNote>
       </AnaKitCard>
     </div>
 
     <AnaKitCard title="年度上新销售占比月度趋势" desc="每根 100%，观察新品对收入的替代节奏">
       <AnaKitLegend :items="yearLegend" />
       <SvgChart :svg="yearSvg" label="年度上新销售占比月度趋势" />
-      <AnaKitChartNote>新品占比逐月上行说明产品迭代有效；若老品占比长期高企，则意味着产品线老化、需加快新品导入与老品汰换节奏。</AnaKitChartNote>
+      <AnaKitChartNote>
+        <template v-if="yearFlat">1-9 月各上市年份的销售占比保持不变（{{ yearShareText }}），示例模型未体现新品对老品的逐月替代；</template>
+        <template v-else>年内新品（2025 / 2026 上新）占比{{ newRangeText }}；</template>
+        观察要点：新品占比逐月上行说明产品迭代有效；若老品占比长期高企，则意味着产品线老化、需加快新品导入与老品汰换节奏。
+      </AnaKitChartNote>
     </AnaKitCard>
 
     <div class="grid-2">
-      <AnaKitCard title="TOP 10 最高毛利 SPU" :desc="`按毛利率降序 ｜ 净收入万元 ｜ 共 ${spus.length} 个 SPU`">
+      <AnaKitCard title="TOP 10 最高毛利 SPU" :desc="`按毛利率降序 ｜ 净收入万元 ｜ 共 ${spus.length} 个 SPU（期初基础 SPU，不含年内上新）`">
         <div class="table-wrap">
           <table class="table" data-test="spu-top">
             <thead><tr><th>SPU 编码</th><th>品类</th><th class="num">净收入（万元）</th><th class="num">毛利率</th></tr></thead>
@@ -200,7 +227,7 @@ function spuTrend(r: SpuRow): Trend {
       </AnaKitCard>
     </div>
 
-    <AnaKitNote title="SPU 效益说明：">SPU 粒度毛利率在品类毛利率基线（财务 F1/F2/F3 按产品板块结构权重分摊）上叠加确定性扰动派生，与品类整体毛利率保持量级一致；TOP / Bottom 仅看毛利率维度，可结合上方「品类经营明细」中的品效与销量权重交叉印证。</AnaKitNote>
+    <AnaKitNote title="SPU 效益说明：">SPU 粒度毛利率在品类毛利率基线（财务 F1/F2/F3 按产品板块结构权重分摊）上叠加确定性扰动派生，与品类整体毛利率保持量级一致；TOP / Bottom 仅看毛利率维度，可结合上方「品类经营明细」中的品效与销量权重交叉印证。SPU 明细按各品类期初基础 SPU 生成（共 {{ fmt(spus.length, 0) }} 个，不含年内上新），与 KPI「在售 SPU 合计」（期末在售 {{ fmt(totalSpu, 0) }} 个，含上新、扣下架）口径不同。</AnaKitNote>
   </div>
 </template>
 

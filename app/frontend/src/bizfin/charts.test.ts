@@ -3,7 +3,7 @@
  * 场景取自 PAGE-F15-05：头程发货量（吨，小量级）、渠道订单量（单，全为非负）、管理费用组合图。
  */
 import { describe, expect, it } from 'vitest'
-import { comboChart, lineChart, niceScale, niceScaleN, spreadLabels } from './charts'
+import { HALF_W, OVERLAP_DASH, coincidentGroups, comboChart, fontScale, hBarChart, lineChart, niceScale, niceScaleN, sameAsEarlier, spreadLabels, stack100 } from './charts'
 
 /** 取左轴刻度文字（lineChart 左轴标签 x = pad.l − 8 = 48，右对齐） */
 function leftTicks(svgStr: string): string[] {
@@ -109,12 +109,68 @@ describe('末端标签纵向避让', () => {
     for (let i = 1; i < ys.length; i++) expect(ys[i] - ys[i - 1]).toBeGreaterThanOrEqual(12 - 0.05)
   })
 
-  it('lineChart：同值且重叠的末端标签合并为一个', () => {
+  it('lineChart：同值且重叠的末端标签合并为一个，写明「A / B 均为 x」并用中性色', () => {
     const out = lineChart(['08月', '09月'], [
       { name: '美森·美西', values: [6.1, 6.47], color: '#2563eb' },
       { name: '美森·美东', values: [6.2, 6.47], color: '#0d9488' },
     ], { endLabel: true, dec: 2 })
-    expect(out.match(/>6\.47</g)).toHaveLength(1)
+    expect(out.match(/6\.47</g)).toHaveLength(1)
+    const label = out.match(/<text [^>]*fill="([^"]+)"[^>]*>美森·美西 \/ 美森·美东 均为 6\.47<\/text>/)
+    expect(label).not.toBeNull()
+    expect(label?.[1]).not.toBe('#2563eb')
+    expect(label?.[1]).not.toBe('#0d9488')
+  })
+
+  it('lineChart：整段重合的序列自动改画虚线（透出下层线色），合并标签带单位，右边距容纳长标签', () => {
+    const series = [
+      { name: 'Amazon', values: [2.4, 2.57, 2.01], color: '#2563eb' },
+      { name: 'Home Depot', values: [2.2, 2.39, 1.876], color: '#7c3aed' },
+      { name: "Lowe's", values: [2.2, 2.39, 1.876 + 1e-15], color: '#e08600' },
+    ]
+    expect(sameAsEarlier(series)).toEqual([null, null, 1])
+    expect(coincidentGroups(series)).toEqual([['Home Depot', "Lowe's"]])
+    const out = lineChart(['07月', '08月', '09月'], series, { w: 860, endLabel: true, dec: 2, endUnit: '%' }).replace(/&#39;/g, "'")
+    expect(out).toContain('stroke="#e08600" stroke-width="2.3" stroke-dasharray="' + OVERLAP_DASH + '"')
+    expect(out).not.toContain('stroke="#7c3aed" stroke-width="2.3" stroke-dasharray')
+    expect(out).toContain(">Home Depot / Lowe's 均为 1.88%<")
+    expect(out).toContain('>2.01%<')
+    /* 标签起点 x + 估算宽度不超出画布 */
+    const m = out.match(/<text x="([\d.]+)"[^>]*>Home Depot \/ Lowe's 均为 1\.88%<\/text>/)
+    expect(Number(m?.[1])).toBeLessThan(860 - 130)
+  })
+})
+
+describe('字号随画布宽度自适应（半宽卡片）', () => {
+  /** 取 SVG 内全部 font-size */
+  const sizes = (out: string): number[] => [...out.matchAll(/font-size="([\d.]+)"/g)].map((m) => Number(m[1]))
+  /** 半宽卡片在 1280 视口下的渲染宽度约 462px（PAGE-F15-05 截图实测） */
+  const RENDER_W = 462
+
+  it('fontScale：全宽画布（≥ 576）为 1，HALF_W 为 1.2，上限 1.35', () => {
+    expect(fontScale(640)).toBe(1)
+    expect(fontScale(860)).toBe(1)
+    expect(fontScale(HALF_W)).toBeCloseTo(1.2, 5)
+    expect(fontScale(200)).toBe(1.35)
+  })
+
+  it('HALF_W 画布的折线 / 组合 / 堆叠 / 条形图，渲染到半宽卡片后最小字号 ≥ 11px', () => {
+    const labels = ['01月', '02月', '03月', '04月', '05月', '06月', '07月', '08月', '09月']
+    const vals = [19, 16, 24, 28, 30, 32, 33, 36, 27]
+    const outs = [
+      lineChart(labels, [{ name: '人力资源部', values: vals, color: '#0d9488' }], { w: HALF_W, endLabel: true }),
+      comboChart(labels, vals, [{ color: '#0d9488', values: vals.map((x) => x / 10) }], { w: HALF_W }),
+      stack100(labels, [{ name: '新品', values: vals, color: '#2563eb' }, { name: '老品', values: vals, color: '#94a3b8' }], { w: HALF_W }),
+      hBarChart([{ label: '人力资源部', value: 49.2 }, { label: '财务部', value: 41.8 }], { w: HALF_W }),
+    ]
+    outs.forEach((out) => {
+      expect(out).toContain('viewBox="0 0 480 ')
+      expect(Math.min(...sizes(out)) * RENDER_W / HALF_W).toBeGreaterThanOrEqual(11)
+    })
+  })
+
+  it('全宽默认画布字号不变（10.5 号刻度）', () => {
+    const out = lineChart(['01月', '02月'], [{ name: 'Amazon', values: [1, 2], color: '#2563eb' }])
+    expect(sizes(out)).toContain(10.5)
   })
 })
 

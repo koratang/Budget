@@ -10,7 +10,8 @@ import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
 import AnaKitKpi from './AnaKitKpi.vue'
 import AnaKitLegend from './AnaKitLegend.vue'
-import { lineChart, type LineSeries } from '@/bizfin/charts'
+import { HALF_W, lineChart, type LineSeries } from '@/bizfin/charts'
+import { lineLegend, overlapNote } from './AnaKit'
 import {
   CHANNELS, CH_COLOR, MONTHS9, S, WH_PROVIDERS, channelRowsAt, costPools, fmt, mSeries, orderModel, provColor, wave, whChShares,
   type Provider,
@@ -109,8 +110,10 @@ const v = computed(() => {
     isMonth, whCostNow, whRateNow, kOpen, kIn, kOut, kClose, stockRows, stockSum,
     mLabel: S.curM || 9,
     period: isMonth ? '当月（' + MONTHS9[curIdx] + '）' : '年初至 ' + MONTHS9[curIdx] + '末累计',
-    whSvg: lineChart(mLabels, whCostSeries, { w: 540, h: 240, endLabel: false, dec: 1 }), whLegend: legend(whCostSeries),
-    chSvg: lineChart(mLabels, chRateSeries, { w: 540, h: 240, endLabel: true, dec: 2 }), chLegend: legend(chRateSeries),
+    /* 半宽卡片用 HALF_W 画布，字号按画布宽度放大（见 charts.ts fontScale） */
+    whSvg: lineChart(mLabels, whCostSeries, { w: HALF_W, h: 250, endLabel: false, dec: 1 }), whLegend: legend(whCostSeries),
+    chSvg: lineChart(mLabels, chRateSeries, { w: HALF_W, h: 250, endLabel: true, dec: 2, endUnit: '%' }), chLegend: lineLegend(chRateSeries),
+    chOverlap: overlapNote(chRateSeries, 2, '%'),
   }
 })
 </script>
@@ -139,7 +142,10 @@ const v = computed(() => {
       <AnaKitCard title="渠道仓储成本占比月度趋势" desc="各渠道仓储成本（含代发）÷ 该渠道收入（%）">
         <SvgChart :svg="v.chSvg" label="渠道仓储成本占比月度趋势" />
         <AnaKitLegend :items="v.chLegend" />
-        <AnaKitChartNote>仓储占比越高说明该渠道越依赖海外仓前置备货；需与尾程费率联动看——前置库存抬高仓储但压低尾程，决策依据应为「仓储 + 尾程」合计费率。</AnaKitChartNote>
+        <AnaKitChartNote>
+          仓储占比越高说明该渠道越依赖海外仓前置备货；需与尾程费率联动看——前置库存抬高仓储但压低尾程，决策依据应为「仓储 + 尾程」合计费率。
+          <template v-if="v.chOverlap"><br><span data-test="overlap-note">注：{{ v.chOverlap }}。</span></template>
+        </AnaKitChartNote>
       </AnaKitCard>
     </div>
 

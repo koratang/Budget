@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import SvgChart from '@/components/g5/SvgChart.vue'
 import { C, COST_LINES, MONTHS9, PAL, S, channelEffectAll, channelRowsAt, fmt, iv, type EffRow } from '@/bizfin/engine'
-import { hBarChart, lineChart } from '@/bizfin/charts'
+import { HALF_W, hBarChart, lineChart } from '@/bizfin/charts'
 import { TREND_COLOR, signTrend, trendStyle, type Trend } from './AnaKit'
 import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
@@ -46,7 +46,7 @@ const revSvg = computed(() =>
     rows.value.slice().sort((a, b) => b.revenue - a.revenue).map((r) => ({
       label: r.key, value: r.revenue, color: C.biz, text: fmt(r.revenue, 0) + ' 万 (' + fmt(r.share * 100, 1) + '%)',
     })),
-    { w: 540, labelW: 108, rowH: 30, rightW: 140 },
+    { w: HALF_W, labelW: 96, rowH: 30, rightW: 150 },
   ),
 )
 const rateSvg = computed(() =>
@@ -57,7 +57,7 @@ const rateSvg = computed(() =>
       color: RATE_BAR[rateTrend(r.grossRate)],
       text: fmt(r.grossRate * 100, 1) + '% 毛利 ' + fmt(r.gross, 0) + '万',
     })),
-    { w: 540, labelW: 108, rowH: 30, rightW: 170 },
+    { w: HALF_W, labelW: 96, rowH: 30, rightW: 168 },
   ),
 )
 
@@ -80,7 +80,7 @@ const trendCharts = computed(() => {
           return rr ? lineVal(rr, line.key) : 0
         }),
       })),
-      { w: 540, h: 220, endLabel: true, dec: 0 },
+      { w: HALF_W, h: 230, endLabel: true, dec: 0 },
     ),
   }))
 })

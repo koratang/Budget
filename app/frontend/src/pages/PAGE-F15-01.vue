@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import BizfinPage from '@/components/g5/BizfinPage.vue'
 import SvgChart from '@/components/g5/SvgChart.vue'
-import { comboChart, donutChart, lineChart, txt } from '@/bizfin/charts'
+import { HALF_W, comboChart, donutChart, lineChart } from '@/bizfin/charts'
 import {
   C, MONTHS9, NAV, PAL, S, deptOf, find, fmt, hasData, jsNum, l2, momYoyOf, pct, rate, rateText, validations,
   type Indicator,
@@ -63,43 +63,22 @@ const signed = (n: number, d: number): string => (n >= 0 ? '+' : '') + fmt(n, d)
 const toneOf = (n: number): string => n > 0 ? 'up' : n < 0 ? 'down' : ''
 
 /* ---------- 渠道毛利率小图 ----------
-   viewBox 宽 480（原 640）：半宽卡片里按约 1:1 缩放，字号与页面其他图一致，不再缩到约 7px。
-   lineChart 的 endLabel 会给每条线各标一次末值，多条线数值相同时标签叠成一团；
-   这里关掉 endLabel，按末值（1 位小数）分组，每组只在末点上方标一次。
-   坐标与 lineChart（endLabel=false）同口径：pad 左 56 右 20 上 20 下 40，纵轴 [min − 20%·跨度, max + 26%·跨度] */
-const GM_W = 480, GM_H = 290
+   半宽画布 HALF_W：字号由 charts.ts 按画布宽度放大。重合线由 lineChart 自动虚线叠画、末端标签合并为「A / B 均为 x%」 */
 interface GmSeries { name: string; color: string; values: number[] }
-interface GmGroup { names: string[]; color: string; last: number; text: string; whole: boolean }
+interface GmGroup { names: string[]; last: number; whole: boolean }
+/** 按末值（1 位小数）分组，用于图下的重合说明 */
 function gmGroups(series: GmSeries[]): GmGroup[] {
   const map = new Map<string, GmSeries[]>()
   series.forEach((s) => {
     const k = fmt(s.values[s.values.length - 1], 1)
     map.set(k, (map.get(k) || []).concat(s))
   })
-  return [...map.entries()].map(([k, list]) => ({
+  return [...map.values()].map((list) => ({
     names: list.map((s) => s.name),
-    color: list.length > 1 ? C.text2 : list[0].color,
     last: list[0].values[list[0].values.length - 1],
-    text: k + '%' + (list.length > 1 ? '（' + list.length + ' 线重合）' : ''),
     /* 整段曲线逐月相同 → 完全重合 */
     whole: list.every((s) => s.values.every((v, i) => fmt(v, 1) === fmt(list[0].values[i], 1))),
   }))
-}
-function gmChartSvg(labels: string[], series: GmSeries[], groups: GmGroup[]): string {
-  const base = lineChart(labels, series, { w: GM_W, h: GM_H, dec: 1 })
-  const all = series.flatMap((s) => s.values)
-  if (!all.length) return base
-  const mn = Math.min(...all), mx = Math.max(...all)
-  const sp = (mx - mn) || Math.abs(mx) || 1
-  const lo = mn - sp * 0.20, hi = mx + sp * 0.26
-  const ih = GM_H - 20 - 40
-  const Y = (v: number): number => 20 + ih - ih * (v - lo) / ((hi - lo) || 1)
-  /* 末点上方 9px 起标；相邻两组标签小于 13px 时依次上推，避免互相压住 */
-  const pos = groups.map((g) => ({ g, y: Y(g.last) - 9 })).sort((a, b) => b.y - a.y)
-  for (let i = 1; i < pos.length; i++) if (pos[i - 1].y - pos[i].y < 13) pos[i].y = pos[i - 1].y - 13
-  const labelsSvg = pos.map((p) => txt(GM_W - 20, Math.max(12, p.y), p.g.text, { anchor: 'end', size: 10.5, weight: 700, fill: p.g.color })).join('')
-  const at = base.lastIndexOf('</svg>')
-  return base.slice(0, at) + labelsSvg + base.slice(at)
 }
 
 const v = computed(() => {
@@ -171,7 +150,7 @@ const v = computed(() => {
     donut: donutChart(chItems.map((c) => ({ label: c.label, value: c.value, color: c.color })), { size: 196, centerTop: '总收入', centerVal: fmt(rev.actual, 0) }),
     chRows: chItems.map((c) => ({ label: c.label, color: c.color, share: fmt(share(c.value), 1) + '%' })),
     amazonShare: fmt(share(chItems[0].value), 1), cr1: pct(share(chItems[0].value), 1),
-    gmChart: gmChartSvg(yMonths, gmSeries, gmG),
+    gmChart: lineChart(yMonths, gmSeries, { w: HALF_W, h: 290, dec: 1, endLabel: true, endUnit: '%' }),
     gmSeries,
     /* 重合说明：如「Amazon / Wayfair / HomeDepot / Lowe's 均为 29.2%」 */
     gmOverlap: gmG.filter((g) => g.names.length > 1)

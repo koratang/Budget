@@ -68,9 +68,12 @@ describe('PAGE-F15-01 经营总览驾驶舱', () => {
     await flushPromises()
     const notes = w.findAll('[data-gm-overlap]').map((n) => n.text())
     expect(notes.some((t) => t.includes("Amazon / Wayfair / HomeDepot / Lowe's 均为"))).toBe(true)
-    const svg = w.findAll('.chart').map((c) => c.html()).find((h) => h.includes('线重合'))
+    // 重合线的末端标签由 lineChart 合并为一个「… 均为 x%」
+    // 图下说明与图内合并标签取同一末值
+    const val = /均为 (\d+\.\d%)/.exec(notes.join(''))?.[1] ?? ''
+    const svg = w.findAll('.chart').map((c) => c.html()).find((h) => h.includes('Lowe&#39;s 均为') || h.includes("Lowe's 均为"))
     expect(svg).toBeDefined()
-    expect((svg || '').match(/线重合/g)).toHaveLength(1)
+    expect((svg || '').match(/均为 \d+\.\d%/g)).toEqual(['均为 ' + val])
     const first = w.get('[data-chain]').findAll('li')[0].get('.fin')
     expect(first.text()).toMatch(/^净利润 \+/)
     expect(first.classes()).toContain('up')

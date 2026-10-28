@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import SvgChart from '@/components/g5/SvgChart.vue'
 import { CHANNELS, CH_COLOR, MONTHS9, S, channelModel, find, fmt, hasData, mSeries, type ChannelModelRow } from '@/bizfin/engine'
-import { lineChart } from '@/bizfin/charts'
+import { HALF_W, lineChart } from '@/bizfin/charts'
 import { hiLo } from './AnaKit'
 import AnaKitCard from './AnaKitCard.vue'
 import AnaKitChartNote from './AnaKitChartNote.vue'
@@ -64,7 +64,7 @@ const trendDefs = computed(() => {
     title: d.title,
     desc: d.desc + ' ｜ ' + labels[0] + ' ~ ' + labels[labels.length - 1],
     note: d.note,
-    svg: lineChart(labels, d.series, { w: 540, h: 230, endLabel: true, dec: d.dec }),
+    svg: lineChart(labels, d.series, { w: HALF_W, h: 240, endLabel: true, dec: d.dec }),
   }))
 })
 </script>

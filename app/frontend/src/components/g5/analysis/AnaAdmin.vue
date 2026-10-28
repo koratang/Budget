@@ -12,7 +12,7 @@ import AnaKitCode from './AnaKitCode.vue'
 import AnaKitKpi from './AnaKitKpi.vue'
 import AnaKitLegend from './AnaKitLegend.vue'
 import AnaKitNote from './AnaKitNote.vue'
-import { COMBO_BAR_COLOR, comboChart, hBarChart, lineChart, stack100 } from '@/bizfin/charts'
+import { COMBO_BAR_COLOR, HALF_W, comboChart, hBarChart, lineChart, stack100 } from '@/bizfin/charts'
 import {
   ADMIN_DEPTS, ADMIN_D_COLOR, ADMIN_TYPES, ADMIN_T_COLOR, C, MONTHS9, S, YEAR_LABEL,
   adminAnnualPool, adminMatrix, adminMatrixNow, adminPoolByM, find, fmt, iv, jsNum, mSeries, periodLabel,
@@ -59,13 +59,14 @@ const v = computed(() => {
   return {
     isMonth, poolM, annual, snap, poolAnnual, poolNow, f43Actual, f43Target, rateGap, rateM,
     deptByM, typeByM, typeAnnual, topTypeIdx, deptAnnualTot, topDeptIdx, typeSnap, topDepts,
-    comboSvg: comboChart(MONTHS9, poolM, [{ color: C.fin, values: rateM }], { h: 268, barColor: BAR_COLOR }),
-    stackSvg: stack100(MONTHS9, ADMIN_TYPES.map((t, ti) => ({ name: t.name, color: ADMIN_T_COLOR[t.name], values: typeByM[ti].byM })), { h: 268 }),
+    /* 4 张图都在半宽卡片里：画布宽 HALF_W，字号按画布宽度放大（见 charts.ts fontScale），渲染后不小于 11px */
+    comboSvg: comboChart(MONTHS9, poolM, [{ color: C.fin, values: rateM }], { w: HALF_W, h: 260, barColor: BAR_COLOR }),
+    stackSvg: stack100(MONTHS9, ADMIN_TYPES.map((t, ti) => ({ name: t.name, color: ADMIN_T_COLOR[t.name], values: typeByM[ti].byM })), { w: HALF_W, h: 260 }),
     hbarSvg: hBarChart(annual.map((r) => ({
       label: r.dept, value: r.total, color: ADMIN_D_COLOR[r.dept],
       text: fmt(r.total, 1) + ' · ' + mainTypeOf(r) + ' ' + fmt(Math.max(...r.types) / r.total * 100, 0) + '%',
-    })).sort((a, b) => b.value - a.value), { w: 600, labelW: 110, rowH: 30, rightW: 220 }),
-    lineSvg: lineChart(MONTHS9, topDepts, { w: 600, h: 268, dec: 1, dots: false, endLabel: true }),
+    })).sort((a, b) => b.value - a.value), { w: HALF_W, labelW: 96, rowH: 30, rightW: 176 }),
+    lineSvg: lineChart(MONTHS9, topDepts, { w: HALF_W, h: 260, dec: 1, dots: false, endLabel: true }),
   }
 })
 
