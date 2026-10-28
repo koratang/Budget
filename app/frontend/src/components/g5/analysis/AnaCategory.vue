@@ -128,7 +128,7 @@ function spuTrend(r: SpuRow): Trend {
             <tr>
               <th>品类</th><th class="num">在售 SPU</th><th class="num">销量（件）</th><th class="num">件均价</th>
               <th class="num">收入</th><th class="num">收入占比</th><th class="num">品效</th>
-              <th class="num">贡献毛利率</th><th class="num">贡献毛利额</th>
+              <th class="num" title="贡献毛利率着色：≥5% 红、<5% 绿（与渠道毛利率的 25% / 15% 分档不是同一指标）">贡献毛利率<br><small class="muted">≥5% 红 / &lt;5% 绿</small></th><th class="num">贡献毛利额</th>
             </tr>
           </thead>
           <tbody>

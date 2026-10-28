@@ -61,28 +61,40 @@ const rateSvg = computed(() =>
   ),
 )
 
+/** 末月取整后数值相同的渠道（与图内合并标签对应），如「Wayfair、独立站 末月均为 9」 */
+function sameEndNote(series: { name: string; values: number[] }[]): string {
+  const map = new Map<string, string[]>()
+  series.forEach((x) => {
+    if (!x.values.length) return
+    const k = fmt(x.values[x.values.length - 1], 0)
+    map.set(k, (map.get(k) || []).concat(x.name))
+  })
+  return [...map.entries()].filter(([, names]) => names.length > 1).map(([k, names]) => names.join('、') + ' 末月均为 ' + k).join('；')
+}
+
 /* 单渠道成本结构月度趋势：每费用项一张折线图，5 渠道各一条线，1 月至当月 */
 const mLabels = computed(() => MONTHS9.slice(0, S.curM || 9))
 const legend = computed(() => rows.value.map((r, idx) => ({ name: r.key, color: PAL[idx] })))
 const trendCharts = computed(() => {
   const monthRows: EffRow[][] = []
   for (let m = 0; m < mLabels.value.length; m++) monthRows.push(channelRowsAt(m))
-  return COST_LINES.filter((c) => c.type === 'cost' || c.key === 'gross').map((line) => ({
-    key: line.key,
-    title: line.name + (line.key === 'gross' ? ' (毛利)' : ''),
-    svg: lineChart(
-      mLabels.value,
-      rows.value.map((r, idx) => ({
-        name: r.key,
-        color: PAL[idx],
-        values: monthRows.map((rs) => {
-          const rr = rs.find((x) => x.key === r.key)
-          return rr ? lineVal(rr, line.key) : 0
-        }),
-      })),
-      { w: HALF_W, h: 230, endLabel: true, dec: 0 },
-    ),
-  }))
+  return COST_LINES.filter((c) => c.type === 'cost' || c.key === 'gross').map((line) => {
+    const series = rows.value.map((r, idx) => ({
+      name: r.key,
+      color: PAL[idx],
+      values: monthRows.map((rs) => {
+        const rr = rs.find((x) => x.key === r.key)
+        return rr ? lineVal(rr, line.key) : 0
+      }),
+    }))
+    return {
+      key: line.key,
+      title: line.name + (line.key === 'gross' ? ' (毛利)' : ''),
+      svg: lineChart(mLabels.value, series, { w: HALF_W, h: 230, endLabel: true, dec: 0 }),
+      /* 半宽图里末值相同的标签合并简写为「N 线均为 x」，在图下写明是哪几条线 */
+      overlap: sameEndNote(series),
+    }
+  })
 })
 </script>
 
@@ -155,6 +167,7 @@ const trendCharts = computed(() => {
           <div class="trend-title">{{ t.title }}</div>
           <SvgChart :svg="t.svg" :label="`${t.title} 月度趋势`" />
           <AnaKitLegend :items="legend" />
+          <p v-if="t.overlap" class="overlap-note small muted" data-test="overlap-note">注：{{ t.overlap }}。</p>
         </div>
       </div>
       <AnaKitChartNote>
@@ -167,6 +180,7 @@ const trendCharts = computed(() => {
 </template>
 
 <style scoped>
+.overlap-note { margin: var(--space-1) 0 0; line-height: 1.6; }
 .kpis { margin-bottom: var(--space-4); }
 .strong { font-weight: 700; }
 .income { color: var(--fg); font-weight: 600; }
