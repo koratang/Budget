@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import select
 
 from app.core.clock import clock
-from app.models import AuditLog, Category, Department
+from app.models import AuditLog, Category
 from app.models.enums import VersionType
 
 from tests.g4 import builders as B
@@ -15,7 +15,6 @@ from tests.acceptance.e3_scenarios import flow28
 
 CHANNEL_NOTE = "4 月中旬断货 12 天，补货 4-28 到仓"
 CATEGORY_NOTE = "3 款框镜因包装认证延期上架"
-DEPT_NOTE = "4 月 KBIS 展会一次性支付"
 
 
 def test_variance_notes(client, seeded):
@@ -24,19 +23,13 @@ def test_variance_notes(client, seeded):
     clock.set_now(datetime(2027, 5, 12, 10, 30))
     us = B.store(db, "Amazon-US-01")
     frame = db.scalar(select(Category).where(Category.name == "框镜"))
-    market = db.scalar(select(Department).where(Department.name == "市场部"))
-    expo = B.account(db, "展会费")
 
     B.login(client, db, "chensiyu")
-    dept_report = client.get("/api/reports/dept-expense", params={"year": 2027}).json()
-    assert dept_report["can_edit_note"] is True
     payloads = [
         {"report_type": "channel-site", "month": "2027-04", "object_type": "store", "object_key": str(us.id),
          "note": CHANNEL_NOTE},
         {"report_type": "category", "month": "2027-04", "object_type": "category", "object_key": f"{frame.id}:new",
          "note": CATEGORY_NOTE},
-        {"report_type": "dept-expense", "month": dept_report["through"], "object_type": "dept-account",
-         "object_key": f"{market.id}:{expo.id}", "note": DEPT_NOTE},
     ]
     for p in payloads:
         r = client.put("/api/variance-notes", json=p)
@@ -59,20 +52,12 @@ def test_variance_notes(client, seeded):
         g = next(g for g in data["groups"] if g["category"] == "框镜")
         return next(r for r in g["rows"] if r["kind"] == "新品")["note"]
 
-    def dept_note(userid):
-        B.login(client, db, userid)
-        data = client.get("/api/reports/dept-expense", params={"year": 2027}).json()
-        g = next(g for g in data["groups"] if g["department"] == "市场部")
-        return next(r for r in g["rows"] if r["account"] == "展会费")["note"]
-
     expected = {"author": "陈思雨", "updated_at": "2027-05-12 10:30"}
     for userid in ("wanghao", "linxiao", "zhoumingyuan"):
         note, can_edit = channel_note(userid)
         assert note == {"text": CHANNEL_NOTE, **expected}
         assert can_edit is False  # 王浩、林晓、周明远都没有「填写说明」入口
         assert category_note(userid) == {"text": CATEGORY_NOTE, **expected}
-    for userid in ("linxiao", "zhoumingyuan"):
-        assert dept_note(userid) == {"text": DEPT_NOTE, **expected}
 
     # 王浩无「填写说明」入口，调用保存接口返回 403
     B.login(client, db, "wanghao")
@@ -86,4 +71,8 @@ def test_note_requires_known_report(client, seeded):
     B.login(client, db, "chensiyu")
     r = client.put("/api/variance-notes", json={"report_type": "unknown", "month": "2027-04",
                                                 "object_type": "store", "object_key": "1", "note": "说明"})
+    assert r.status_code == 422
+    # 部门费用报告已删除：不再接受 dept-expense 类型的偏差说明
+    r = client.put("/api/variance-notes", json={"report_type": "dept-expense", "month": "2027-04",
+                                                "object_type": "dept-account", "object_key": "1:1", "note": "说明"})
     assert r.status_code == 422

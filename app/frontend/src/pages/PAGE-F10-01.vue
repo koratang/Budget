@@ -87,8 +87,8 @@ function rateClass(v: string | null): string {
   return v.startsWith('-') || Number(v) < 100 ? 'bad' : 'good'
 }
 
-// 偏差柱状图：纵轴 0–2.5 个百分点统一比例尺，1.5 处红色虚线阈值
-const W = 320, H = 180, L = 32, R = 8, T = 12, B = 28, MAX = 2.5, THRESHOLD = 1.5
+// 偏差柱状图：纵轴 0–2.5 个百分点统一比例尺，1.5 处红色虚线阈值（标签在右侧留白处，不与柱子重叠）
+const W = 640, H = 240, L = 36, R = 64, T = 16, B = 28, MAX = 2.5, THRESHOLD = 1.5
 const yOf = (v: number) => T + (H - T - B) * (1 - Math.min(v, MAX) / MAX)
 const bars = computed(() => {
   const list = (data.value?.accuracy ?? []).filter((a) => a.actual_imported && a.deviation_pp !== null)
@@ -220,7 +220,7 @@ const ticks = [0, 0.5, 1, 1.5, 2, 2.5]
                   <td>部门费用合计</td><td class="num">{{ money(data.growth.dept_expense.prior) }}</td><td class="num">{{ money(data.growth.dept_expense.current) }}</td>
                   <td class="num">{{ money(data.growth.dept_expense.increase) }}</td>
                   <td class="num" :class="{ bad: data.growth.expense_faster }">{{ pctSigned(data.growth.dept_expense.growth) }}</td>
-                  <td><RouterLink :to="{ name: 'report-dept' }">部门费用报告</RouterLink></td>
+                  <td>—</td>
                 </tr>
               </tbody>
             </table>
@@ -279,7 +279,7 @@ const ticks = [0, 0.5, 1, 1.5, 2, 2.5]
                 <text :x="b.x + b.w / 2" :y="H - 10" text-anchor="middle">{{ b.m.slice(5) }} 月</text>
               </template>
               <line class="threshold" :x1="L" :x2="W - R" :y1="yOf(THRESHOLD)" :y2="yOf(THRESHOLD)" />
-              <text class="thr" :x="L + 4" :y="yOf(THRESHOLD) - 4" text-anchor="start">阈值 1.5</text>
+              <text class="thr" :x="W - R + 6" :y="yOf(THRESHOLD) + 4" text-anchor="start">阈值 1.5</text>
               <line class="axis" :x1="L" :x2="W - R" :y1="yOf(0)" :y2="yOf(0)" />
             </svg>
           </div>
@@ -288,7 +288,6 @@ const ticks = [0, 0.5, 1, 1.5, 2, 2.5]
 
       <div class="link-row">
         <RouterLink :to="{ name: 'report-channel' }">查看渠道×站点偏差</RouterLink>
-        <RouterLink :to="{ name: 'report-dept' }">查看部门费用报告</RouterLink>
         <RouterLink :to="{ name: 'versions' }">查看预算版本</RouterLink>
       </div>
     </template>

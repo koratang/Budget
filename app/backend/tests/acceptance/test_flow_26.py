@@ -1,4 +1,4 @@
-"""FLOW-26 验收（真实路由 + 权限 + 数据库）：品类×新老品偏差（品效按人民币汇总，DEC-025）与部门费用报告（额度使用率、时间进度）。
+"""FLOW-26 验收（真实路由 + 权限 + 数据库）：品类×新老品偏差（品效按人民币汇总，DEC-025）；部门费用报告已删除，仅断言其接口 404。
 
 期望值逐字取自 TDD验收契约.md FLOW-26 行。
 """
@@ -7,7 +7,7 @@ from decimal import Decimal
 from app.calc import formulas as F
 from app.core.money import fmt_amount, round_to
 
-from tests.acceptance.e3_scenarios import flow26_category, flow26_dept
+from tests.acceptance.e3_scenarios import flow26_category
 from tests.g4 import builders as B
 
 
@@ -18,10 +18,6 @@ def money(v):
 def integer(v):
     q = round_to(Decimal(v), 0)
     return f"{'−' if q < 0 else ''}{abs(q):,}"
-
-
-def rate2(v):
-    return f"{round_to(Decimal(v), 2)}%"
 
 
 def test_efficiency_formulas_unit():
@@ -54,23 +50,10 @@ def test_category_report(client, seeded):
     assert empty["empty"] is True
 
 
-def test_dept_report(client, seeded):
-    """人力资源部培训费全年预算 1,200,000.00、2027-01 至 2027-04 累计实际 500,000.00。"""
+def test_dept_report_removed(client, seeded):
+    """部门费用报告已删除（2026-10-29）：接口不存在，返回 404。"""
     db = seeded
-    flow26_dept(db)
     B.login(client, db, "linxiao")
-    data = client.get("/api/reports/dept-expense", params={"year": 2027}).json()
-    group = next(g for g in data["groups"] if g["department"] == "人力资源部")
-    row = next(r for r in group["rows"] if r["account"] == "培训费")
-    assert money(row["budget"]) == "1,200,000.00"
-    assert money(row["actual"]) == "500,000.00"
-    assert rate2(row["usage"]) == "41.67%"
-    assert rate2(data["time_progress"]) == "33.33%"
-    assert data["imported_months"] == 4
-    # 部门负责人只看到本部门；无部门范围的角色 403
+    assert client.get("/api/reports/dept-expense", params={"year": 2027}).status_code == 404
     B.login(client, db, "wujing")
-    mine = client.get("/api/reports/dept-expense", params={"year": 2027}).json()
-    assert [g["department"] for g in mine["groups"]] == ["人力资源部"]
-    assert mine["total"]["department"] == "合计（我的部门）"
-    B.login(client, db, "wanghao")
-    assert client.get("/api/reports/dept-expense", params={"year": 2027}).status_code == 403
+    assert client.get("/api/reports/dept-expense", params={"year": 2027}).status_code == 404

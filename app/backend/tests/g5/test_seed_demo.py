@@ -100,9 +100,6 @@ def test_pages_have_data(demo):
             continue
         tasks = get(c, "/api/tasks")
         assert any(t["year"] == 2027 and t["status"] == TaskStatus.COMPLETED for t in tasks["items"])
-        dept = get(c, "/api/reports/dept-expense?year=2027")
-        assert not dept["empty"] and dept["groups"] and dept["prior_available"]
-        assert Decimal(dept["total"]["budget"]) > 0 and Decimal(dept["total"]["actual"]) > 0
         rec = get(c, "/api/reconciliation?month=2027-03")
         assert rec["kpis"]["combos"] >= 5 and 1 <= rec["kpis"]["over"] < rec["kpis"]["combos"]
         rates = [abs(Decimal(r["diff_rate"])) for r in rec["rows"] if r["diff_rate"] is not None]
@@ -112,6 +109,7 @@ def test_pages_have_data(demo):
         assert any(a["rule_name"].startswith("部门费用额度使用率") for a in alerts["items"])
         company = get(c, "/api/reports/company?year=2027")
         assert company["growth"]["available"]
+        assert Decimal(company["growth"]["dept_expense"]["current"]) > 0
         assert Decimal("90") <= Decimal(company["achievement"]["original"]["rate"]) <= Decimal("105")
     c = login(db, dingtalk, "林晓")
     sku = get(c, "/api/master/sku-mapping?month=2027-03")

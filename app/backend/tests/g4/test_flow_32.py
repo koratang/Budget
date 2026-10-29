@@ -122,14 +122,10 @@ def test_wang_hao_export_only_own_store(client, seeded):
     assert r.status_code == 403 and r.json() == {"code": "forbidden", "message": "无权限"}
 
 
-def test_dept_and_budget_table_export(client, seeded):
+def test_budget_table_export(client, seeded):
     db = seeded
     versions = flow25(db)
     target = versions["target"]
-    for m in range(1, 13):
-        B.dept_expense(db, target, "人力资源部", "培训费", f"2027-{m:02d}", "100000.00")
-    kd = B.batch(db, "kingdee", "2027-01")
-    B.kingdee(db, kd, "2027-01", "培训费", "123456.785", dept_name="人力资源部")
     task = BudgetTask(name="2027 年度预算编制", year=2027, deadline=date(2026, 12, 20), version_id=target.id)
     db.add(task)
     db.flush()
@@ -141,14 +137,9 @@ def test_dept_and_budget_table_export(client, seeded):
     db.flush()
 
     B.login(client, db, "linxiao")
-    name, wb = export(client, "report-dept", {"year": 2027})
-    assert name == "部门费用报告_截至2027-05.xlsx"
-    ws = wb.active
-    assert header_row(ws, 1) == ["部门", "预算科目", "全年预算", "累计实际", "额度使用率", "时间进度", "达成条",
-                                  "上年同期实际", "同比", "偏差说明"]
-    row = next(r for r in ws.iter_rows(min_row=2) if r[1].value == "培训费")
-    assert money_cell(row[2]) == Decimal("1200000.00")
-    assert money_cell(row[3]) == Decimal("123456.79")  # ROUND_HALF_UP 2 位，与页面显示一致
+    # 部门费用报告已删除：导出视图 report-dept 不再支持
+    r = client.get("/api/export", params={"view": "report-dept", "filters": json.dumps({"year": 2027})})
+    assert r.status_code == 422 and r.json()["message"] == "不支持导出该页面"
 
     name, wb = export(client, "budget-platform", {"unit_id": unit.id})
     assert name == "预算表_Amazon-US-01_2027 年度预算编制.xlsx"

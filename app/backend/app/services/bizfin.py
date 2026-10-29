@@ -11,7 +11,7 @@ from app.core.errors import Conflict, NotFound, ValidationFailed
 from app.models import BizfinSection
 from app.models.bizfin import SECTION_KEYS
 
-LABELS = {"indicators": "财务与业务指标", "biz_dim": "业务指标维度填报", "policy": "政策环境事件", "keywork": "重点工作"}
+LABELS = {"indicators": "财务与业务指标", "biz_dim": "业务指标维度填报", "policy": "政策环境事件"}
 
 
 def _view(row: BizfinSection) -> dict:
@@ -48,11 +48,3 @@ def save(db: Session, current: CurrentUser, key: str, body: dict) -> dict:
                 before={"revision": current_rev}, after={"revision": row.revision, "is_demo": is_demo})
     return _view(row)
 
-
-def reset(db: Session, current: CurrentUser) -> None:
-    """恢复示例数据：清空全部已保存部分。"""
-    rows = db.scalars(select(BizfinSection)).all()
-    for r in rows:
-        db.delete(r)
-    write_audit(db, action="bizfin.reset", object_type="bizfin_section", actor=current,
-                before={"keys": sorted(r.key for r in rows)}, after=None)

@@ -1,0 +1,28 @@
+groups 预算编制|实际数|预算执行|业财分析|基础数据|系统设置
+items 工作台|编制任务|待我审批|预算版本|实际数导入|BI 与金蝶核对|公司汇总|渠道×站点偏差|品类×新老品偏差|预算预警|财务指标|业务指标|数据分析|政策环境|渠道与店铺|SKU 对照表|B端客户与部门|科目映射|汇率|角色与权限
+PASS 侧栏一级分组 — 预算编制|实际数|预算执行|业财分析|基础数据|系统设置
+PASS 预算编制含预算版本
+PASS 预算执行四项
+PASS 业财分析四项
+PASS /versions 侧栏高亮「预算版本」 — 预算版本
+PASS /reports/company 侧栏高亮「公司汇总」 — 公司汇总
+PASS /alerts 侧栏高亮「预算预警」 — 预算预警
+PASS /rules 侧栏高亮「预算预警」 — 预算预警
+PASS 预算预警页签：预警记录 / 规则库 — 预警记录|规则库
+PASS 规则库页标题「预算预警」
+PASS 规则详情高亮「预算预警」 — 预算预警
+PASS 旧链接 /reports/dept 回到首页
+PASS 林晓无前端错误
+wanghao items 工作台|我的填报|预算版本|渠道×站点偏差|品类×新老品偏差|预算预警
+PASS wanghao 只见预警记录页签 — 预警记录
+PASS wanghao 侧栏无部门费用报告且有预算预警
+PASS wanghao 无前端错误
+wujing items 工作台|待我审批|预算版本|预算预警
+PASS wujing 只见预警记录页签 — 预警记录
+PASS wujing 侧栏无部门费用报告且有预算预警
+PASS wujing 无前端错误
+zhengke items 工作台|我的填报|部门费用|预算版本|预算预警
+PASS zhengke 只见预警记录页签 — 预警记录
+PASS zhengke 侧栏无部门费用报告且有预算预警
+PASS zhengke 无前端错误
+passed=22; failed=0

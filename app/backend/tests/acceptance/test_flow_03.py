@@ -1,6 +1,6 @@
 """FLOW-03 验收（API 层：角色 × 资源矩阵，真实路由 + 数据库）：期望值逐字取自 TDD验收契约 FLOW-03。
 
-种子含 3 个部门、4 个店铺、3 个 B 端客户；吴静、郑可打开部门费用填报与部门费用报告 → 只见人力资源部行与「合计（我的部门）」；
+种子含 3 个部门、4 个店铺、3 个 B 端客户；吴静、郑可打开部门费用填报 → 只见人力资源部行（部门费用报告已于 2026-10-29 删除）；
 王浩打开填报与渠道×站点偏差 → 只见 Amazon-US-01 行及其合计；孙婷打开 B 端填报与偏差报告 → 只见 Ferguson、Menards；
 蒋帆打开物流比例填报并调用填报数据接口 → 只含维度列与头程费率、尾程费率、仓储费率、关税率四项，响应 JSON 无收入、销量、毛利字段键。
 """
@@ -44,16 +44,7 @@ def test_flow_03_department_roles(seeded, dingtalk, tmp_path):
         assert "人力资源部" in json.dumps(g.json(), ensure_ascii=False)
         for other in ("财务部", "市场部"):
             assert other not in json.dumps(g.json()["rows"], ensure_ascii=False), (who, other)
-        rep = c.get("/api/reports/dept-expense", params={"year": 2027})
-        assert rep.status_code == 200, rep.text
-        d = rep.json()
-        assert [x["name"] for x in d["departments"]] == ["人力资源部"], who
-        text = json.dumps(d, ensure_ascii=False)
-        assert "合计（我的部门）" in text and "财务部" not in text and "市场部" not in text, who
-    # 范围外部门报告请求被拒
-    mkt = next(x["id"] for x in p("linxiao").get("/api/reports/dept-expense", params={"year": 2027}).json()[
-        "departments"] if x["name"] == "市场部")
-    assert p("wujing").get("/api/reports/dept-expense", params={"year": 2027, "department_id": mkt}).status_code == 403
+        assert c.get("/api/reports/dept-expense", params={"year": 2027}).status_code == 404
 
 
 def test_flow_03_operations(seeded, dingtalk, tmp_path):

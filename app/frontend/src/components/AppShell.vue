@@ -5,9 +5,9 @@
  */
 import { computed, watch, type Component } from 'vue'
 import {
-  Bell, Box, Calendar, Coin, Collection, Connection, DataAnalysis, DataBoard, DataLine, Document, DocumentChecked, EditPen,
-  Files, Flag, Goods, Guide, HomeFilled, Histogram, Link, List, Lock, Money, Notebook, OfficeBuilding, Odometer, PieChart,
-  Promotion, Setting, ShoppingBag, TrendCharts, Upload, Wallet, Warning,
+  Box, Calendar, Coin, Collection, Connection, DataAnalysis, DataBoard, DataLine, DocumentChecked, EditPen, Goods, Guide,
+  HomeFilled, Histogram, Link, Lock, Money, Notebook, OfficeBuilding, Odometer, PieChart, Promotion, Setting, ShoppingBag,
+  TrendCharts, Upload, Wallet, Warning,
 } from '@element-plus/icons-vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
@@ -22,16 +22,14 @@ const ui = useUiStore()
 
 /** 一级标题（分组）与二级菜单图标；按分组名 / 路由名取，未列出的不显示图标 */
 const GROUP_ICONS: Record<string, Component> = {
-  预算编制: Notebook, 预算版本: Files, 实际数: Coin, 报表: DataAnalysis, 业财分析: TrendCharts, 预警与规则: Bell, 基础数据: Box, 系统设置: Setting,
+  预算编制: Notebook, 实际数: Coin, 预算执行: DataLine, 业财分析: TrendCharts, 基础数据: Box, 系统设置: Setting,
 }
 const ITEM_ICONS: Record<string, Component> = {
   workbench: HomeFilled, tasks: Calendar, 'my-filling': EditPen, 'dept-expense': Wallet, approvals: DocumentChecked,
   versions: Collection, import: Upload, reconcile: Connection, 'report-company': Odometer, 'report-channel': DataBoard,
-  'report-category': PieChart, 'report-dept': DataLine, alerts: Warning, rules: Document, stores: ShoppingBag, sku: Goods,
+  'report-category': PieChart, alerts: Warning, stores: ShoppingBag, sku: Goods,
   customers: OfficeBuilding, accounts: Link, fx: Money, roles: Lock,
   'bizfin-finance': Histogram, 'bizfin-business': Promotion, 'bizfin-analysis': DataAnalysis, 'bizfin-policy': Guide,
-  'bizfin-keywork': Flag,
-  'bizfin-data': List,
 }
 
 const groups = computed(() =>

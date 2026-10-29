@@ -188,7 +188,7 @@ def company_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, 
                         amount(g["revenue"]["increase"]), signed_percent(g["revenue"]["growth"]), text("渠道×站点偏差")])
         gs.rows.append([text("部门费用合计"), amount(g["dept_expense"]["prior"]), amount(g["dept_expense"]["current"]),
                         amount(g["dept_expense"]["increase"]), signed_percent(g["dept_expense"]["growth"]),
-                        text("部门费用报告")])
+                        text("—")])
     else:
         gs = Sheet("增速对比", None, ["说明"], [[text(g["message"])]])
     acc = Sheet("预测准确度", None, ["月份", "所属季度快照", "快照预测净利润率", "实际净利润率", "偏差（百分点）", "判定"])
@@ -364,35 +364,6 @@ def category_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str,
     sh.total_rows.add(len(sh.rows))
     sh.rows.append(_category_row(data["total"], False))
     return f"品类新老品偏差_{data['month']}.xlsx", [sh]
-
-
-# ---------------------------------------------------------------------------
-# 视图：部门费用报告（PAGE-F10-04 §8）
-# ---------------------------------------------------------------------------
-DEPT_HEADERS = ["部门", "预算科目", "全年预算", "累计实际", "额度使用率", "时间进度", "达成条", "上年同期实际", "同比",
-                "偏差说明"]
-
-
-def dept_sheets(db: Session, ctx: ScopeContext, filters: dict) -> tuple[str, list[Sheet]]:
-    data = R.dept_report(db, ctx, _int(filters.get("year")), _int(filters.get("department_id")))
-    if data["empty"]:
-        raise ValidationFailed(data["message"])
-    sh = Sheet("部门费用报告", None, DEPT_HEADERS)
-    progress = data["time_progress"]
-
-    def line(r, note: bool):
-        return [text(r["department"]), text(r["account"]), amount(r["budget"]), amount(r["actual"]),
-                percent(r["usage"]), percent(progress), bar(r["usage"]), amount(r.get("prior")),
-                signed_percent(r.get("yoy")), note_text(r.get("note")) if note else Cell(None)]
-
-    for g in data["groups"]:
-        sh.total_rows.add(len(sh.rows))
-        sh.rows.append(line(g["subtotal"], False))
-        for r in g["rows"]:
-            sh.rows.append(line(r, True))
-    sh.total_rows.add(len(sh.rows))
-    sh.rows.append(line(data["total"], False))
-    return f"部门费用报告_截至{data['through']}.xlsx", [sh]
 
 
 # ---------------------------------------------------------------------------
@@ -595,7 +566,6 @@ VIEWS: dict[str, Callable[[Session, ScopeContext, dict], tuple[str, list[Sheet]]
     "report-company": company_sheets,
     "report-channel": channel_sheets,
     "report-category": category_sheets,
-    "report-dept": dept_sheets,
     "budget-platform": budget_platform_sheets,
     "version-compare": compare_sheets,
     "actual-reconcile": reconcile_sheets,

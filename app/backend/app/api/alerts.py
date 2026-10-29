@@ -174,9 +174,10 @@ def alert_detail(alert_id: int, current: CurrentUser = Depends(get_current_user)
     data.update(receivers=receivers, changes=changes, attempts=attempts, max_attempts=MAX_ATTEMPTS,
                 notice_preview={"title": outbox.params.get("title"), "name": outbox.params.get("name"),
                                 "object": outbox.params.get("object_name"), "period": outbox.params.get("period"),
-                                "link_text": "预算管理平台 › 预警中心"} if outbox else None,
-                report_link={"department": "/reports/dept", "store": "/reports/channel",
-                             "category": "/reports/category", "company": "/reports/company"}.get(alert.object_type))
+                                "link_text": "预算管理平台 › 预算预警"} if outbox else None,
+                # 部门对象无对应报表（部门费用报告已删除）：不给链接，详情页不显示「查看相关报表」
+                report_link={"store": "/reports/channel", "category": "/reports/category",
+                             "company": "/reports/company"}.get(alert.object_type))
     return data
 
 

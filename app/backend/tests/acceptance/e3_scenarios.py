@@ -114,19 +114,15 @@ def flow27_2028(db):
 
 
 def flow28(db):
-    """FLOW-25 场景 + 市场部展会费预算与实际（部门费用报告市场部展会费行）。"""
+    """FLOW-25 场景 + 2027-03 金蝶实际（偏差说明：渠道×站点、品类×新老品）。"""
     versions = _flow25(db)
-    target = versions["target"]
-    for m in range(1, 13):
-        B.dept_expense(db, target, "市场部", "展会费", f"2027-{m:02d}", "50000.00")
     kd = B.batch(db, "kingdee", "2027-03")
-    B.kingdee(db, kd, "2027-03", "展会费", "40000.00", dept_name="市场部")
     B.kingdee(db, kd, "2027-03", "平台销售收入", "100000.00", store_name="Amazon-US-01")
     return versions
 
 
 def flow32(db):
-    """FLOW-25 场景 + 人力资源部培训费（部门费用报告）+ Amazon-US-01 平台填报单位（预算表）。"""
+    """FLOW-25 场景 + 人力资源部培训费预算与金蝶实际 + Amazon-US-01 平台填报单位（预算表）。"""
     versions = _flow25(db)
     target = versions["target"]
     for m in range(1, 13):

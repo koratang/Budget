@@ -85,7 +85,7 @@ onMounted(init)
     <div v-else-if="versions.length < 2" class="card state">
       <div class="state-title">至少需要两个预算版本才能对比</div>
       <p>当前年度不足两个版本。季度目标调整生效或发布滚动预测快照后即可对比。</p>
-      <RouterLink class="btn" :to="{ name: 'versions' }">返回版本管理</RouterLink>
+      <RouterLink class="btn" :to="{ name: 'versions' }">返回预算版本</RouterLink>
     </div>
     <template v-else>
       <div class="row section">

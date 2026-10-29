@@ -1,4 +1,4 @@
-"""DATA-F15-01 业财分析工作区（REQ-F15-01）：财务指标、业务指标维度填报、政策事件、重点工作各存一份 JSON 文档。
+"""DATA-F15-01 业财分析工作区（REQ-F15-01）：财务指标、业务指标维度填报、政策事件各存一份 JSON 文档。
 
 计算（勾稽、派生、分析模型）全部在前端引擎完成，服务端只做按部分存取、乐观锁与审计（DEC-029）。
 """
@@ -10,12 +10,12 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
 
-SECTION_KEYS = ("indicators", "biz_dim", "policy", "keywork")
+SECTION_KEYS = ("indicators", "biz_dim", "policy")
 
 
 class BizfinSection(Base):
     __tablename__ = "bizfin_section"
-    __table_args__ = (CheckConstraint("key IN ('indicators', 'biz_dim', 'policy', 'keywork')", name="key"),)
+    __table_args__ = (CheckConstraint("key IN ('indicators', 'biz_dim', 'policy')", name="key"),)
     key: Mapped[str] = mapped_column(String(16), primary_key=True)
     data: Mapped[dict | list] = mapped_column(JSONB, nullable=False)
     is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False)  # 仍是示例数据（未经数据管理导入正式数据）

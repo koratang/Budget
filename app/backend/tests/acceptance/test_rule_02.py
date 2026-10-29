@@ -214,7 +214,6 @@ def scope_cases(world) -> list[tuple[str, str, str, str, dict | list | None]]:
         ("wanghao", "GET", exp("budget-platform", json.dumps({"unit_id": de})), "export", None),
         ("wanghao", "GET", f"/api/reports/channel-site?channel={chan['Wayfair'].id}", "list", None),
         ("wanghao", "GET", exp("report-channel", json.dumps({"channel": str(chan["Wayfair"].id)})), "export", None),
-        ("wanghao", "GET", f"/api/reports/dept-expense?department_id={dept['市场部'].id}", "list", None),
         ("wanghao", "GET", "/api/reports/company", "list", None),
         ("wanghao", "GET", f"/api/dept-expense/{mkt}/grid", "detail", None),
         ("wanghao", "GET", f"/api/reserves?department_id={dept['市场部'].id}", "list", None),
@@ -236,8 +235,6 @@ def scope_cases(world) -> list[tuple[str, str, str, str, dict | list | None]]:
         ("sunting", "GET", "/api/reports/category", "list", None),
         ("sunting", "GET", f"/api/alerts/{a_de}", "detail", None),
         # 吴静：请求市场部费用
-        ("wujing", "GET", f"/api/reports/dept-expense?department_id={dept['市场部'].id}", "list", None),
-        ("wujing", "GET", exp("report-dept", json.dumps({"department_id": dept["市场部"].id})), "export", None),
         ("wujing", "GET", f"/api/dept-expense/{mkt}/grid", "detail", None),
         ("wujing", "GET", f"/api/filling-units/{mkt}/template", "export", None),
         ("wujing", "PATCH", f"/api/filling-units/{mkt}/cells", "write",
@@ -349,22 +346,18 @@ def _xlsx_text(content: bytes) -> str:
 def test_rule_02_lists_and_exports_filtered_server_side(world):
     db = world["db"]
     c = world["clients"]
-    # 实际与预算：Amazon-US-01 / Amazon-DE-01、Ferguson / Bauhaus、人力资源部 / 市场部
+    # 实际与预算：Amazon-US-01 / Amazon-DE-01、Ferguson / Bauhaus
     orig = B.version(db, 2026, VersionType.ORIGINAL_TARGET, "V1 年初原始目标")
     for s in ("Amazon-US-01", "Amazon-DE-01"):
         B.platform_unit(db, orig, s, "2026-04", "浴室柜", True, spu=10, avg_sales="120", avg_price="80.00",
                         discount="0.10", ad_rate="0.12")
     for cu in ("Ferguson", "Bauhaus"):
         B.b2b_unit(db, orig, cu, "2026-04", sales_local="100000.00", refund_rate="0.03", purchase_cost_rate="0.40")
-    for d in ("人力资源部", "市场部"):
-        B.dept_expense(db, orig, d, "差旅费", "2026-04", "30000.00")
     kd = B.batch(db, "kingdee", "2026-04", "金蝶_2026-04_利润表.xlsx")
     for s, amt in (("Amazon-US-01", "554400.00"), ("Amazon-DE-01", "321000.00")):
         B.kingdee(db, kd, "2026-04", "平台销售收入", amt, store_name=s)
     for cu, amt in (("Ferguson", "700000.00"), ("Bauhaus", "456000.00")):
         B.kingdee(db, kd, "2026-04", "平台销售收入", amt, customer_name=cu)
-    for d, amt in (("人力资源部", "28000.00"), ("市场部", "41000.00")):
-        B.kingdee(db, kd, "2026-04", "差旅费", amt, dept_name=d)
     B.fx_actual(db, "2026-04", "USD", "7.2000")
     B.fx_actual(db, "2026-04", "EUR", "7.8000")
 
@@ -396,14 +389,8 @@ def test_rule_02_lists_and_exports_filtered_server_side(world):
     text = _xlsx_text(ex.content)
     assert "Ferguson" in text and "Bauhaus" not in text
 
-    # 吴静：部门费用报告与导出只含人力资源部
-    rep = c["wujing"].get("/api/reports/dept-expense?year=2026")
-    assert rep.status_code == 200, rep.text
-    assert [d["name"] for d in rep.json()["departments"]] == ["人力资源部"]
-    assert "市场部" not in rep.text
-    ex = c["wujing"].get("/api/export", params={"view": "report-dept", "filters": json.dumps({"year": 2026})})
-    text = _xlsx_text(ex.content)
-    assert "人力资源部" in text and "市场部" not in text
+    # 吴静：预警列表不含市场部（部门费用报告已于 2026-10-29 删除，其接口返回 404）
+    assert c["wujing"].get("/api/reports/dept-expense?year=2026").status_code == 404
     alerts = c["wujing"].get("/api/alerts").json()
     assert alerts["items"] == []
 

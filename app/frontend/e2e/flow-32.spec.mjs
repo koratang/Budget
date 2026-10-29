@@ -132,22 +132,6 @@ await run('FLOW-32', 'flow32', '2027-05-20 10:00', async (env) => {
   eq(texts(sh.rows[1]), pt.header, '品类报告：表头列与页面一致')
   compareRows('品类报告', pt, sh.rows.slice(2), 2)
 
-  // 部门费用报告
-  await page.goto(`${BASE}/reports/dept`)
-  const dt = page.locator('[data-testid="dept-table"]')
-  await dt.locator('tbody tr').first().waitFor()
-  await page.waitForTimeout(500)
-  ex = await exportFrom(page, 'PAGE-F10-04', 'linxiao-dept')
-  check(ex.filename.startsWith('部门费用报告') && ex.filename.endsWith('.xlsx'), `部门费用报告下载文件名：${ex.filename}`)
-  pt = await pageTable(dt)
-  sh = ex.sheets[0]
-  eq(texts(sh.rows[0]), pt.header, '部门费用报告：表头列与页面一致')
-  const prow = pt.rows.find((r) => r.includes('培训费'))
-  const srow = sh.rows.find((r) => texts(r).includes('培训费'))
-  const pi = prow.indexOf('培训费')
-  check(norm(fmtCell(srow[pi + 1])) === norm(prow[pi + 1]) && norm(fmtCell(srow[pi + 2])) === norm(prow[pi + 2]), `部门费用报告培训费金额与页面一致（${prow[pi + 1]} / ${prow[pi + 2]}）`)
-  eq(fmtCell(srow[pi + 2]), '123,456.79', '累计实际 123,456.785 → 123,456.79（四舍五入 2 位）')
-
   // 预算表（PAGE-F04-02）
   const unit = env.seeded.unit
   await page.goto(`${BASE}/filling/platform/${unit}`)

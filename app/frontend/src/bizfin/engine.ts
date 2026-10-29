@@ -4,7 +4,7 @@
  * 移植原则：
  * - 标识符名与参数签名与原代码保持一致，便于页面作者对照原 view* 函数逐行改写；
  * - 数值计算、舍入、容差、「未填报为 null 不当 0」等口径与原代码逐行一致，不做「改进」；
- * - 原全局可变状态（IND / CUR / BIZ_DIM / POLICY_EVENTS / KW_TASKS / TREND / dim / curM）
+ * - 原全局可变状态（IND / CUR / BIZ_DIM / POLICY_EVENTS / TREND / dim / curM）
  *   集中在响应式对象 S 中，Vue 页面的 computed 读 S 即可随状态自动刷新；
  * - 不含登录 / 权限 / localStorage / toast / DOM 渲染逻辑；持久化由 seed / snapshot / hydrate 接口承担。
  */
@@ -86,15 +86,6 @@ export interface PolicyEvent {
   desc: string
   impact: string
 }
-export interface KwTask {
-  time: string
-  cat: string
-  goal: string
-  breakdown: string
-  eta: string
-  progress: number
-  status: string
-}
 export interface TrendData {
   months: string[]
   revenue: number[]
@@ -126,8 +117,6 @@ export function jsNum(v: number | null | undefined): number {
   return v as number
 }
 
-/* ------------------------- 基础常量 ------------------------- */
-export const COMPANY = '示例公司'
 export const DEPTS = ['产品作战部', '研发部', '运营部', '供应中心', '物流物控部', '视觉部', '市场部', '人力资源部', '财务部', '信息数字化部', '项目管理部', '总经办']
 export const CHANNELS = ['Amazon', 'Wayfair', 'Home Depot', "Lowe's", '独立站']
 export const CATEGORIES = ['框镜', '灯镜', '镜柜', '水龙头', '浴室柜', '淋浴门']
@@ -853,29 +842,6 @@ export const POLICY_SEED: PolicyEvent[] = [
 /* =========================================================================
    重点工作进度：工作台账行字段 = 时间 / 工作分类 / 工作目标 / 工作分解 / 预计完成时间 / 目前进度 / 工作状态。
    工作分类六档，工作状态四档；「需要关注工作」按状态自动从台账派生（延误 + 阻滞）。
-   ========================================================================= */
-export const KW_CATEGORIES = ['核算', '资金', '合规', '降本增收', '财务BP', '信息化']
-export const KW_CATEGORY_COLOR: Record<string, string> = { '核算': '#2563eb', '资金': '#0ea5b7', '合规': '#d9251d', '降本增收': '#0f9d58', '财务BP': '#7c3aed', '信息化': '#475569' }
-export const KW_STATUS = ['进行中', '已完成', '延误', '阻滞']
-export const KW_STATUS_COLOR: Record<string, string> = { '进行中': '#2563eb', '已完成': '#0f9d58', '延误': '#e08600', '阻滞': '#d9251d' }
-
-export const KW_SEED: KwTask[] = [
-  { time: '2026-04', cat: '合规', goal: '美国 STURDY 防倾倒标准合规改模', breakdown: '框镜主结构重新开模 · 二轮试产 09/20 · 一次性模具分摊到 Q3-Q4 量产批次', eta: '2026-11', progress: 62, status: '进行中' },
-  { time: '2026-03', cat: '合规', goal: 'EUDR 木材合规溯源体系', breakdown: 'FCA 入库 100% 标注 → QR 链路 09/30 上线 · 小型供应商 FAVOR ID 组合方式缓出', eta: '2026-12', progress: 48, status: '进行中' },
-  { time: '2026-05', cat: '合规', goal: '欧盟 GPSR 产品安全合规建设', breakdown: '全 SKU 合规标签上线 · EC REP 已签约 · 9 月底完成 80%', eta: '2026-11', progress: 55, status: '进行中' },
-  { time: '2026-02', cat: '合规', goal: '德国 VerpackG / EPR 包装许可', breakdown: 'LUCID 注册 + 包装回收合同签约 → 后续年费 18 万/年', eta: '2026-08', progress: 100, status: '已完成' },
-  { time: '2026-01', cat: '降本增收', goal: '头程物流拼柜 + FBA 多仓调拨优化', breakdown: 'FBA 多仓分拨覆盖 5 个仓号 → 9 月单柜成本下降 14% · 目标物流成本占收入比 -1.5pt', eta: '2026-12', progress: 71, status: '进行中' },
-  { time: '2026-02', cat: '降本增收', goal: '关键 SKU 集中采购 + 战略供应商返利', breakdown: 'Top 20 SKU 已 70% 集中下单 · 季度返利机制谈判中 · 目标采购成本占收入比 -1.2pt', eta: '2026-12', progress: 65, status: '进行中' },
-  { time: '2026-03', cat: '降本增收', goal: '模具共享 + 通用化平台', breakdown: '通用底座方案已定稿 · 客户定制化响应时间缩短 30% · 3 个新品 BOM 重叠度低于预期', eta: '2026-11', progress: 32, status: '延误' },
-  { time: '2026-04', cat: '降本增收', goal: '视觉素材 AI 化生产', breakdown: '新品视觉成本较去年下降 28% · 单图时效由 6h 缩至 1.5h', eta: '2026-10', progress: 78, status: '进行中' },
-  { time: '2026-05', cat: '降本增收', goal: 'Home Depot 招商上架 20 款', breakdown: '首批 12 SKU 通过招商审核 · 9/25 上架 8 SKU · 预计 Q4 单月贡献 80 万', eta: '2026-12', progress: 45, status: '进行中' },
-  { time: '2026-06', cat: '降本增收', goal: "Lowe's 招商上架 15 款", breakdown: "招商资料提交 8/15 → 进入合规审核阶段 · Lowe's 要求额外 EHS 检测报告，预计延后 8 周", eta: '2026-12', progress: 18, status: '阻滞' },
-  { time: '2026-04', cat: '核算', goal: '独立站 DTC 升级 + CRM 体系', breakdown: '新站 9/20 上线 · 复购率由 18% 升至 24% · 目标毛利率提升 0.4pt', eta: '2026-12', progress: 52, status: '进行中' },
-  { time: '2026-03', cat: '降本增收', goal: '智能灯镜二代上市', breakdown: '小批量 9/15 试产 · 计划 10/8 全面上市 · 目标新品成功率 70%', eta: '2026-10', progress: 58, status: '进行中' },
-  { time: '2026-02', cat: '核算', goal: '镜柜 SKU 全面升级', breakdown: '镜柜系列全面切换 → 月度件数较去年 +15.3% · 项目已闭环', eta: '2026-08', progress: 100, status: '已完成' },
-  { time: '2026-06', cat: '信息化', goal: '业财一体化工作台上线', breakdown: 'V1.0 已上线 · 月度填报闭环 9 月底前完成 · 年化节省财务+运营人力约 30 万', eta: '2026-10', progress: 82, status: '进行中' },
-  { time: '2026-05', cat: '信息化', goal: '仓储 WMS 二期 + 多仓可视化', breakdown: '主仓功能上线 → 海外仓对接延期至 11 月 · 海外仓 API 对接比预期复杂', eta: '2026-12', progress: 38, status: '延误' },
-]
 
 /* ------------------------- 经营建议：管理建议台账 -------------------------
    行字段：时间 / 业务板块 / 背景描述 / 管理建议 / 影响评估；业务板块下拉复用 POLICY_SEGS */
@@ -892,7 +858,6 @@ export const S = reactive({
   CUR: [] as Indicator[],
   BIZ_DIM: {} as BizDimStore,
   POLICY_EVENTS: POLICY_SEED.map(function (o) { return Object.assign({}, o) }) as PolicyEvent[],
-  KW_TASKS: KW_SEED.map(function (o) { return Object.assign({}, o) }) as KwTask[],
   TREND: {
     months: ['04月', '05月', '06月', '07月', '08月', '09月'],
     revenue: [0, 0, 0, 0, 0, 0],
@@ -903,37 +868,6 @@ export const S = reactive({
   dim: 'year' as DimMode,
   curM: 9,
 })
-
-/* 「今天」：集中为可注入函数，便于测试固定时间 */
-export let today: () => Date = () => new Date()
-export function setToday(fn: () => Date): void {
-  today = fn
-}
-
-/* 台账统计：分类 / 状态 计数 + 平均进度 + 需关注数 */
-export interface KwStat {
-  total: number; byStatus: Record<string, number>; byCat: Record<string, number>; progSum: number
-  delayed: number; blocked: number; hot: number; progressAvg: number; watch: number
-}
-export function kwStat(): KwStat {
-  const s: KwStat = {
-    total: S.KW_TASKS.length, byStatus: {}, byCat: {}, progSum: 0,
-    delayed: 0, blocked: 0, hot: 0, progressAvg: 0, watch: 0,
-  }
-  KW_STATUS.forEach(function (x) { s.byStatus[x] = 0 })
-  KW_CATEGORIES.forEach(function (x) { s.byCat[x] = 0 })
-  S.KW_TASKS.forEach(function (p) {
-    s.byStatus[p.status] = (s.byStatus[p.status] || 0) + 1
-    s.byCat[p.cat] = (s.byCat[p.cat] || 0) + 1
-    s.progSum += Number(p.progress || 0)
-  })
-  s.delayed = s.byStatus['延误'] || 0
-  s.blocked = s.byStatus['阻滞'] || 0
-  s.hot = s.delayed + s.blocked
-  s.watch = s.hot
-  s.progressAvg = S.KW_TASKS.length ? s.progSum / S.KW_TASKS.length : 0
-  return s
-}
 
 /* ------------------------- 数据分析二级导航 -------------------------
    数据分析模块下的 9 个子模块；左导航「数据分析」展开的二级菜单与页内二级导航栏共用此定义 */
@@ -965,20 +899,15 @@ export const NAV: NavItem[] = [
   { id: 'analysis', name: '数据分析', group: '决策支持', icon: 'analysis',
     sub: '渠道效益 / 产品效益 / 流量 / 用户 / 订单 / 品类 / 物流 / 仓储 / 管理费用 多维度分析',
     children: ANA_NAV },
-  { id: 'keywork', name: '重点工作进度', group: '决策支持', icon: 'keywork',
-    sub: '年度重点项目立项 / 进度 / 责任部门 / 财务影响归因' },
-  { id: 'data', name: '数据管理', group: '系统', icon: 'data',
-    sub: '表格导入 / 手动填写 / 导出 / 指标字典' },
 ]
 
 /* ------------------------- 持久化接口（替代原 save / load / seed） ------------------------- */
-export type SectionKey = 'indicators' | 'biz_dim' | 'policy' | 'keywork'
+export type SectionKey = 'indicators' | 'biz_dim' | 'policy'
 /** 每个持久化部分对应的状态字段 */
 export const SECTION_OF = {
   indicators: 'IND',
   biz_dim: 'BIZ_DIM',
   policy: 'POLICY_EVENTS',
-  keywork: 'KW_TASKS',
 } as const satisfies Record<SectionKey, keyof typeof S>
 
 function seedIND(): Indicator[] {
@@ -991,7 +920,6 @@ export function seed(): void {
   S.IND = seedIND()
   S.BIZ_DIM = {}
   S.POLICY_EVENTS = POLICY_SEED.map(function (o) { return Object.assign({}, o) })
-  S.KW_TASKS = KW_SEED.map(function (o) { return Object.assign({}, o) })
   recompute()
 }
 
@@ -1009,7 +937,6 @@ export function snapshot(): Record<SectionKey, unknown> {
     indicators: json(clean),
     biz_dim: json(S.BIZ_DIM),
     policy: json(S.POLICY_EVENTS),
-    keywork: json(S.KW_TASKS),
   }
 }
 
@@ -1021,10 +948,6 @@ function isIndicator(x: unknown): x is Indicator {
 }
 function isPolicyEvent(x: unknown): x is PolicyEvent {
   return isRecord(x) && ['time', 'seg', 'desc', 'impact'].every(function (k) { return typeof x[k] === 'string' })
-}
-function isKwTask(x: unknown): x is KwTask {
-  return isRecord(x) && ['time', 'cat', 'goal', 'breakdown', 'eta', 'status'].every(function (k) { return typeof x[k] === 'string' }) &&
-    typeof x.progress === 'number'
 }
 function cellNum(v: unknown): number | null {
   return typeof v === 'number' ? v : null
@@ -1062,7 +985,6 @@ export function hydrate(input: Partial<Record<SectionKey, unknown>>): void {
   S.IND = ind.length ? ind : seedIND()
   S.BIZ_DIM = sec.biz_dim !== undefined ? toBizDimStore(sec.biz_dim) : {}
   S.POLICY_EVENTS = Array.isArray(sec.policy) ? sec.policy.filter(isPolicyEvent) : POLICY_SEED.map(function (o) { return Object.assign({}, o) })
-  S.KW_TASKS = Array.isArray(sec.keywork) ? sec.keywork.filter(isKwTask) : KW_SEED.map(function (o) { return Object.assign({}, o) })
   recompute()
 }
 
@@ -1893,209 +1815,12 @@ export function marketsNow(): { label: string; value: number; color: string }[] 
 
 /* =========================================================================
    数据管理：导入 / 导出（纯函数部分）
-   ========================================================================= */
-export function parseTable(text: string): string[][] {
-  text = String(text).replace(/^﻿/, '').replace(/\r\n?/g, '\n')
-  const lines = text.split('\n').filter(function (l) { return l.trim().length })
-  if (!lines.length) return []
-  const dTab = (lines[0].match(/\t/g) || []).length
-  const dCom = (lines[0].match(/,/g) || []).length
-  const delim = dTab >= dCom ? '\t' : ','
-  return lines.map(function (l) {
-    return l.split(delim).map(function (s) { return s.trim().replace(/^"(.*)"$/, '$1') })
-  })
-}
 
 export type HeaderKey = 'code' | 'name' | 'target' | 'actual' | 'weight' | 'dept' | 'unit' | 'dir' | 'dim' | 'month'
 export type HeaderIndex = Partial<Record<HeaderKey, number>>
-export function mapHeader(h: string[]): HeaderIndex {
-  const idx: HeaderIndex = {}
-  h.forEach(function (c, i) {
-    const k = String(c).toLowerCase().replace(/\s/g, '')
-    if (idx.code === undefined && /^(编码|code|指标编码|编号)$/.test(k)) idx.code = i
-    else if (idx.name === undefined && /(指标名称|名称|name)/.test(k)) idx.name = i
-    else if (idx.target === undefined && /(目标值|目标|target)/.test(k)) idx.target = i
-    else if (idx.actual === undefined && /(实际值|实际|actual|完成值|本期值)/.test(k)) idx.actual = i
-    else if (idx.weight === undefined && /(权重|weight)/.test(k)) idx.weight = i
-    else if (idx.dept === undefined && /(责任部门|部门|dept|department)/.test(k)) idx.dept = i
-    else if (idx.unit === undefined && /(单位|unit)/.test(k)) idx.unit = i
-    else if (idx.dir === undefined && /(方向|dir|正逆)/.test(k)) idx.dir = i
-    else if (idx.dim === undefined && /^(维度|维度成员|维度值|维度名称|成员|member|dim)$/.test(k)) idx.dim = i
-    else if (idx.month === undefined && /^(月份|月度|month|数据月份|期间月份)$/.test(k)) idx.month = i
-  })
-  return idx
-}
-
-/* 解析月份文本：支持 “9”、“09月”、“2026年9月”、“2026-09” */
-export function monthIndex(s: unknown): number {
-  const str = String(s == null ? '' : s).trim()
-  if (!str) return -1
-  if (/^(年度|全年|年度累计|累计|年)$/.test(str)) return -1
-  const m = str.match(/(\d{1,2})\s*月?\s*$/)
-  if (!m) return -1
-  const n = parseInt(m[1], 10)
-  return (n >= 1 && n <= 9) ? (n - 1) : -1
-}
-
-export function looksLikeHeader(row: string[]): boolean {
-  const s = row.join('').toLowerCase()
-  return /编码|指标|名称|code|name|目标|实际|target|actual/.test(s)
-}
-
-/* 维度成员 → 维度键：仅当该指标声明了对应维度、且成员名在维度成员清单内时命中 */
-export function pickDimKey(it: Indicator | null | undefined, member: string): string | null {
-  const dks = (it && it.dims) || []
-  for (let i = 0; i < dks.length; i++) {
-    const D = BIZ_DIMS[dks[i]]
-    if (D && D.members.indexOf(member) >= 0) return dks[i]
-  }
-  return null
-}
-
-export interface ImportResult { updated: number; notfound: number; total: number; monthly: number; dim: number; dimbad: number }
-export function applyRows(rows: string[][]): ImportResult {
-  if (!rows.length) return { updated: 0, notfound: 0, total: 0, monthly: 0, dim: 0, dimbad: 0 }
-  const hasHeader = looksLikeHeader(rows[0])
-  const idx: HeaderIndex = hasHeader ? mapHeader(rows[0]) : { code: 0, target: 1, actual: 2 }
-  const data = hasHeader ? rows.slice(1) : rows
-  let updated = 0, notfound = 0, monthly = 0, dimrows = 0, dimbad = 0
-  data.forEach(function (r) {
-    const code = idx.code !== undefined ? String(r[idx.code] || '').trim() : ''
-    const name = idx.name !== undefined ? String(r[idx.name] || '').trim() : ''
-    let it: Indicator | undefined
-    if (code) {
-      it = S.IND.filter(function (x) { return x.code.toLowerCase() === code.toLowerCase() })[0]
-    }
-    if (!it && name) it = S.IND.filter(function (x) { return x.name === name })[0]
-    if (!it) { notfound++; return }
-    const num = function (v: unknown): number | null { const n = parseFloat(String(v).replace(/[,%¥\s]/g, '')); return isNaN(n) ? null : n }
-    const mt = idx.target !== undefined ? num(r[idx.target]) : null
-    const ma = idx.actual !== undefined ? num(r[idx.actual]) : null
-
-    /* A) 含「维度」列且填了维度成员 → 写入业务指标的分维度矩阵（BIZ_DIM）。
-          指标整体值不在此处直接改写，由 recompute() 按维度填报值聚合回填。 */
-    if (idx.dim !== undefined && String(r[idx.dim] || '').trim()) {
-      const mbName = String(r[idx.dim]).trim()
-      const dk = pickDimKey(it, mbName)
-      if (dk === null) { dimbad++ } else {
-        if (mt !== null) setBizDimOf(it.code, dk, mbName, 'target', mt)
-        if (ma !== null) setBizDimOf(it.code, dk, mbName, 'actual', ma)
-        dimrows++
-      }
-      updated++
-      return
-    }
-
-    /* B) 含「月份」列 → 该行视为月度数据，写入对应月份的覆盖项并反算年度累计 */
-    const mi = idx.month !== undefined ? monthIndex(r[idx.month]) : -1
-    if (mi >= 0) {
-      if (mt !== null) setMonthOverride(it, 'target', mi, mt)
-      if (ma !== null) setMonthOverride(it, 'actual', mi, ma)
-      monthly++
-    } else {
-      if (mt !== null) it.target = mt
-      if (ma !== null) it.actual = ma
-      /* 手工直接填报 → 取消维度派生标记，以手工值为准 */
-      if (mt !== null || ma !== null) { if (it._dimAgg) delete it._dimAgg }
-    }
-    if (idx.weight !== undefined) { const w = num(r[idx.weight]); if (w !== null) it.weight = w }
-    if (idx.unit !== undefined && r[idx.unit]) it.unit = String(r[idx.unit]).trim()
-    if (idx.name !== undefined && name) it.name = name
-    if (idx.dir !== undefined && r[idx.dir]) it.dir = /逆向|反向|-1|越小|越低/.test(String(r[idx.dir])) ? -1 : 1
-    if (idx.dept !== undefined && r[idx.dept]) {
-      it.depts = String(r[idx.dept]).split(/[/、,，|]/).map(function (s) { return s.trim() }).filter(Boolean)
-    }
-    updated++
-  })
-  return { updated: updated, notfound: notfound, total: data.length, monthly: monthly, dim: dimrows, dimbad: dimbad }
-}
-
-/* 导入一段 CSV / TSV 文本（替代原 readFile + afterImport 中的非 DOM 部分）：
-   解析 → 写入 → recompute；无有效行或全部未匹配时抛 Error（文案同原 toast） */
-export function importTable(text: string): ImportResult {
-  const res = applyRows(parseTable(text))
-  recompute()
-  if (!res.total) throw new Error('未解析到有效数据行，请检查文件格式')
-  if (!res.updated) throw new Error('导入失败：共 ' + res.total + ' 行，均未匹配到已有指标编码，请检查「编码」列是否填写正确')
-  return res
-}
-/* 导入成功提示文案（同原 afterImport 的成功 toast） */
-export function importMessage(res: ImportResult): string {
-  const extra: string[] = []
-  if (res.monthly) extra.push(res.monthly + ' 行为月度数据，已反算年度累计')
-  if (res.dim) extra.push(res.dim + ' 行为分维度填报，已写入维度矩阵')
-  if (res.dimbad) extra.push(res.dimbad + ' 行的维度成员不在该指标声明的维度内，已跳过')
-  return '导入完成：成功更新 ' + res.updated + ' 条指标' +
-    (extra.length ? '（其中 ' + extra.join('；') + '）' : '') +
-    (res.notfound ? '，' + res.notfound + ' 条未匹配到编码被跳过' : '')
-}
-
-export type CsvCell = string | number | null | undefined
-export function toCSV(header: string[], rows: CsvCell[][]): string {
-  const out = [header.join(',')]
-  rows.forEach(function (r) {
-    out.push(r.map(function (c) {
-      const s = (c === null || c === undefined) ? '' : String(c)
-      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s
-    }).join(','))
-  })
-  return '﻿' + out.join('\r\n')
-}
-/* 导出文件名时间戳（原 stamp，今天取自可注入的 today()） */
-export function stamp(): string {
-  const d = today(), p = function (n: number): string { return (n < 10 ? '0' : '') + n }
-  return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes())
-}
-/* 指标声明的维度标签（分渠道 / 分品类 / 分线路 / 分服务商） */
-export function dimLabels(i: Indicator | null | undefined): string {
-  const dks = (i && i.dims) || []
-  return dks.map(function (dk) { return BIZ_DIMS[dk] ? BIZ_DIMS[dk].label : dk }).join('/')
-}
-export function rowsOf(list: Indicator[]): CsvCell[][] {
-  return list.map(function (i) {
-    return [i.code, i.name, (i.kind === 'fin' ? '财务' : '业务'), (i.level === 1 ? '一级' : '二级'),
-      i.unit, (i.dir === 1 ? '正向' : '逆向'), dimLabels(i), i.target, i.actual, i.weight, i.depts.join('/'), i.note || '']
-  })
-}
-export const IND_HEADER = ['编码', '指标名称', '类型', '层级', '单位', '方向', '维度声明', '目标值', '实际值', '权重', '责任部门', '说明/计算口径']
 
 /* 维度填报明细 / 导入模板：每行一个「指标 × 维度成员」单元 */
 export const DIM_SKIP_MAP: Record<string, Set<string>> = { S3: new Set(['category']), S4: new Set(['provider']) }
-export function dimRowsOf(list: Indicator[]): CsvCell[][] {
-  const rows: CsvCell[][] = []
-  list.forEach(function (i) {
-    const dks = (i && i.dims) || []
-    dks.forEach(function (dk) {
-      const skip = i.parent !== null ? DIM_SKIP_MAP[i.parent] : undefined
-      if (skip && skip.has(dk)) return
-      const D = BIZ_DIMS[dk]
-      if (!D) return
-      D.members.forEach(function (mb) {
-        const c = bizDimOf(i.code, dk, mb)
-        rows.push([i.code, i.name, D.label, mb,
-          (c.target === null || c.target === undefined ? '' : c.target),
-          (c.actual === null || c.actual === undefined ? '' : c.actual),
-          i.unit])
-      })
-    })
-  })
-  return rows
-}
-export const DIM_HEADER = ['编码', '指标名称', '维度', '维度成员', '目标值', '实际值', '单位']
-
-/* 月度明细导出：每个指标展开为 9 行（2026 年 1-9 月） */
-export function monthlyRowsOf(list: Indicator[]): CsvCell[][] {
-  const rows: CsvCell[][] = []
-  list.forEach(function (i) {
-    for (let m = 0; m < 9; m++) {
-      rows.push([i.code, i.name, (i.kind === 'fin' ? '财务' : '业务'), (i.level === 1 ? '一级' : '二级'),
-        i.unit, (i.dir === 1 ? '正向' : '逆向'), '2026年' + MONTHS9[m], mT(i, m), mA(i, m),
-        i.weight, i.depts.join('/'), i.note || ''])
-    }
-  })
-  return rows
-}
-export const MONTH_HEADER = ['编码', '指标名称', '类型', '层级', '单位', '方向', '月份', '月目标值', '月实际值', '权重', '责任部门', '说明/计算口径']
 
 /* =========================================================================
    单元格编辑（原 document change 事件委托中的非 DOM 部分；权限校验 / toast / save / render 由页面负责）

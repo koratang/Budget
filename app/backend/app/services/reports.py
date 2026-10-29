@@ -46,10 +46,8 @@ POSITIVE_ITEMS = frozenset({"revenue", "inventory_claim"})
 OTHER_PL_ITEMS = ("finance_cost", "fx_gain_loss", "non_operating", "income_tax")
 
 BASELINES = {"orig": "年初原始目标", "adj": "最新调整后目标", "roll": "最新滚动预测"}
-PUBLIC_DEPT_LABEL = "公司公共（未分部门）"
 NOTE_EMPTY_MESSAGE = "请填写说明内容"
-REPORT_TYPES = {"channel-site": ("store", "customer", "unassigned"), "category": ("category",),
-                "dept-expense": ("dept-account",)}
+REPORT_TYPES = {"channel-site": ("store", "customer", "unassigned"), "category": ("category",)}
 REPORT_VIEW_ROLES = {
     "company": frozenset({Role.CEO, Role.FINANCE_HEAD, Role.FINANCE_BP}),
 }
@@ -840,112 +838,5 @@ def category_report(db: Session, ctx: ScopeContext, month: str | None = None) ->
             "groups": groups, "total": row("合计", "品效按人民币汇总", tb, ta)}
 
 
-# ---------------------------------------------------------------------------
-# API-F10-04 部门费用报告（AC-F10-07）
-# ---------------------------------------------------------------------------
-def _ensure_dept_access(ctx: ScopeContext) -> None:
-    if not (ctx.all_company or ctx.department_ids):
-        raise Forbidden()
-
-
-def dept_report(db: Session, ctx: ScopeContext, year: int | None = None, department_id: int | None = None) -> dict:
-    _ensure_dept_access(ctx)
-    year = year or default_year(db)
-    if department_id is not None:
-        ctx.ensure_department(department_id)
-    depts = db.scalars(select(Department).where(ctx.department_clause(Department.id))
-                       .order_by(Department.sort, Department.id)).all()
-    base = {"year": year, "departments": [{"id": d.id, "name": d.name} for d in depts],
-            "department_id": department_id, "can_edit_note": ctx.has_role(Role.FINANCE_BP)}
-    last = latest_kingdee_month(db, year)
-    if last is None:
-        return {**base, "empty": True, "message": f"{year} 年还没有导入金蝶实际"}
-    version, fell_back = target_version(db, year)
-    vid = data_version_id(db, version) if version else None
-    dept_ids = [d.id for d in depts if department_id is None or d.id == department_id]
-    budget: dict[tuple[int, int], Decimal] = defaultdict(lambda: ZERO)
-    if vid is not None:
-        q = (select(DeptExpense.department_id, DeptExpense.account_id, func.sum(DeptExpense.amount))
-             .where(DeptExpense.version_id == vid, func.extract("year", DeptExpense.month) == year,
-                    DeptExpense.department_id.in_(dept_ids))
-             .group_by(DeptExpense.department_id, DeptExpense.account_id))
-        for d, acc, v in db.execute(q).all():
-            budget[(d, acc)] += v or ZERO
-        q = (select(Reserve.department_id, Reserve.account_id, func.sum(Reserve.amount))
-             .where(Reserve.version_id == vid, func.extract("year", Reserve.plan_month) == year,
-                    Reserve.department_id.in_(dept_ids))
-             .group_by(Reserve.department_id, Reserve.account_id))
-        for d, acc, v in db.execute(q).all():
-            budget[(d, acc)] += v or ZERO
-    # 全公司视角另列「公司公共」：部门为空的部门费用科目实际（如经营历史表中负责部门不在主数据的管理费用）
-    with_public = ctx.all_company and department_id is None
-
-    def dept_actual(y: int, through: date) -> dict[tuple[int | None, int], Decimal]:
-        out: dict[tuple[int | None, int], Decimal] = defaultdict(lambda: ZERO)
-        dept_filter = KingdeeActual.department_id.in_(dept_ids)
-        if with_public:
-            dept_filter = dept_filter | KingdeeActual.department_id.is_(None)
-        q = (select(KingdeeActual.department_id, KingdeeActual.account_id, func.sum(KingdeeActual.amount))
-             .join(BudgetAccount, BudgetAccount.id == KingdeeActual.account_id)
-             .where(KingdeeActual.batch_id.in_(_effective_batches()), BudgetAccount.is_dept_expense.is_(True),
-                    KingdeeActual.month >= date(y, 1, 1), KingdeeActual.month <= through, dept_filter)
-             .group_by(KingdeeActual.department_id, KingdeeActual.account_id))
-        for d, acc, v in db.execute(q).all():
-            out[(d, acc)] += v or ZERO
-        return out
-
-    actual = dept_actual(year, last)
-    # 同比（REQ-F10-07）：上年同期 = 上年 1 月至同月；上年这些月份须全部已导入，否则不给同比
-    prior_through = date(year - 1, last.month, 1)
-    imported = set(kingdee_months(db))
-    prior_available = all(date(year - 1, mm, 1) in imported for mm in range(1, last.month + 1))
-    prior = dept_actual(year - 1, prior_through) if prior_available else defaultdict(lambda: ZERO)
-    accounts = {a.id: a for a in db.scalars(select(BudgetAccount)).all()}
-    progress = F.time_progress(last.month)
-    notes = load_notes(db, "dept-expense", last)
-
-    def metric(b, a, p=None):
-        out = {"budget": s(b), "actual": s(a), "usage": pct(F.quota_usage(a, b))}
-        if prior_available:
-            out.update({"prior": s(p or ZERO), "yoy": pct(PA.growth(a, p or ZERO))})
-        else:
-            out.update({"prior": None, "yoy": None})
-        return out
-
-    groups, tb, ta, tp = [], ZERO, ZERO, ZERO
-    dept_list = [(d.id, d.name) for d in depts if d.id in dept_ids]
-    if with_public:
-        dept_list.append((None, PUBLIC_DEPT_LABEL))
-    for dept_id, dept_name in dept_list:
-        keys = sorted({acc for (dd, acc) in list(budget) + list(actual) + list(prior) if dd == dept_id},
-                      key=lambda acc: (accounts[acc].sort, acc))
-        if not keys:
-            continue
-        items, sb, sa, sp = [], ZERO, ZERO, ZERO
-        for acc in keys:
-            b, a, p = budget[(dept_id, acc)], actual[(dept_id, acc)], prior[(dept_id, acc)]
-            nk = f"{dept_id if dept_id is not None else 'public'}:{acc}"
-            items.append({"department": dept_name, "account": accounts[acc].name, **metric(b, a, p),
-                          "note_key": {"object_type": "dept-account", "object_key": nk},
-                          "note": notes.get(("dept-account", nk))})
-            sb += b
-            sa += a
-            sp += p
-        groups.append({"department_id": dept_id, "department": dept_name, "rows": items,
-                       "subtotal": {"department": dept_name, "account": "部门合计", **metric(sb, sa, sp)}})
-        tb += sb
-        ta += sa
-        tp += sp
-    total_label = "全公司合计" if ctx.all_company and department_id is None else (
-        "合计（我的部门）" if not ctx.all_company else "合计（当前部门）")
-    return {**base, "empty": False, "through": fmt_month(last), "imported_months": last.month,
-            "time_progress": pct(progress),
-            "baseline_label": (f"{version.name}（本年度暂无调整，取年初原始目标）" if fell_back else version.name)
-            if version else "尚无年初原始目标",
-            "prior_available": prior_available,
-            "prior_period": f"{year - 1}-01 至 {fmt_month(prior_through)}",
-            "groups": groups, "total": {"department": total_label, "account": "", **metric(tb, ta, tp)}}
-
-
-__all__ = ["company_summary", "channel_site", "category_report", "dept_report", "save_note", "achievement",
+__all__ = ["company_summary", "channel_site", "category_report", "save_note", "achievement",
            "forecast_accuracy", "kingdee_months", "bi_months", "latest_kingdee_month", "default_year", "COST_ITEMS"]

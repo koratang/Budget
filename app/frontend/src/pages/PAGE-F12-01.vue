@@ -5,6 +5,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { api, ApiError } from '@/api/client'
 import PageState from '@/components/PageState.vue'
+import AlertTabs from '@/components/g3/AlertTabs.vue'
 import '@/components/g3/g3.css'
 
 interface RuleRow {
@@ -50,7 +51,8 @@ function credBadge(c: string | null): string {
 
 <template>
   <div data-page-id="PAGE-F12-01" class="g3">
-    <div class="page-head"><h1 class="page-title">规则库</h1></div>
+    <div class="page-head"><h1 class="page-title">预算预警</h1></div>
+    <AlertTabs current="rules" />
     <PageState v-if="loading" state="loading" />
     <PageState v-else-if="error" :error="error" :description="forbiddenText" @retry="load" />
     <div v-else-if="!items.length" class="card state">

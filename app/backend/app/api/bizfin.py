@@ -1,4 +1,4 @@
-"""业财分析（API-F15-01~03）。查看：CEO、财务负责人、财务BP；编辑：财务负责人、财务BP；恢复示例数据：财务负责人。"""
+"""业财分析（API-F15-01~02）。查看：CEO、财务负责人、财务BP；编辑：财务负责人、财务BP。"""
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
@@ -16,8 +16,7 @@ EDITORS = (Role.FINANCE_HEAD, Role.FINANCE_BP)
 
 @router.get("/sections")
 def get_sections(current: CurrentUser = Depends(require_roles(*VIEWERS)), db: Session = Depends(get_db)):
-    return {"sections": svc.sections(db), "can_edit": current.has_role(*EDITORS),
-            "can_reset": current.has_role(Role.FINANCE_HEAD)}
+    return {"sections": svc.sections(db), "can_edit": current.has_role(*EDITORS)}
 
 
 @router.put("/sections/{key}")
@@ -26,10 +25,3 @@ def save_section(key: str, body: dict, current: CurrentUser = Depends(require_ro
     data = svc.save(db, current, key, body)
     db.commit()
     return data
-
-
-@router.post("/reset")
-def reset(current: CurrentUser = Depends(require_roles(Role.FINANCE_HEAD)), db: Session = Depends(get_db)):
-    svc.reset(db, current)
-    db.commit()
-    return {"ok": True}

@@ -11,7 +11,7 @@ export interface NoteKey {
 }
 
 export interface NoteTarget extends NoteKey {
-  report_type: 'channel-site' | 'category' | 'dept-expense'
+  report_type: 'channel-site' | 'category'
   month: string
   /** 弹窗副标题中的对象名，如「Amazon-US-01」 */
   label: string

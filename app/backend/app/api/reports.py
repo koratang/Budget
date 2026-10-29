@@ -1,4 +1,4 @@
-"""偏差报告（API-F10-01~05）：/reports、/variance-notes。
+"""偏差报告（API-F10-01~03、05）：/reports、/variance-notes。
 
 每个路由声明 Depends(get_scope) 或 require_roles(...)；查询经 ScopeContext 过滤（NFR-003），
 越权返回 403「无权限」且不含记录字段（AC-F01-11）。
@@ -31,12 +31,6 @@ def channel_site(month: str | None = None, baseline: str = "adj", channel: str |
 @router.get("/reports/category")
 def category(month: str | None = None, ctx: ScopeContext = Depends(get_scope), db: Session = Depends(get_db)):
     return svc.category_report(db, ctx, month)
-
-
-@router.get("/reports/dept-expense")
-def dept_expense(year: int | None = None, department_id: int | None = None, ctx: ScopeContext = Depends(get_scope),
-                 db: Session = Depends(get_db)):
-    return svc.dept_report(db, ctx, year, department_id)
 
 
 class NoteIn(BaseModel):

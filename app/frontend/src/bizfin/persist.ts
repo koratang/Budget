@@ -18,15 +18,12 @@ interface SectionDoc extends SectionMeta {
 interface SectionsResp {
   sections: Partial<Record<SectionKey, SectionDoc>>
   can_edit: boolean
-  can_reset: boolean
 }
 
-export const SECTION_KEYS: SectionKey[] = ['indicators', 'biz_dim', 'policy', 'keywork']
+export const SECTION_KEYS: SectionKey[] = ['indicators', 'biz_dim', 'policy']
 export const SECTION_LABELS: Record<SectionKey, string> = {
-  indicators: '财务与业务指标', biz_dim: '业务指标维度填报', policy: '政策环境事件', keywork: '重点工作',
+  indicators: '财务与业务指标', biz_dim: '业务指标维度填报', policy: '政策环境事件',
 }
-
-const LEDGERS = new Set<SectionKey>(['policy', 'keywork'])
 
 const blankMeta = (): SectionMeta => ({ revision: null, is_demo: true, updated_by: null, updated_at: null })
 
@@ -35,7 +32,6 @@ export const store = reactive({
   loading: false,
   error: null as unknown,
   canEdit: false,
-  canReset: false,
   saving: 0,
   /** 最近一次保存失败的提示（冲突 / 网络），页面头部显示 */
   saveError: '',
@@ -63,7 +59,6 @@ export function load(force = false): Promise<void> {
       }
       hydrate(data)
       store.canEdit = r.can_edit
-      store.canReset = r.can_reset
       store.saveError = ''
       store.loaded = true
     })
@@ -78,17 +73,13 @@ export function load(force = false): Promise<void> {
 }
 
 const timers = new Map<SectionKey, ReturnType<typeof setTimeout>>()
-const pendingOfficial = new Set<SectionKey>()
 
 async function put(key: SectionKey): Promise<void> {
   const meta = store.meta[key]
-  // 台账类（政策、重点工作）没有导入入口：用户保存过即视为正式台账
-  const isDemo = pendingOfficial.has(key) || LEDGERS.has(key) ? false : meta.is_demo
-  pendingOfficial.delete(key)
   store.saving++
   try {
     const r = await api.put<SectionDoc>(`/api/bizfin/sections/${key}`, {
-      data: snapshot()[key], revision: meta.revision, is_demo: isDemo,
+      data: snapshot()[key], revision: meta.revision, is_demo: false,
     })
     store.meta[key] = { revision: r.revision, is_demo: r.is_demo, updated_by: r.updated_by, updated_at: r.updated_at }
     store.saveError = ''
@@ -102,13 +93,12 @@ async function put(key: SectionKey): Promise<void> {
 }
 
 /**
- * 引擎状态已修改，保存对应部分。markOfficial 为 true（数据管理导入正式数据）或台账类部分时去掉「示例数据」标记；
- * 指标与维度的普通编辑沿用原标记。
+ * 引擎状态已修改，保存对应部分。没有单独的导入入口（revision 8 删除业财数据管理），
+ * 用户在页面上修改并保存即视为正式数据，该部分去掉「示例数据」标记。
  */
-export function commit(keys: SectionKey | SectionKey[], markOfficial = false): void {
+export function commit(keys: SectionKey | SectionKey[]): void {
   if (!store.canEdit) return
   for (const key of Array.isArray(keys) ? keys : [keys]) {
-    if (markOfficial) pendingOfficial.add(key)
     const t = timers.get(key)
     if (t) clearTimeout(t)
     timers.set(key, setTimeout(() => {
@@ -116,12 +106,6 @@ export function commit(keys: SectionKey | SectionKey[], markOfficial = false): v
       void put(key)
     }, 500))
   }
-}
-
-/** 恢复示例数据（财务负责人）：清空服务器上已保存的全部部分后重新读取 */
-export async function resetDemo(): Promise<void> {
-  await api.post('/api/bizfin/reset')
-  await load(true)
 }
 
 export const anyDemo = (): boolean => SECTION_KEYS.some((k) => store.meta[k].is_demo)

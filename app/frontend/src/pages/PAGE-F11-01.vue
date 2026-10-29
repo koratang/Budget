@@ -7,6 +7,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '@/api/client'
 import PageState from '@/components/PageState.vue'
+import AlertTabs from '@/components/g3/AlertTabs.vue'
 import G3Modal from '@/components/g3/G3Modal.vue'
 import { errorText, useToast } from '@/components/g3/useG3'
 import '@/components/g3/g3.css'
@@ -99,7 +100,8 @@ function notifyBadge(s: string): string {
 
 <template>
   <div data-page-id="PAGE-F11-01" class="g3">
-    <div class="page-head"><h1 class="page-title">预警中心</h1></div>
+    <div class="page-head"><h1 class="page-title">预算预警</h1></div>
+    <AlertTabs current="alerts" />
     <PageState v-if="loading" state="loading" />
     <PageState v-else-if="error" :error="error" @retry="load" />
     <template v-else-if="data">
@@ -125,7 +127,8 @@ function notifyBadge(s: string): string {
           <span v-if="data.last_evaluation" class="small muted">最近评估：{{ data.last_evaluation.at }}（{{ data.last_evaluation.file_name }} 导入后）</span>
         </div>
         <div class="table-wrap">
-          <table class="table">
+          <table class="table alert-table">
+            <colgroup><col style="width: 21%"><col style="width: 12%"><col style="width: 11%"><col style="width: 15%"><col style="width: 12%"><col style="width: 10%"><col style="width: 9%"><col style="width: 10%"></colgroup>
             <thead><tr><th>规则（版本）</th><th>对象</th><th>期间</th><th class="num">指标值</th><th>阈值</th><th>状态</th><th>通知状态</th><th>操作</th></tr></thead>
             <tbody>
               <tr v-for="it in data.items" :key="it.id">
@@ -209,6 +212,11 @@ function notifyBadge(s: string): string {
 </template>
 
 <style>
+/* 1280 宽下 8 列需在卡片内放下：固定布局按比例分配列宽，单元格内换行 */
+.g3 .alert-table { table-layout: fixed; width: 100%; }
+.g3 .alert-table th, .g3 .alert-table td { padding-left: 10px; padding-right: 10px; white-space: normal; }
+.g3 .alert-table td.wrap, .g3 .alert-table td.w-n { min-width: 0; }
+
 .g3-modal .msg { white-space: pre-line; background: var(--surface-warm); border: 1px solid var(--border-soft); border-radius: var(--radius-md); padding: var(--space-3); font-size: var(--text-sm); }
 .g3-modal .timeline { list-style: none; margin: 0; padding: 0; font-size: var(--text-sm); }
 .g3-modal .timeline li { padding: var(--space-1) 0; border-bottom: 1px solid var(--border-soft); }

@@ -128,7 +128,7 @@ class VarianceNote(Base):
         CheckConstraint("extract(day from month) = 1", name="month_first_day"),
     )
     id: Mapped[int] = mapped_column(primary_key=True)
-    report_type: Mapped[str] = mapped_column(String(24), nullable=False)  # channel-site / category / dept-expense
+    report_type: Mapped[str] = mapped_column(String(24), nullable=False)  # channel-site / category（历史 dept-expense 行保留不读）
     month: Mapped[date] = mapped_column(Date, nullable=False)
     object_type: Mapped[str] = mapped_column(String(24), nullable=False)
     object_key: Mapped[str] = mapped_column(String(128), nullable=False)

@@ -1,5 +1,5 @@
 /**
- * 路由注册表（开发约定「前端路由」：36 个页面，菜单 key = 路由 name）
+ * 路由注册表（开发约定「前端路由」：33 个页面，菜单 key = 路由 name）
  * group / parent 用于顶栏面包屑：分组 / [上级页链接] / 本页标题
  */
 export interface PageRouteDef {
@@ -33,23 +33,20 @@ export const PAGE_ROUTES: PageRouteDef[] = [
   { pageId: 'PAGE-F05-02', path: '/dept-expense/reserves', name: 'reserves', title: '专项预留额度', group: '预算编制', parent: 'dept-expense' },
   { pageId: 'PAGE-F07-01', path: '/approvals', name: 'approvals', title: '待我审批', group: '预算编制' },
   { pageId: 'PAGE-F07-02', path: '/approvals/:type/:id', name: 'approval-detail', title: '审批详情', group: '预算编制', parent: 'approvals' },
-  { pageId: 'PAGE-F08-01', path: '/versions', name: 'versions', title: '版本管理', group: '预算版本' },
-  { pageId: 'PAGE-F08-02', path: '/versions/compare', name: 'version-compare', title: '版本对比', group: '预算版本', parent: 'versions' },
+  { pageId: 'PAGE-F08-01', path: '/versions', name: 'versions', title: '预算版本', group: '预算编制' },
+  { pageId: 'PAGE-F08-02', path: '/versions/compare', name: 'version-compare', title: '版本对比', group: '预算编制', parent: 'versions' },
   { pageId: 'PAGE-F09-01', path: '/actuals/import', name: 'import', title: '实际数导入', group: '实际数' },
   { pageId: 'PAGE-F09-02', path: '/actuals/reconcile', name: 'reconcile', title: 'BI 与金蝶核对', group: '实际数' },
-  { pageId: 'PAGE-F10-01', path: '/reports/company', name: 'report-company', title: '公司汇总', group: '报表' },
-  { pageId: 'PAGE-F10-02', path: '/reports/channel', alias: '/reports/channel-site', name: 'report-channel', title: '渠道×站点偏差', group: '报表' },
-  { pageId: 'PAGE-F10-03', path: '/reports/category', name: 'report-category', title: '品类×新老品偏差', group: '报表' },
-  { pageId: 'PAGE-F10-04', path: '/reports/dept', name: 'report-dept', title: '部门费用报告', group: '报表' },
+  { pageId: 'PAGE-F10-01', path: '/reports/company', name: 'report-company', title: '公司汇总', group: '预算执行' },
+  { pageId: 'PAGE-F10-02', path: '/reports/channel', alias: '/reports/channel-site', name: 'report-channel', title: '渠道×站点偏差', group: '预算执行' },
+  { pageId: 'PAGE-F10-03', path: '/reports/category', name: 'report-category', title: '品类×新老品偏差', group: '预算执行' },
   { pageId: 'PAGE-F15-02', path: '/bizfin/finance', name: 'bizfin-finance', title: '财务指标', group: '业财分析' },
   { pageId: 'PAGE-F15-03', path: '/bizfin/business', name: 'bizfin-business', title: '业务指标', group: '业财分析' },
   { pageId: 'PAGE-F15-05', path: '/bizfin/analysis/:sub?', name: 'bizfin-analysis', title: '数据分析', group: '业财分析' },
   { pageId: 'PAGE-F15-06', path: '/bizfin/policy', name: 'bizfin-policy', title: '政策环境', group: '业财分析' },
-  { pageId: 'PAGE-F15-08', path: '/bizfin/keywork', name: 'bizfin-keywork', title: '重点工作进度', group: '业财分析' },
-  { pageId: 'PAGE-F15-09', path: '/bizfin/data', name: 'bizfin-data', title: '业财数据管理', group: '业财分析' },
-  { pageId: 'PAGE-F11-01', path: '/alerts', name: 'alerts', title: '预警中心', group: '预警与规则' },
-  { pageId: 'PAGE-F12-01', path: '/rules', name: 'rules', title: '规则库', group: '预警与规则' },
-  { pageId: 'PAGE-F12-02', path: '/rules/:id', name: 'rule-detail', title: '规则详情', group: '预警与规则', parent: 'rules' },
+  { pageId: 'PAGE-F11-01', path: '/alerts', name: 'alerts', title: '预算预警', group: '预算执行' },
+  { pageId: 'PAGE-F12-01', path: '/rules', name: 'rules', title: '规则库', group: '预算执行', parent: 'alerts' },
+  { pageId: 'PAGE-F12-02', path: '/rules/:id', name: 'rule-detail', title: '规则详情', group: '预算执行', parent: 'rules' },
 ]
 
 export const LOGIN_ROUTE = { pageId: 'PAGE-F01-01', path: '/login', name: 'login', title: '登录' } as const
@@ -69,9 +66,9 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'my-filling', label: '我的填报' },
       { name: 'dept-expense', label: '部门费用' },
       { name: 'approvals', label: '待我审批' },
+      { name: 'versions', label: '预算版本' },
     ],
   },
-  { label: '预算版本', items: [{ name: 'versions', label: '版本管理' }] },
   {
     label: '实际数',
     items: [
@@ -80,12 +77,12 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: '报表',
+    label: '预算执行',
     items: [
       { name: 'report-company', label: '公司汇总' },
       { name: 'report-channel', label: '渠道×站点偏差' },
       { name: 'report-category', label: '品类×新老品偏差' },
-      { name: 'report-dept', label: '部门费用报告' },
+      { name: 'alerts', label: '预算预警' },
     ],
   },
   {
@@ -95,15 +92,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { name: 'bizfin-business', label: '业务指标' },
       { name: 'bizfin-analysis', label: '数据分析' },
       { name: 'bizfin-policy', label: '政策环境' },
-      { name: 'bizfin-keywork', label: '重点工作进度' },
-      { name: 'bizfin-data', label: '业财数据管理' },
-    ],
-  },
-  {
-    label: '预警与规则',
-    items: [
-      { name: 'alerts', label: '预警中心' },
-      { name: 'rules', label: '规则库' },
     ],
   },
   {
@@ -119,8 +107,13 @@ export const NAV_GROUPS: NavGroup[] = [
   { label: '系统设置', items: [{ name: 'roles', label: '角色与权限' }] },
 ]
 
-/** 子页面高亮其上级菜单（如 /tasks/12 高亮「编制任务」） */
+/** 子页面高亮其最上级菜单（如 /tasks/12 高亮「编制任务」，/rules/3 → 规则库 → 高亮「预算预警」） */
 export function navKeyFor(routeName: string): string {
-  const def = PAGE_ROUTES.find((r) => r.name === routeName)
-  return def?.parent ?? routeName
+  let def = PAGE_ROUTES.find((r) => r.name === routeName)
+  while (def?.parent) {
+    const up = PAGE_ROUTES.find((r) => r.name === def?.parent)
+    if (!up) break
+    def = up
+  }
+  return def?.name ?? routeName
 }

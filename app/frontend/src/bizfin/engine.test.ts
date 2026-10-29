@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  ADMIN_TYPES, BIZ_DIM_ORDER, BIZ_DIMS, DIM_HEADER, IND_HEADER, KW_CATEGORIES, KW_STATUS, LINKAGE, POLICY_SEGS,
+  ADMIN_TYPES, BIZ_DIM_ORDER, BIZ_DIMS, LINKAGE, POLICY_SEGS,
   S, SEED_BIZ, SEED_FIN,
-  adminAnnualPool, adminMatrix, adminPoolByM, applyRows, bizDimFilled, bizHealth, byKind, channelModel,
-  children, dimRowsOf, dimTag, editCell, editDimCell, find, finHealth, hasData, hydrate, importMessage, importTable,
-  isBlankBiz, isSumUnit, kwStat, l1, l2, mapHeader, momYoyOf, monthIndex, monthlyRowsOf, orderModel, overallHealth, parseTable,
-  rate, rateText, recompute, rowsOf, seed, setBizDimOf, setToday, snapshot, stamp, toCSV, validations,
+  adminAnnualPool, adminMatrix, adminPoolByM, bizDimFilled, bizHealth, channelModel,
+  children, dimTag, editCell, editDimCell, find, finHealth, hasData, hydrate,
+  isBlankBiz, isSumUnit, l1, l2, momYoyOf, orderModel, overallHealth,
+  rate, rateText, recompute, seed, setBizDimOf, snapshot, validations,
   type Indicator,
 } from './engine'
 import { barChart, donutChart, gauge, hBarChart, lineChart, stack100, txt } from './charts'
@@ -21,15 +21,6 @@ const sum = (codes: string[]): number => codes.reduce((s, c) => s + act(c), 0)
 const CH = ['F1.1', 'F1.2', 'F1.3', 'F1.4', 'F1.5']
 const MK = ['F1.6', 'F1.7', 'F1.8']
 
-/* verify2 的维度单元格期望数：S3 不展开品类、S4 不展开服务商 */
-const cellExpect = (): number => {
-  const skip: Record<string, Set<string>> = { S3: new Set(['category']), S4: new Set(['provider']) }
-  let n = 0
-  l2('biz').forEach((i) => (i.dims || []).forEach((dk) => {
-    if (BIZ_DIMS[dk] && !(i.parent && skip[i.parent] && skip[i.parent].has(dk))) n += BIZ_DIMS[dk].members.length
-  }))
-  return n
-}
 
 beforeEach(() => {
   S.dim = 'year'
@@ -120,7 +111,6 @@ describe('持久化：snapshot / hydrate 往返', () => {
     S.dim = 'year'
     recompute()
     S.POLICY_EVENTS.push({ time: '2026-09-30', seg: '财务板块', desc: '美元兑人民币中间价走弱，海外回款结汇收益收窄', impact: '财务费用 -12 万元' })
-    S.KW_TASKS[0].progress = 70
 
     const snap = snapshot()
     const f73 = act('F7.3'), f41 = act('F4.1'), s11 = act('S1.1')
@@ -140,13 +130,11 @@ describe('持久化：snapshot / hydrate 往返', () => {
     expect(act('F7.3')).toBe(f73)
     expect(act('S1.1')).toBe(s11)
     expect(S.POLICY_EVENTS).toHaveLength(5)
-    expect(S.KW_TASKS[0].progress).toBe(70)
   })
 
   it('缺的部分用示例数据，非法行被过滤', () => {
     hydrate({ policy: [{ time: '2026-05-01', seg: '营销板块', desc: '亚马逊调整家居类目佣金', impact: '佣金率 +0.5pt' }, null, { time: 1 }] })
     expect(S.POLICY_EVENTS).toHaveLength(1)
-    expect(S.KW_TASKS).toHaveLength(15)
     expect(act('F1')).toBe(9840)
     expect(validations().every((v) => v.state === 'ok')).toBe(true)
   })
@@ -165,28 +153,20 @@ describe('verify2 · D 空值口径默认态', () => {
   })
 })
 
-describe('verify2 · E/F/G 维度填报 → 聚合勾稽 / 导出 / 清零回滚', () => {
-  const csv = [
-    '编码,维度,目标值,实际值',
-    'S1.1,Amazon,150,138',
-    'S1.1,Wayfair,90,96',
-    'S1.1,Home Depot,60,55',
-    "S1.1,Lowe's,40,42",
-    'S1.1,独立站,120,130',
-    'S1.2,Amazon,4.0,4.2',
-    'S1.2,Wayfair,2.4,2.2',
-    'S1.3,Amazon,1065,1100',
-    'S2.2,镜柜,30,32',
-    'S4.2,美东,12.5,12.0',
-    'S4.4,服务商A,0.92,0.88',
-    'S1.1,不存在的渠道,10,10',
-  ].join('\n')
+describe('verify2 · E/F/G 维度填报 → 聚合勾稽 / 清零回滚', () => {
+  // [编码, 维度, 成员, 目标值, 实际值]：原经 CSV 导入，业财数据管理删除后（revision 8）改为页面同一写值函数
+  const cells: [string, string, string, number, number][] = [
+    ['S1.1', 'channel', 'Amazon', 150, 138], ['S1.1', 'channel', 'Wayfair', 90, 96],
+    ['S1.1', 'channel', 'Home Depot', 60, 55], ['S1.1', 'channel', "Lowe's", 40, 42], ['S1.1', 'channel', '独立站', 120, 130],
+    ['S1.2', 'channel', 'Amazon', 4.0, 4.2], ['S1.2', 'channel', 'Wayfair', 2.4, 2.2], ['S1.3', 'channel', 'Amazon', 1065, 1100],
+    ['S2.2', 'category', '镜柜', 30, 32], ['S4.2', 'lane', '美东', 12.5, 12.0], ['S4.4', 'provider', '服务商A', 0.92, 0.88],
+  ]
 
-  it('导入维度行并聚合', () => {
-    expect(mapHeader(['编码', '维度', '目标值', '实际值']).dim).toBe(1)
-    const res = applyRows(parseTable(csv))
-    expect(res.dim).toBe(11)
-    expect(res.dimbad).toBe(1)
+  it('维度填报并聚合', () => {
+    for (const [code, dk, mb, t, a] of cells) {
+      setBizDimOf(code, dk, mb, 'target', t)
+      setBizDimOf(code, dk, mb, 'actual', a)
+    }
     recompute()
     const d11 = find('S1.1')!
     expect(close(d11.actual, 461)).toBe(true)
@@ -209,14 +189,6 @@ describe('verify2 · E/F/G 维度填报 → 聚合勾稽 / 导出 / 清零回滚
     expect(isBlankBiz(find('S3'))).toBe(true)
     expect(dimTag(find('S1.1')!)).toContain('5/5')
 
-    // F 维度导出
-    const dimRows = dimRowsOf(byKind('biz'))
-    expect(dimRows.length).toBe(cellExpect())
-    expect(dimRows.some((r) => r[0] === 'S1.1' && r[3] === 'Amazon' && r[5] === 138)).toBe(true)
-    expect(IND_HEADER).toContain('维度声明')
-    expect(rowsOf([find('S1.1')!])[0][6]).toBe('渠道')
-    expect(DIM_HEADER).toContain('维度成员')
-
     // G 清零回滚
     for (const mb of BIZ_DIMS.channel.members) {
       setBizDimOf('S1.1', 'channel', mb, 'target', null)
@@ -231,27 +203,6 @@ describe('verify2 · E/F/G 维度填报 → 聚合勾稽 / 导出 / 清零回滚
     expect(close(find('S1.2')!.actual, (9.9 + 2.2) / 2)).toBe(true)
   })
 
-  it('importTable：成功返回结果与提示文案，无有效行抛错', () => {
-    const res = importTable(csv)
-    expect(res.updated).toBe(12)
-    expect(importMessage(res)).toContain('11 行为分维度填报')
-    expect(() => importTable('')).toThrow('未解析到有效数据行')
-    expect(() => importTable('编码,实际值\nX9.9,1')).toThrow('均未匹配到已有指标编码')
-  })
-
-  it('月份列导入写月度覆盖并反算年度', () => {
-    expect(monthIndex('2026年9月')).toBe(8)
-    expect(monthIndex('09月')).toBe(8)
-    expect(monthIndex('年度累计')).toBe(-1)
-    const before = act('F1')
-    const res = applyRows(parseTable('编码,月份,实际值\nF1,2026-03,800'))
-    expect(res.monthly).toBe(1)
-    recompute()
-    const f1 = find('F1')!
-    expect(f1._ma![2]).toBe(800)
-    expect(close(f1._ma!.reduce((a, b) => a + b, 0), act('F1'), 1e-9)).toBe(true)
-    expect(act('F1')).not.toBe(before)
-  })
 })
 
 describe('verify2 · H 编码完整性 / 台账', () => {
@@ -265,16 +216,9 @@ describe('verify2 · H 编码完整性 / 台账', () => {
     expect(BIZ_DIM_ORDER).toEqual(['channel', 'category', 'lane', 'provider'])
   })
 
-  it('政策 / 重点工作台账', () => {
+  it('政策台账', () => {
     expect(S.POLICY_EVENTS).toHaveLength(4)
     expect(S.POLICY_EVENTS.every((e) => POLICY_SEGS.includes(e.seg))).toBe(true)
-    expect(S.KW_TASKS).toHaveLength(15)
-    expect(KW_CATEGORIES).toEqual(['核算', '资金', '合规', '降本增收', '财务BP', '信息化'])
-    expect(KW_STATUS).toEqual(['进行中', '已完成', '延误', '阻滞'])
-    const st = kwStat()
-    expect(st.hot).toBe(3) // 延误 2 + 阻滞 1
-    expect(st.progressAvg).toBeGreaterThanOrEqual(0)
-    expect(st.progressAvg).toBeLessThanOrEqual(100)
   })
 })
 
@@ -307,7 +251,7 @@ describe('verify2 · J 管理费用分析', () => {
   })
 })
 
-describe('verify2 · L 财务指标 v3 结构 / N 月度导出', () => {
+describe('verify2 · L 财务指标 v3 结构', () => {
   it('7 个一级 + 核心二级齐全', () => {
     expect(l1('fin').map((x) => x.code)).toEqual(['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7'])
     expect(l2('fin').length).toBeGreaterThanOrEqual(16)
@@ -320,16 +264,9 @@ describe('verify2 · L 财务指标 v3 结构 / N 月度导出', () => {
     expect(find('F7')!.name).toBe('经营净现金流')
   })
 
-  it('月度导出每个指标 9 行，CSV 带 BOM 并转义', () => {
-    const rows = monthlyRowsOf([find('S1.1')!, find('F1')!])
-    expect(rows).toHaveLength(18)
-    expect(rows[9][6]).toBe('2026年01月')
-    const csv = toCSV(['编码', '说明'], [['F1', '含"引号",逗号']])
-    expect(csv).toBe('﻿编码,说明\r\n' + 'F1,"含""引号"",逗号"')
-  })
 })
 
-describe('单元格编辑与日期注入', () => {
+describe('单元格编辑', () => {
   it('手工编辑 F2.x 后 recompute 不再覆盖；非数字抛错', () => {
     editCell('F2.1', 'actual', 1100)
     editCell('F1.1', 'actual', 3700)
@@ -337,11 +274,6 @@ describe('单元格编辑与日期注入', () => {
     expect(() => editCell('F1', 'actual', '一万')).toThrow('请输入有效数字')
   })
 
-  it('stamp 使用可注入的 today', () => {
-    setToday(() => new Date(2026, 9, 28, 9, 5))
-    expect(stamp()).toBe('20261028_0905')
-    setToday(() => new Date())
-  })
 })
 
 describe('charts：返回 SVG 字符串且文本经过转义', () => {

@@ -1,4 +1,5 @@
-// FLOW-26 品类×新老品偏差（PAGE-F10-03）与部门费用报告（PAGE-F10-04）。期望值逐字取自契约 FLOW-26。
+// FLOW-26 品类×新老品偏差（PAGE-F10-03）。期望值逐字取自契约 FLOW-26。
+// 部门费用报告（PAGE-F10-04）已于 2026-10-29 删除，其浏览器步骤一并去掉。
 import { BASE, check, eq, loginAs, run, tableText } from './_e3_harness.mjs'
 
 await run('FLOW-26', 'flow26', '2027-05-20 10:00', async (env) => {
@@ -18,19 +19,4 @@ await run('FLOW-26', 'flow26', '2027-05-20 10:00', async (env) => {
   eq(r.slice(5, 8), ['1,200', '1,100', '−100'], '销量 1,200 / 1,100 / −100')
   check(r[8].includes('61,516.80') && r[9].includes('61,600.00') && r[10].includes('83.20'), '品效 61,516.80 / 61,600.00 / 83.20')
   check(r[11].includes('615,168.00') && r[12].includes('554,400.00') && r[13].includes('−') && r[13].includes('60,768.00'), '收入 615,168.00 / 554,400.00 / −60,768.00')
-
-  await page.goto(`${BASE}/reports/dept`)
-  const dept = page.locator('[data-page-id="PAGE-F10-04"]')
-  const dt = dept.locator('[data-testid="dept-table"]')
-  await dt.locator('tbody tr').first().waitFor()
-  await page.waitForTimeout(500)
-  const drows = (await tableText(dt)).slice(1)
-  const tr = drows.find((x) => x.includes('培训费'))
-  console.log('  培训费行：', JSON.stringify(tr))
-  const i = tr.indexOf('培训费')
-  check(tr[i + 1].includes('1,200,000.00'), '全年预算 1,200,000.00')
-  check(tr[i + 2].includes('500,000.00'), '累计实际 500,000.00')
-  eq(tr[i + 3], '41.67%', '额度使用率 41.67%')
-  eq(tr[i + 4], '33.33%', '时间进度 33.33%')
-  check((await dept.textContent()).includes('时间进度（4 ÷ 12）'), '时间进度（4 ÷ 12）')
 })

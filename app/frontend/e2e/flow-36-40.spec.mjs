@@ -1,4 +1,4 @@
-// FLOW-36～40 业财分析浏览器验收 + DESIGN-31～39 截图（真实后端 8014、库 budget_acc4 基础种子，服务器无业财数据 → 示例数据）
+// FLOW-36～39 业财分析浏览器验收 + DESIGN-31～39 截图（真实后端 8014、库 budget_acc4 基础种子，服务器无业财数据 → 示例数据）
 import { BASE, chromium, check, finish, loginAs } from './e4_harness.mjs'
 
 const OUT = process.env.VISUAL_DIR
@@ -31,10 +31,10 @@ async function shot(page, file) {
 }
 const PAGES = [
   ['PAGE-F15-02', '/bizfin/finance'], ['PAGE-F15-03', '/bizfin/business'], ['PAGE-F15-05', '/bizfin/analysis/anaChannel'],
-  ['PAGE-F15-06', '/bizfin/policy'], ['PAGE-F15-08', '/bizfin/keywork'], ['PAGE-F15-09', '/bizfin/data'],
+  ['PAGE-F15-06', '/bizfin/policy'],
 ]
-const NAV6 = ['财务指标', '业务指标', '数据分析', '政策环境', '重点工作进度', '业财数据管理']
-const REMOVED = ['经营总览驾驶舱', '业财联动关系', '经营建议']
+const NAV4 = ['财务指标', '业务指标', '数据分析', '政策环境']
+const REMOVED = ['经营总览驾驶舱', '业财联动关系', '经营建议', '重点工作进度', '业财数据管理']
 
 // ---------- FLOW-38 口径 + DESIGN 截图（林晓，示例数据）----------
 {
@@ -43,15 +43,15 @@ const REMOVED = ['经营总览驾驶舱', '业财联动关系', '经营建议']
     await open(page, path)
     const t = await text(page)
     check(R, `FLOW-38 ${pid} 无 NaN / undefined`, !/NaN|undefined/.test(t))
-    check(R, `FLOW-40 首次进入 ${pid} 显示「示例数据」标记`, (await page.locator('[data-demo-badge]').count()) === 1)
+    check(R, `FLOW-38 首次进入 ${pid} 显示「示例数据」标记`, (await page.locator('[data-demo-badge]').count()) === 1)
     const sw = await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)
     check(R, `DESIGN ${pid} 1280 宽无页面级横向滚动`, sw)
     if (OUT) await shot(page, `${OUT}/${pid}.png`)
   }
   await open(page, '/bizfin/finance')
   const nav = await page.locator('aside').innerText()
-  check(R, 'FLOW-36 林晓侧栏业财分析 6 项、无已删除模块', nav.includes('业财分析') && NAV6.every((n) => nav.includes(n)) && !REMOVED.some((n) => nav.includes(n)))
-  for (const old of ['/bizfin/dashboard', '/bizfin/linkage', '/bizfin/advice']) {
+  check(R, 'FLOW-36 林晓侧栏业财分析 4 项、无已删除模块', nav.includes('业财分析') && NAV4.every((n) => nav.includes(n)) && !REMOVED.some((n) => nav.includes(n)))
+  for (const old of ['/bizfin/dashboard', '/bizfin/linkage', '/bizfin/advice', '/bizfin/keywork', '/bizfin/data']) {
     await page.goto(BASE + old)
     await page.waitForTimeout(800)
     check(R, `FLOW-36 旧链接 ${old} 回到首页`, new URL(page.url()).pathname === '/')
@@ -74,10 +74,6 @@ const REMOVED = ['经营总览驾驶舱', '业财联动关系', '经营建议']
     const got = Number((await val(c)).replace(/,/g, ''))
     check(R, `FLOW-38 ${c} = ${v}`, Math.abs(got - v) < 0.051, String(got))
   }
-  await open(page, '/bizfin/data')
-  const chk = page.locator('[data-checks]')
-  const okN = await chk.locator('.chk.ok').count(); const allN = await chk.locator('.chk').count()
-  check(R, 'FLOW-38 勾稽校验 10 项全部通过', okN === 10 && allN === 10, `ok=${okN} all=${allN}`)
   await open(page, '/bizfin/analysis/anaChannel')
   t = await text(page)
   check(R, 'FLOW-38 渠道效益贡献毛利合计 = 净利润（勾稽一致）', t.includes('勾稽一致') && t.includes('553.9'))
@@ -125,7 +121,7 @@ const REMOVED = ['经营总览驾驶舱', '业财联动关系', '经营建议']
   await ctx.close()
 }
 
-// ---------- FLOW-37 保存与冲突 / FLOW-39 事件 / FLOW-40 导入导出（陈思雨）----------
+// ---------- FLOW-37 保存与冲突 / FLOW-39 政策事件（陈思雨）----------
 {
   const { ctx, page, errors } = await session('chensiyu')
   await open(page, '/bizfin/finance')
@@ -135,6 +131,10 @@ const REMOVED = ['经营总览驾驶舱', '业财联动关系', '经营建议']
   const sec = await (await page.request.get(BASE + '/api/bizfin/sections')).json()
   const f11 = sec.sections.indicators?.data.find((i) => i.code === 'F1.1')
   check(R, 'FLOW-37 F1.1 = 5200 已保存到服务器', !!f11 && Number(f11.actual) === 5200 && sec.sections.indicators.updated_by === '陈思雨', JSON.stringify(f11?.actual))
+  await open(page, '/bizfin/finance')
+  check(R, 'FLOW-37 修改保存后指标部分转为正式数据、财务指标页「示例数据」标记消失', sec.sections.indicators.is_demo === false && (await page.locator('[data-demo-badge]').count()) === 0)
+  await open(page, '/bizfin/analysis/anaTraffic')
+  check(R, 'FLOW-37 推算子模块仍标示例数据', (await page.locator('[data-demo-badge]').count()) === 1)
 
   // FLOW-39 政策事件新增 → 保存 → 刷新仍在
   await open(page, '/bizfin/policy')
@@ -158,65 +158,14 @@ const REMOVED = ['经营总览驾驶舱', '业财联动关系', '经营建议']
   await open(page, '/bizfin/policy')
   check(R, 'FLOW-39 确认后删除并保存', (await page.locator('tbody tr').count()) === n0 && !(await page.locator('[aria-label="事件描述"]').evaluateAll((els) => els.map((e) => e.value))).includes('美国对进口浴室柜加征 10% 关税'))
 
-  await open(page, '/bizfin/keywork')
-  const total0 = await page.locator('[data-testid="count"]').innerText()
-  await page.getByRole('button', { name: '＋ 新增工作' }).click()
-  await page.waitForTimeout(300)
-  const goal = page.getByLabel('工作目标').last()
-  await goal.fill('Wayfair 美西新仓上线'); await goal.blur()
-  const row = page.locator('tr', { has: page.locator('input[aria-label="工作目标"]').last() }).last()
-  const prog = page.locator('input[aria-label="目前进度"]').last()
-  await prog.fill('120'); await prog.blur()
-  await page.waitForTimeout(1500)
-  const kw = (await (await page.request.get(BASE + '/api/bizfin/sections')).json()).sections.keywork.data
-  const mine = kw.find((k) => k.goal === 'Wayfair 美西新仓上线')
-  check(R, 'FLOW-39 重点工作进度限制为 100 并保存', !!mine && Number(mine.progress) === 100, JSON.stringify(mine?.progress))
-  check(R, 'FLOW-39 重点工作统计刷新', (await page.locator('[data-testid="count"]').innerText()) !== total0 && !!row)
-
   // FLOW-37 冲突：用旧版本号保存政策事件
   const pol = (await (await page.request.get(BASE + '/api/bizfin/sections')).json()).sections.policy
   const stale = await page.request.put(BASE + '/api/bizfin/sections/policy', { data: { data: pol.data, revision: pol.revision - 1, is_demo: true } })
   const body = await stale.json()
   check(R, 'FLOW-37 旧版本保存 409 并提示更新人', stale.status() === 409 && body.message === '「政策环境事件」已被陈思雨更新，请刷新后再改', body.message)
 
-  // FLOW-40 导入
-  await open(page, '/bizfin/data')
-  await page.getByLabel('粘贴表格数据').fill('编码\t实际值\nF1.1\t5300\nF9.9\t100')
-  await page.locator('[data-paste-import]').click()
-  await page.waitForTimeout(1500)
-  const t = await page.locator('body').innerText()
-  check(R, 'FLOW-40 导入提示写入 1 条、未识别 1 条', t.includes('导入完成：成功更新 1 条指标，1 条未匹配到编码被跳过'), (t.match(/导入完成[^\n]*/) || [''])[0])
-  const meta = (await (await page.request.get(BASE + '/api/bizfin/sections')).json()).sections
-  check(R, 'FLOW-40 导入后指标与维度部分不再是示例数据', meta.indicators.is_demo === false && meta.biz_dim.is_demo === false && meta.policy.is_demo === false)
-  await open(page, '/bizfin/finance')
-  check(R, 'FLOW-40 财务指标页「示例数据」标记消失', (await page.locator('[data-demo-badge]').count()) === 0)
-  await open(page, '/bizfin/analysis/anaTraffic')
-  check(R, 'FLOW-40 推算子模块仍标示例数据', (await page.locator('[data-demo-badge]').count()) === 1)
-  await open(page, '/bizfin/data')
-  check(R, 'FLOW-40 保存记录表显示陈思雨', (await page.locator('[data-testid="save-meta"]').innerText()).includes('陈思雨'))
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /导出.*指标/ }).first().click()])
-  const csv = await (await import('node:fs/promises')).readFile(await dl.path(), 'utf8')
-  check(R, 'FLOW-40 导出指标 CSV 表头同原工作台', csv.replace(/^﻿/, '').startsWith('类型,') || csv.includes('编码'), csv.slice(0, 60))
-  check(R, 'FLOW-40 陈思雨看不到恢复示例数据', (await page.locator('[data-reset]').count()) === 0)
-  check(R, 'FLOW-40 陈思雨恢复接口 403', (await page.request.post(BASE + '/api/bizfin/reset')).status() === 403)
-  check(R, 'FLOW-37/39/40 陈思雨全程无前端错误', errors.length === 0, errors.slice(0, 3).join(' | '))
-  await ctx.close()
-}
-
-// ---------- FLOW-40 恢复示例数据（林晓）----------
-{
-  const { ctx, page } = await session('linxiao')
-  await open(page, '/bizfin/data')
-  await page.locator('[data-reset]').click()
-  const dlg = page.locator('.el-message-box')
-  await dlg.waitFor()
-  check(R, 'FLOW-40 恢复前二次确认说明会清空服务器数据', (await dlg.innerText()).includes('服务器'))
-  await dlg.getByRole('button', { name: /确定|恢复/ }).click()
-  await page.waitForTimeout(1500)
-  const sec = (await (await page.request.get(BASE + '/api/bizfin/sections')).json()).sections
-  check(R, 'FLOW-40 恢复后服务器无已保存部分', Object.keys(sec).length === 0)
-  await open(page, '/bizfin/finance')
-  check(R, 'FLOW-40 恢复后重新显示示例数据', (await page.locator('[data-demo-badge]').count()) === 1 && (await page.locator('tr[data-code="F1.1"] [data-f="actual"]').inputValue()) !== '5,300')
+  check(R, 'FLOW-36 恢复示例数据接口已删除', [404, 405].includes((await page.request.post(BASE + '/api/bizfin/reset')).status()))
+  check(R, 'FLOW-37/39 陈思雨全程无前端错误', errors.length === 0, errors.slice(0, 3).join(' | '))
   await ctx.close()
 }
 

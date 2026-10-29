@@ -4,7 +4,7 @@
 
 - work_type: feature
 - workflow_mode: standard
-- revision: 7
+- revision: 8
 - scope: 本期
 - source_prd: PRD详细版.md
 - status: active
@@ -1378,12 +1378,15 @@ THE SYSTEM SHALL 对已有 BI 实际的月份按「品类 × 新品/老品」显
 - Story: US-F10-01
 - Stage: 本期
 - Revision: 1
-- Status: active
+- Status: retired
+- Retired: revision 8，用户 2026-10-29 要求删除「部门费用报告」二级主题
 
 ### AC-F10-07 · 额度使用率与时间进度
 
 - Parent: REQ-F10-04
 - Priority: P0
+- Status: retired
+- Retired: revision 8，随部门费用报告删除
 - EARS:
 
 ```text
@@ -1435,7 +1438,7 @@ THE SYSTEM SHALL 显示该月 |快照预测净利润率 − 实际净利润率|�
 
 - Story: US-F10-01
 - Stage: 本期
-- Revision: 1
+- Revision: 2
 - Status: active
 
 ### AC-F10-11 · 财务BP填写说明
@@ -1445,7 +1448,7 @@ THE SYSTEM SHALL 显示该月 |快照预测净利润率 − 实际净利润率|�
 - EARS:
 
 ```text
-WHEN 财务BP为某月某渠道、品类或部门的偏差保存说明文字
+WHEN 财务BP为某月某渠道或品类的偏差保存说明文字
 THE SYSTEM SHALL 在对应报告行显示该说明及填写人和填写时间，有查看权限的角色都能看到
 ```
 
@@ -1453,7 +1456,7 @@ THE SYSTEM SHALL 在对应报告行显示该说明及填写人和填写时间，
 
 - Story: US-F10-01
 - Stage: 本期
-- Revision: 1
+- Revision: 2
 - Status: active
 - Source: 用户 2026-10-28（2027 年每月做实际与预算差异时同时看同比）
 
@@ -1472,6 +1475,8 @@ THE SYSTEM SHALL 每个店铺、B 端客户和合计行显示上年同月收入�
 
 - Parent: REQ-F10-07
 - Priority: P0
+- Status: retired
+- Retired: revision 8，随部门费用报告删除
 - EARS:
 
 ```text
@@ -1731,17 +1736,17 @@ THE SYSTEM SHALL 生成 .xlsx 文件，列与页面当前显示一致，且只�
 ### US-F15-01 · 在预算平台里看业财指标、做经营分析
 
 - Role: 财务负责人、财务BP、CEO
-- Goal: 不再单独打开业财一体化工作台，在预算平台里查看财务与业务指标、九项数据分析、政策环境和重点工作进度
+- Goal: 不再单独打开业财一体化工作台，在预算平台里查看财务与业务指标、九项数据分析和政策环境
 - Value: 指标、分析和预算在同一个平台，同一套账号与权限，数据集中保存可追溯
 - Stage: 本期
 - Status: active
-- Source: 用户 2026-10-28（上传业财一体化工作台，要求把全部模块合并进预算平台，按平台重写；缺数据源的指标保留模拟数据当演示）；revision 7 用户要求删除经营总览驾驶舱、业财联动关系、经营建议三个模块
+- Source: 用户 2026-10-28（上传业财一体化工作台，要求把全部模块合并进预算平台，按平台重写；缺数据源的指标保留模拟数据当演示）；revision 7 用户要求删除经营总览驾驶舱、业财联动关系、经营建议三个模块；revision 8 用户要求删除重点工作进度、业财数据管理
 
 ### REQ-F15-01 · 数据集中保存与权限
 
 - Story: US-F15-01
 - Stage: 本期
-- Revision: 1
+- Revision: 2
 - Status: active
 
 ### AC-F15-01 · 可见与可编辑角色
@@ -1762,7 +1767,7 @@ THE SYSTEM SHALL 仅向 CEO、财务负责人、财务BP 显示侧栏「业财�
 - EARS:
 
 ```text
-WHEN 有编辑权限的用户修改指标、维度填报、政策事件或重点工作
+WHEN 有编辑权限的用户修改指标、维度填报或政策事件
 THE SYSTEM SHALL 自动保存到服务器（不再存浏览器本地），每次保存写审计日志；若其他人已先保存同一部分，提示「已被某某更新，请刷新后再改」且不覆盖对方数据
 ```
 
@@ -1773,8 +1778,8 @@ THE SYSTEM SHALL 自动保存到服务器（不再存浏览器本地），每次
 - EARS:
 
 ```text
-WHEN 某部分尚未通过业财数据管理导入正式数据，或页面含平台暂无数据源的推算数据（流量、新老客、订单、服务商单价、库存等）
-THE SYSTEM SHALL 在页面标题旁显示「示例数据」标记并说明来源；财务负责人可一键恢复示例数据（需二次确认、写审计）
+WHEN 某部分仍是原工具示例数据（尚无人在页面上修改并保存），或页面含平台暂无数据源的推算数据（流量、新老客、订单、服务商单价、库存等）
+THE SYSTEM SHALL 在页面标题旁显示「示例数据」标记并说明来源；该部分修改并保存后视为正式数据，标记消失（revision 8 删除业财数据管理后不再提供导入与恢复示例数据）
 ```
 
 ### REQ-F15-02 · 指标体系与勾稽
@@ -1826,11 +1831,11 @@ WHEN 打开数据分析的渠道效益、流量、用户、订单、品类、头
 THE SYSTEM SHALL 按原工作台模型计算并显示图表与明细表（如渠道贡献毛利合计 = 净利润），业务指标已填报时优先用填报值，未填报时回落结构基准
 ```
 
-### REQ-F15-04 · 政策环境、重点工作
+### REQ-F15-04 · 政策环境
 
 - Story: US-F15-01
 - Stage: 本期
-- Revision: 2
+- Revision: 3
 - Status: active
 
 ### AC-F15-07 · 事件维护
@@ -1840,8 +1845,8 @@ THE SYSTEM SHALL 按原工作台模型计算并显示图表与明细表（如渠
 - EARS:
 
 ```text
-WHEN 有编辑权限的用户新增、修改或删除政策事件或重点工作任务
-THE SYSTEM SHALL 保存到服务器并刷新相关统计（重点工作按分类 / 状态统计完成进度）；CEO 只能查看
+WHEN 有编辑权限的用户新增、修改或删除政策事件
+THE SYSTEM SHALL 保存到服务器；CEO 只能查看
 ```
 
 ### REQ-F15-05 · 业财数据导入导出
@@ -1849,12 +1854,15 @@ THE SYSTEM SHALL 保存到服务器并刷新相关统计（重点工作按分类
 - Story: US-F15-01
 - Stage: 本期
 - Revision: 1
-- Status: active
+- Status: retired
+- Retired: revision 8，用户 2026-10-29 要求删除「业财数据管理」
 
 ### AC-F15-08 · 导入导出
 
 - Parent: REQ-F15-05
 - Priority: P0
+- Status: retired
+- Retired: revision 8，随业财数据管理删除
 - EARS:
 
 ```text

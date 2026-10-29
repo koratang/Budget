@@ -154,7 +154,7 @@ def test_reimport_same_period_needs_overwrite(g3):
     assert r.status_code == 409 and r.json()["code"] == "needs_overwrite"
 
 
-def test_yoy_in_channel_site_and_dept_reports(g3):
+def test_yoy_in_channel_site_report(g3):
     import_year(g3, WB_2026, 2026)
     import_year(g3, WB_2027, 2027)
     c = g3.client("林晓")
@@ -167,16 +167,6 @@ def test_yoy_in_channel_site_and_dept_reports(g3):
     assert round(D(us["yoy"]["gross_profit"]["growth"]), 2) == D("-2.86")   # (17,000 − 17,500) ÷ 17,500
     ca = next(r for r in rep["rows"] if r["name"] == "Amazon-CA-02")      # 今年无实际、上年有：仍列出
     assert D(ca["yoy"]["revenue"]["growth"]) == D("-100")
-
-    dept = c.get("/api/reports/dept-expense", params={"year": 2027}).json()
-    assert dept["prior_available"] is True and dept["prior_period"] == "2026-01 至 2026-01"
-    hr = next(g for g in dept["groups"] if g["department"] == "人力资源部")
-    recruit = next(r for r in hr["rows"] if r["account"] == "招聘费")
-    assert D(recruit["actual"]) == D("6000") and D(recruit["prior"]) == D("5000")
-    assert D(recruit["yoy"]) == D("20")
-    public = next(g for g in dept["groups"] if g["department"] == "公司公共（未分部门）")
-    welfare = next(r for r in public["rows"] if r["account"] == "福利费")
-    assert D(welfare["prior"]) == D("3000") and D(welfare["yoy"]) == D("-100")
 
 
 def test_yoy_unavailable_without_prior_year(g3):

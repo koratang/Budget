@@ -184,7 +184,7 @@ function onActual(e: Event, i: Indicator): void {
       <code>S4</code> 仓配履约板块（单位头程成本<b>分线路</b>：美东 / 美西 / 英国 / 欧洲；单位仓储费用、单位操作费用<b>分服务商</b>：A / B / C）。<br>
       <b>数据状态：</b>真实台账就绪前全部指标留空，页面显示「—」，避免以 0 拉低板块健康度。
       当前已填报 <b data-testid="filled-stat">{{ stat.filled }} / {{ stat.total }}</b> 项二级指标。<b data-testid="dim-stat">{{ stat.dimFilled }} / {{ stat.dimTotal }}</b> 个维度单元格已填报。
-      可在下方矩阵中逐格填报，或在「<RouterLink :to="{ name: 'bizfin-data' }">数据管理</RouterLink>」中按「<code>编码, 维度, 实际值</code>」批量导入。
+      可在下方矩阵中逐格填报。
     </div>
 
     <template v-for="b in boards" :key="b.p.code">

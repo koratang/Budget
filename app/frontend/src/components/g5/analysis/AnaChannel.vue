@@ -175,7 +175,7 @@ const trendCharts = computed(() => {
       </AnaKitChartNote>
     </AnaKitCard>
 
-    <AnaKitNote title="渠道效益分析说明：">本表以<b>财务指标为唯一真源</b>：净销售额口径取自渠道二级 <AnaKitCode code="F1.1~F1.5" />（与订单分析的渠道集中度 CR1 同源），费用池由 <AnaKitCode code="F1" /> / <AnaKitCode code="F2" /> / <AnaKitCode code="F4.1" /> / <AnaKitCode code="F4.2" /> / <AnaKitCode code="F4" /> 直接决定，渠道结构权重仅用于<b>池内分摊</b>。因此 <b>贡献毛利额合计 ≡ <AnaKitCode code="F4" /> 净利润</b>、<b>贡献毛利率合计 ≡ <AnaKitCode code="F5" /> 净利润率</b>，九项结构在渠道维度加总后可与管理报表逐项对账。可在「数据管理」导入分渠道佣金单 / FBA 账单后，用真实台账替换分摊权重，勾稽关系保持不变。毛利率 + 收入规模 双轴交叉 = 渠道优先级矩阵：低毛利 + 低规模（及时止损）、低毛利 + 高规模（重点改进）、高毛利 + 低规模（放量）、高毛利 + 高规模（守住）。</AnaKitNote>
+    <AnaKitNote title="渠道效益分析说明：">本表以<b>财务指标为唯一真源</b>：净销售额口径取自渠道二级 <AnaKitCode code="F1.1~F1.5" />（与订单分析的渠道集中度 CR1 同源），费用池由 <AnaKitCode code="F1" /> / <AnaKitCode code="F2" /> / <AnaKitCode code="F4.1" /> / <AnaKitCode code="F4.2" /> / <AnaKitCode code="F4" /> 直接决定，渠道结构权重仅用于<b>池内分摊</b>。因此 <b>贡献毛利额合计 ≡ <AnaKitCode code="F4" /> 净利润</b>、<b>贡献毛利率合计 ≡ <AnaKitCode code="F5" /> 净利润率</b>，九项结构在渠道维度加总后可与管理报表逐项对账。毛利率 + 收入规模 双轴交叉 = 渠道优先级矩阵：低毛利 + 低规模（及时止损）、低毛利 + 高规模（重点改进）、高毛利 + 低规模（放量）、高毛利 + 高规模（守住）。</AnaKitNote>
   </div>
 </template>
 

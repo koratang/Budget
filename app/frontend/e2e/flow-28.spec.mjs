@@ -1,15 +1,14 @@
-// FLOW-28 偏差说明（PAGE-F10-02 / 03 / 04）：陈思雨填写，王浩、林晓、周明远查看；王浩无入口、接口 403。期望值逐字取自契约 FLOW-28。
+// FLOW-28 偏差说明（PAGE-F10-02 / 03）：陈思雨填写，王浩、林晓、周明远查看；王浩无入口、接口 403。期望值逐字取自契约 FLOW-28。
+// 部门费用报告（PAGE-F10-04）已于 2026-10-29 删除，其偏差说明步骤一并去掉。
 import { BASE, check, eq, loginAs, run } from './_e3_harness.mjs'
 
 const CHANNEL_NOTE = '4 月中旬断货 12 天，补货 4-28 到仓'
 const CATEGORY_NOTE = '3 款框镜因包装认证延期上架'
-const DEPT_NOTE = '4 月 KBIS 展会一次性支付'
 const WHEN = '2027-05-12 10:30'
 
 const REPORTS = {
   channel: { url: '/reports/channel?month=2027-04', page: 'PAGE-F10-02', row: (p) => p.locator('[data-testid="channel-table"] tbody tr', { hasText: 'Amazon-US-01' }).first() },
   category: { url: '/reports/category?month=2027-04', page: 'PAGE-F10-03', row: (p) => p.locator('[data-testid="category-table"] tbody tr').filter({ has: p.page().locator('td:nth-child(1)', { hasText: /^框镜$/ }) }).filter({ has: p.page().locator('td:nth-child(2)', { hasText: /^新品$/ }) }).first() },
-  dept: { url: '/reports/dept', page: 'PAGE-F10-04', row: (p) => p.locator('[data-testid="dept-table"] tbody tr', { hasText: '展会费' }).first() },
 }
 
 async function open(page, key) {
@@ -24,8 +23,8 @@ async function open(page, key) {
 await run('FLOW-28', 'flow28', WHEN, async (env) => {
   const page = await env.newPage()
   await loginAs(page, '陈思雨')
-  const notes = { channel: CHANNEL_NOTE, category: CATEGORY_NOTE, dept: DEPT_NOTE }
-  for (const key of ['channel', 'category', 'dept']) {
+  const notes = { channel: CHANNEL_NOTE, category: CATEGORY_NOTE }
+  for (const key of ['channel', 'category']) {
     const row = await open(page, key)
     await row.getByRole('button', { name: '填写说明' }).click()
     const dlg = page.getByRole('dialog')
@@ -43,8 +42,7 @@ await run('FLOW-28', 'flow28', WHEN, async (env) => {
   for (const who of ['王浩', '林晓', '周明远']) {
     await page.context().clearCookies()
     await loginAs(page, who)
-    const keys = who === '王浩' ? ['channel', 'category'] : ['channel', 'category', 'dept']
-    for (const key of keys) {
+    for (const key of ['channel', 'category']) {
       const row = await open(page, key)
       const txt = await row.textContent()
       check(txt.includes(notes[key]) && txt.includes(`陈思雨 · ${WHEN}`), `${who} 在${key}报告对应行看到说明、填写人「陈思雨」与填写时间`)

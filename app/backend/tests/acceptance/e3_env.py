@@ -65,7 +65,7 @@ def scenario(db, name: str) -> dict:
     elif name == "flow25":
         S.flow25(db)
     elif name == "flow26":
-        # 浏览器场景合并品类与部门费用前置：金蝶 2027-01～04 已导入（时间进度 4 ÷ 12），BI 只有 2027-04
+        # 浏览器场景前置：金蝶 2027-01～04 已导入（含人力资源部培训费），BI 只有 2027-04
         v = S.flow26_category(db, with_may_kingdee=False)
         S.flow26_dept(db, v)
     elif name == "flow27":

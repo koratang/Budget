@@ -1,4 +1,5 @@
 // FLOW-03 浏览器 E2E：期望值逐字取自 TDD验收契约 FLOW-03（前置：3 部门、4 店铺、3 B 端客户的预算与实际 + 已发布编制任务）。
+// 部门费用报告（/reports/dept）已于 2026-10-29 删除，吴静、郑可只校验部门费用填报。
 import { run, loginAs, BASE, check, eq } from './e1_harness.mjs'
 
 const BAD_KEY = /revenue|sales|gross|收入|销量|毛利|profit|qty/i
@@ -22,11 +23,6 @@ await run('FLOW-03', 'flow03', async (env) => {
     await pg.waitForSelector('revo-grid .rgCell')
     const t = await pageText(pg)
     check(t.includes('人力资源部') && !t.includes('财务部') && !t.includes('市场部'), `${who} 部门费用填报只见人力资源部`)
-    await pg.goto(`${BASE}/reports/dept?year=2027`)
-    await pg.locator('[data-testid="dept-table"]').waitFor()
-    const r = await pg.locator('[data-testid="dept-table"]').innerText()
-    check(r.includes('人力资源部') && r.includes('合计（我的部门）') && !r.includes('财务部') && !r.includes('市场部'),
-      `${who} 部门费用报告只见人力资源部行与「合计（我的部门）」`)
   }
 
   const wang = await env.newPage()
